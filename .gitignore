@@ -1,0 +1,6 @@
+# ignore the following files
+
+settings.py
+__pycache__/
+.idea/
+
