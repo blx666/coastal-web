@@ -9,7 +9,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('product', '0002_add_point_delete_lon_lat.py'),
+        ('product', '0002_add_point_delete_lon_lat'),
     ]
 
     operations = [
