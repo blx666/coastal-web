@@ -129,3 +129,9 @@ class Yacht(Product):
 
 class Jet(Product):
     pass
+
+
+class ProductImage(models.Model):
+    product = models.ForeignKey(Product)
+    image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
+    display_order = models.PositiveSmallIntegerField(default=0)
