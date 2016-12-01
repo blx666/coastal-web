@@ -108,16 +108,15 @@ class Product(models.Model):
     country = models.CharField(max_length=100)
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255)
-    lon = models.FloatField()
-    lat = models.FloatField()
 
     for_rental = models.BooleanField()
     for_sale = models.BooleanField()
 
     rental_price = models.FloatField(help_text='here is the price per day')
     # rental_currency = models.ForeignKey()
-    rental_usd_price = models.FloatField('Rental USD Price', editable=False)
+    rental_usd_price = models.FloatField('Rental USD Price')
     rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES)
+    point = models.PointField()
 
 
 class Space(Product):
