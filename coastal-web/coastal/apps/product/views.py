@@ -1,11 +1,35 @@
 from coastal.core import response
 from coastal.core.response import JsonResponse
 from .models import Product, ProductImage
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import Distance, D
 from .uilts import similar_products
 
 
 def product_list(request):
-    return JsonResponse()
+    lon = float(request.GET.get('lon'))
+    lat = float(request.GET.get('lat'))
+    distance = int(request.GET.get('distance'))
+    target = Point(lat, lon)
+    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
+    data = []
+    for product in products[0:20]:
+        images = list(ProductImage.objects.filter(product=product))
+        data.append({
+            "id": product.id,
+            "category": product.category.id,
+            "images": [product_image.image.url for product_image in images],
+            "for_rental": product.for_rental,
+            "for_sale": product.for_sale,
+            "rental_price": product.rental_price,
+            "rental_unit": product.rental_unit,
+            "sale_price": None,
+            "lon": product.point[1],
+            "lat": product.point[0],
+            "beds": product.beds,
+            "max_guests": product.max_guests,
+        })
+    return JsonResponse(data)
 
 
 def product_detail(request, pid):
@@ -58,7 +82,5 @@ def product_detail(request, pid):
         },
         "similar_products": similar_products(product)
     }
-
     return JsonResponse(data)
-
 
