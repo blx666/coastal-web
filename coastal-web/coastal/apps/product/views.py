@@ -3,6 +3,7 @@ from coastal.core.response import JsonResponse
 from .models import Product, ProductImage
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import Distance, D
+from .uilts import similar_products
 
 
 def product_list(request):
@@ -36,27 +37,36 @@ def product_detail(request, pid):
         product = Product.objects.get(id=pid)
     except Product.DoesNotExist:
         return JsonResponse(status=response.STATUS_404, message="The product does not exist.")
-
+    images = ProductImage.objects.filter(product=product)
+    image = [product_image.image.url for product_image in images]
+    # owner_name = product.owner.name or 'qwe'
+    name = product.name
+    description = product.description
+    amenities = product.amenities
+    address = product.address
+    for_rental = product.for_rental
+    for_sale = product.for_sale
+    rental_price = product.rental_price
+    rental_unit = product.rental_unit
+    category = product.category.id
     data = {
-        "id": 12,
-        "category": 1,
-        "images": ["/media/products/image001.jpg"],
-        "for_rental": True,
-        "for_sale": True,
-        "rental_price": 1023.00,
-        "rental_unit": "Day",
-        "sale_price": 2050000.00,
-        "lon": 35.4340958,
-        "lat": -115.6360776,
-        "address": "Malibu, CA, United States",
-        "name": "Oceanfast",
+        "id": pid,
+        "category": category,
+        "images": image,
+        "for_rental": for_rental,
+        "for_sale": for_sale,
+        "rental_price": rental_price,
+        "rental_unit": rental_unit,
+        "sale_price": None,
+        "address": address,
+        "name": name,
         "short_desc": "1,200 ft. Yacht",
-        "description": "This is a sample description of a beautiful yacht. ",
-        "Amenities": "Air conditioning, Hot Tub, TV, Wifi",
+        "description": description,
+        "Amenities": amenities,
         "liked": False,
         "owner": {
-            "id": 23,
-            "name": "Sarah Keller",
+            "id": product.owner.id,
+            "name": 'Jam Green',
             "photo": "/media/user/photo001.jpg",
         },
         "reviews": {
@@ -70,22 +80,7 @@ def product_detail(request, pid):
                 "content": "This is a sample rating of this listing."
             }
         },
-        "similar_products": [{
-            "id": 28,
-            "category": 1,
-            "image": "/media/products/image021.jpg",
-            "liked": False,
-            "for_rental": True,
-            "for_sale": False,
-            "rental_price": 7500.00,
-            "rental_unit": "Day",
-            "sale_price": None,
-            "city": "Malibu",
-            "max_guests": 6,
-            "speed": 1200,
-            "reviews_count": 8,
-            "reviews_avg_score": 4.5,
-        }, {}]
+        "similar_products": similar_products(product)
     }
-
     return JsonResponse(data)
+
