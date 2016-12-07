@@ -20,6 +20,7 @@ from django.contrib import admin
 
 urlpatterns = [
     url(r'^api/products/', include('coastal.apps.product.urls')),
+    url(r'^api/account/', include('coastal.api.account.urls')),
     url(r'^admin/', admin.site.urls),
 ]
 
