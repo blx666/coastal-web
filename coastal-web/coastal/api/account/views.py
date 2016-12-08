@@ -19,7 +19,7 @@ def register(request):
                                     email=register_form.cleaned_data['email'],
                                     password=register_form.cleaned_data['password'])
     UserProfile.objects.create(user=user)
-    data = {"has_agency_info": user.userprofile.has_agency_info}
+    data = {"has_agency_info": user.userprofile.has_agency_info, 'user_id': user.id}
     return CoastalJsonResponse(data)
 
 
@@ -33,6 +33,7 @@ def login(request):
         data = {
             'logged': request.user.is_authenticated(),
             'has_agency_info': user.userprofile.has_agency_info,
+            'user_id': user.id
         }
     else:
         data = {
