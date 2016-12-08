@@ -132,6 +132,6 @@ class Jet(Product):
 
 
 class ProductImage(models.Model):
-    product = models.ForeignKey(Product)
+    product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
