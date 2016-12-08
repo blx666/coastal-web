@@ -35,4 +35,4 @@ def product_list(request):
             "lat": product.point[0],
         })
         data.append(product_data)
-    return JsonResponse(data)
+    return CoastalJsonResponse(data)
