@@ -12,7 +12,7 @@ from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
-        return CoastalJsonResponse(status=400)
+        return CoastalJsonResponse(form.errors, status=400)
 
     lon = form.cleaned_data['lon']
     lat = form.cleaned_data['lat']
@@ -39,7 +39,7 @@ def product_list(request):
     elif for_sale:
         products = products.filter(for_sale=True)
     if category:
-        products = products.filter(category__name=category)
+        products = products.filter(category=category)
     if min_price:
         products = products.filter(rental_price__gte=min_price)
     if max_price:
