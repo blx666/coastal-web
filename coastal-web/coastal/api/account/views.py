@@ -52,7 +52,7 @@ def check_email(request):
         return CoastalJsonResponse({
             'exists': User.objects.filter(email=form.cleaned_data['email']).exists()
         })
-    return CoastalJsonResponse(message=form.errors, status=400)
+    return CoastalJsonResponse(form.errors, status=400)
 
 
 @login_required
