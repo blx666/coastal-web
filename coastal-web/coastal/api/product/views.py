@@ -79,15 +79,30 @@ def product_detail(request, pid):
 
 
 def product_image_upload(request):
-    if request.method == 'POST':
-        form = ImageUploadForm(request.POST, request.FILES)
-        if form.is_valid():
-            image = form.save()
-            data = {
-                'image_id': image.id
-            }
-            return CoastalJsonResponse(data)
-        else:
-            return CoastalJsonResponse(form.errors, status=400)
-    else:
+    if request.method != 'POST':
         return CoastalJsonResponse(status=405)
+    form = ImageUploadForm(request.POST, request.FILES)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=400)
+    image = form.save()
+    data = {
+        'image_id': image.id
+    }
+    return CoastalJsonResponse(data)
+
+
+def product_add(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=405)
+
+    form = ProductForm(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=400)
+
+    product = form.save(commit=False)
+    product.owner = request.user
+    product.save()
+    data = {
+        'product_id': product.id
+    }
+    return CoastalJsonResponse(data)
