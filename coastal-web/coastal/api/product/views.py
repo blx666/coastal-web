@@ -25,17 +25,18 @@ def product_list(request):
     max_price = form.cleaned_data['max_price']
     sort = form.cleaned_data['sort']
     category = form.cleaned_data['category']
-    purchase_or_rent = form.cleaned_data['purchase_or_rent']
+    for_sale = form.cleaned_data['for_sale']
+    for_rental = form.cleaned_data['for_rental']
     target = Point(lat, lon)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
-    if purchase_or_rent == 'both':
+    if for_sale and for_rental:
         products = products.filter(for_rental=True) | products.filter(for_sale=True)
-    elif purchase_or_rent == 'rent':
+    elif for_rental:
         products = products.filter(for_rental=True)
-    elif purchase_or_rent == 'buy':
+    elif for_sale:
         products = products.filter(for_sale=True)
     if category:
         products = products.filter(category=category)
@@ -48,9 +49,9 @@ def product_list(request):
     if checkout_date:
         products = products.filter(rentaldaterange__end_date__gte=checkout_date)
     if sort == 'price':
-        products = products.order_by('rental_price')
+        products = products.order_by(sort.replace('price', 'rental_price'))
     if sort == '-price':
-        products = products.order_by('-rental_price')
+        products = products.order_by(sort.replace('price', 'rental_price'))
     product_images = ProductImage.objects.filter(product__in=products)
     for product in products:
         product.images = []
