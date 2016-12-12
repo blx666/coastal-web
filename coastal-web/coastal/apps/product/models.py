@@ -98,9 +98,9 @@ class Product(models.Model):
         ('rental_false', 'direct_rental_false'),
     )
     category = models.ForeignKey(Category)
-    owner = models.ForeignKey(User)
     for_rental = models.BooleanField()
     for_sale = models.BooleanField()
+    owner = models.ForeignKey(User, related_name='properties')
 
     # address info
     country = models.CharField(max_length=100)
@@ -158,3 +158,8 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
+
+
+class ProductViewCount(models.Model):
+    product = models.ForeignKey(Product)
+    view_count = models.PositiveIntegerField(default=0)

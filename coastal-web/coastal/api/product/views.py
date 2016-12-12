@@ -1,37 +1,91 @@
 from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm
-from coastal.apps.product.models import Product, ProductImage
-from django.contrib.gis.geos import Point
-from django.contrib.gis.measure import Distance, D
 from coastal.api.product.utils import get_similar_products
+from coastal.api.core.response import CoastalJsonResponse
+from coastal.apps.product.models import Product, ProductImage
+from coastal.api.product.forms import ProductListFilterForm
+from django.contrib.gis.geos import Point
+from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
-from coastal.api.core.response import CoastalJsonResponse, JsonResponse
 
 
 def product_list(request):
-    lon = float(request.GET.get('lon'))
-    lat = float(request.GET.get('lat'))
-    distance = int(request.GET.get('distance'))
+    form = ProductListFilterForm(request.GET)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=400)
+
+    lon = form.cleaned_data['lon']
+    lat = form.cleaned_data['lat']
+    distance = form.cleaned_data['distance']
+
+    guests = form.cleaned_data['guests']
+    arrival_date = form.cleaned_data['arrival_date']
+    checkout_date = form.cleaned_data['checkout_date']
+    min_price = form.cleaned_data['min_price']
+    max_price = form.cleaned_data['max_price']
+    sort = form.cleaned_data['sort']
+    category = form.cleaned_data['category']
+    for_sale = form.cleaned_data['for_sale']
+    for_rental = form.cleaned_data['for_rental']
     target = Point(lat, lon)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
+
+    if guests:
+        products = products.filter(max_guests__gte=guests)
+    if for_sale and for_rental:
+        products = products.filter(for_rental=True) | products.filter(for_sale=True)
+    elif for_rental:
+        products = products.filter(for_rental=True)
+    elif for_sale:
+        products = products.filter(for_sale=True)
+    if category:
+        products = products.filter(category=category)
+    if min_price:
+        products = products.filter(rental_price__gte=min_price)
+    if max_price:
+        products = products.filter(rental_price__lte=max_price)
+    if arrival_date:
+        products = products.filter(rentaldaterange__start_date__lte=arrival_date)
+    if checkout_date:
+        products = products.filter(rentaldaterange__end_date__gte=checkout_date)
+    if sort == 'price':
+        products = products.order_by(sort.replace('price', 'rental_price'))
+    if sort == '-price':
+        products = products.order_by(sort.replace('price', 'rental_price'))
+    product_images = ProductImage.objects.filter(product__in=products)
+    for product in products:
+        product.images = []
+        for image in product_images:
+            if image.product == product:
+                product.images.append(image.image.url)
     data = []
     for product in products[0:20]:
-        images = list(ProductImage.objects.filter(product=product))
-        data.append({
-            "id": product.id,
-            "category": product.category.id,
-            "images": [product_image.image.url for product_image in images],
-            "for_rental": product.for_rental,
-            "for_sale": product.for_sale,
-            "rental_price": product.rental_price,
-            "rental_unit": product.rental_unit,
+        product_data = model_to_dict(product,
+                                     fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
+                                             'max_guests'])
+        product_data.update({
+            "category": product.category_id,
+            "images": product.images,
             "sale_price": None,
             "lon": product.point[1],
             "lat": product.point[0],
-            "beds": product.beds,
-            "max_guests": product.max_guests,
         })
-    return JsonResponse(data)
+        data.append(product_data)
+    return CoastalJsonResponse(data)
+
+
+CATEGORY_SPACE = 1
+CATEGORY_YACHT = 2
+CATEGORY_JET = 3
+CATEGORY_HOUSE = 5
+CATEGORY_APARTMENT = 5
+CATEGORY_ROOM = 6
+
+
+def product_image_url(product):
+
+    images = [i.image.url for i in ProductImage.objects.filter(product=product)]
+    return images
 
 
 def product_detail(request, pid):
@@ -43,6 +97,14 @@ def product_detail(request, pid):
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
                                           'reviews_avg_score', 'liked'])
+    if product.category in [CATEGORY_HOUSE, CATEGORY_APARTMENT]:
+        data['short_desc'] = '%s rooms' % product.rooms
+    elif product.category in [CATEGORY_ROOM]:
+        data['short_desc'] = 'single room'
+    elif product.category in [CATEGORY_YACHT]:
+        data['short_desc'] = '%s ft. yacht' % product.length
+    elif product.category in [CATEGORY_JET]:
+        data['short_desc'] = '%s ft. jet' % product.length
 
     data['images'] = [i.image.url for i in ProductImage.objects.filter(product=product)]
 
@@ -69,10 +131,7 @@ def product_detail(request, pid):
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        img_urls = []
-        for img_url in p.productimage_set.all():
-            img_urls.append(img_url.image.url)
-        content['images'] = img_urls
+        content['images'] = product_image_url(p)
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
