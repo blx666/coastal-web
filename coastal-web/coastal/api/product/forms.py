@@ -12,5 +12,4 @@ class ProductListFilterForm(forms.Form):
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
     category = forms.IntegerField(required=False)
-    for_rental = forms.BooleanField(required=False)
-    for_sale = forms.BooleanField(required=False)
+    purchase_or_rent = forms.CharField(required=False)

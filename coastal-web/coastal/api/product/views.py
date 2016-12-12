@@ -25,18 +25,17 @@ def product_list(request):
     max_price = form.cleaned_data['max_price']
     sort = form.cleaned_data['sort']
     category = form.cleaned_data['category']
-    for_rental = form.cleaned_data['for_rental']
-    for_sale = form.cleaned_data['for_sale']
+    purchase_or_rent = form.cleaned_data['purchase_or_rent']
     target = Point(lat, lon)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
-    if for_sale and for_rental:
+    if purchase_or_rent == 'both':
         products = products.filter(for_rental=True) | products.filter(for_sale=True)
-    elif for_rental:
+    elif purchase_or_rent == 'rent':
         products = products.filter(for_rental=True)
-    elif for_sale:
+    else:
         products = products.filter(for_sale=True)
     if category:
         products = products.filter(category=category)
