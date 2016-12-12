@@ -95,7 +95,7 @@ class Product(models.Model):
     )
 
     category = models.ForeignKey(Category)
-    owner = models.ForeignKey(User)
+    owner = models.ForeignKey(User, related_name='properties')
 
     name = models.CharField(max_length=255)
     description = models.TextField()
@@ -118,20 +118,16 @@ class Product(models.Model):
     rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES)
     point = models.PointField()
 
-
-class Space(Product):
-    pass
-
-
-class Yacht(Product):
-    pass
-
-
-class Jet(Product):
-    pass
+    liker = models.ManyToManyField(User, related_name='favorites')
+    viewer = models.ManyToManyField(User, related_name='recently_viewed')
 
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
+
+
+class ProductViewCount(models.Model):
+    product = models.ForeignKey(Product)
+    view_count = models.PositiveIntegerField(default=0)
