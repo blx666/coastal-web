@@ -150,8 +150,8 @@ class Amenity(models.Model):
         ('extra', 'Extra'),
     )
 
-    name = models.CharField(max_length=32, null=True, blank=True)
-    amenity_type = models.CharField(max_length=32, null=True, blank=True)
+    name = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
+    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES,  null=True, blank=True)
 
 
 class ProductImage(models.Model):
