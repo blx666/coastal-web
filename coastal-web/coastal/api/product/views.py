@@ -35,7 +35,7 @@ def product_list(request):
         products = products.filter(for_rental=True) | products.filter(for_sale=True)
     elif purchase_or_rent == 'rent':
         products = products.filter(for_rental=True)
-    else:
+    elif purchase_or_rent == 'buy':
         products = products.filter(for_sale=True)
     if category:
         products = products.filter(category=category)
