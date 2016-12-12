@@ -128,7 +128,7 @@ class Product(models.Model):
     # rental_currency = models.ForeignKey()
     rental_usd_price = models.FloatField('Rental USD Price')
     rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
-    rental_type = models.PositiveSmallIntegerField(choices=RENTAL_TYPE_CHOICES, help_text='', null=True, blank=True)
+    rental_type = models.PositiveSmallIntegerField(choices=RENTAL_TYPE_CHOICES, help_text='Who can book instantly', null=True, blank=True)
     rental_rule = models.TextField(blank=True)
     # sale info
     sale_price = models.FloatField(null=True, blank=True)
