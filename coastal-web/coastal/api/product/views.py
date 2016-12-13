@@ -105,7 +105,7 @@ def product_detail(request, pid):
             "content": "This is a sample rating of this listing."
         }
     }
-    similar_products =get_similar_products(product)
+    similar_products = get_similar_products(product)
     bind_product_image(similar_products)
     similar_product_dict = []
     for p in similar_products:
