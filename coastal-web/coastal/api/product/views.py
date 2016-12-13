@@ -146,3 +146,4 @@ def product_add(request):
         'product_id': product.id
     }
     return CoastalJsonResponse(data)
+

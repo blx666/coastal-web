@@ -46,3 +46,4 @@ def bond_product_image(products):
         for image in product_images:
             if image.product == product:
                 product.images.append(image.image.url)
+
