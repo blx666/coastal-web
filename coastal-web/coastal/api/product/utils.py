@@ -7,9 +7,11 @@ from django.contrib.gis.measure import D
 def get_similar_products(product):
     point = product.point
 
-    similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35))).exclude(
-        id=product.id).order_by(
-        Distance('point', point))[0:12]
+    if point:
+        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35))).exclude(
+            id=product.id).order_by(Distance('point', point))[0:12]
+    else:
+        similar_distance_product = Product.objects.all()[0:12]
 
     price = product.rental_price
     price_order = Product.objects.order_by('rental_price')
