@@ -9,7 +9,6 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.product import defines as defs
 
-
 def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
