@@ -13,11 +13,13 @@ def init_categories(apps, schema_editor):
     categories = (
         # (id, path, depth, numchild, name, full_name)
         (1, '0001', 1, 3, "Space", "Space"),
-        (2, '0002', 1, 0, "Yacht", "Yacht"),
+        (2, '0002', 1, 2, "Yacht", "Yacht"),
         (3, '0003', 1, 0, "Jet", "Jet"),
         (4, '00010001', 2, 0, "House", "Space > House"),
         (5, '00010002', 2, 0, "Apartment", "Space > Apartment"),
         (6, '00010003', 2, 0, "Room", "Space > Room"),
+        (7, '00020001', 2, 0, "Yacht", "Yacht > Yacht"),
+        (8, '00020002', 2, 0, "Boat Slip", "Yacht > Boat Slip"),
     )
 
     for cid, path, depth, numchild, name, full_name in categories:
