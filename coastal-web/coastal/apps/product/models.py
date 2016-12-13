@@ -93,9 +93,9 @@ class Product(models.Model):
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
     )
-    RENTAL_TYPE_CHOICES = (
-        ('rental_true', 'direct_rental_true'),
-        ('rental_false', 'direct_rental_false'),
+    ALLOW_RENTAL_CHOICES = (
+        ('meet-cr', 'Guests who meet Coastal\'s requirements'),
+        ('no-one', 'No one. I will read and approve every request within 24 hours'),
     )
     category = models.ForeignKey(Category)
     for_rental = models.BooleanField()
@@ -128,7 +128,7 @@ class Product(models.Model):
     # rental_currency = models.ForeignKey()
     rental_usd_price = models.FloatField('Rental USD Price')
     rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
-    rental_type = models.CharField(max_length=32, choices=RENTAL_TYPE_CHOICES, null=True, blank=True,
+    rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
                                    help_text='Who can book instantly')
     rental_rule = models.TextField(blank=True)
     # sale info
@@ -143,6 +143,9 @@ class Product(models.Model):
     desc_interaction = models.TextField(max_length=255, null=True, blank=True)
     desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
     desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
+
+    liker = models.ManyToManyField(User, related_name='favorites')
+    viewer = models.ManyToManyField(User, related_name='recently_viewed')
 
 
 class Amenity(models.Model):
