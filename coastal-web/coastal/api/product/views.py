@@ -2,11 +2,12 @@ from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm
 from coastal.api.product.utils import get_similar_products
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.product.models import Product, ProductImage, FavouriteProduct, HomeImage
 from coastal.api.product.forms import ProductListFilterForm
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
+from datetime import datetime
 
 
 def product_list(request):
@@ -77,7 +78,7 @@ def product_list(request):
 CATEGORY_SPACE = 1
 CATEGORY_YACHT = 2
 CATEGORY_JET = 3
-CATEGORY_HOUSE = 5
+CATEGORY_HOUSE = 4
 CATEGORY_APARTMENT = 5
 CATEGORY_ROOM = 6
 
