@@ -49,9 +49,7 @@ def product_list(request):
         products = products.filter(rentaldaterange__start_date__lte=arrival_date)
     if checkout_date:
         products = products.filter(rentaldaterange__end_date__gte=checkout_date)
-    if sort == 'price':
-        products = products.order_by(sort.replace('price', 'rental_price'))
-    if sort == '-price':
+    if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     product_images = ProductImage.objects.filter(product__in=products)
     for product in products:
@@ -98,13 +96,13 @@ def product_detail(request, pid):
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
                                           'reviews_avg_score', 'liked'])
-    if product.category in [CATEGORY_HOUSE, CATEGORY_APARTMENT]:
+    if product.category_id in (CATEGORY_HOUSE, CATEGORY_APARTMENT):
         data['short_desc'] = '%s rooms' % product.rooms
-    elif product.category in [CATEGORY_ROOM]:
+    elif product.category_id == CATEGORY_ROOM:
         data['short_desc'] = 'single room'
-    elif product.category in [CATEGORY_YACHT]:
+    elif product.category_id == CATEGORY_YACHT:
         data['short_desc'] = '%s ft. yacht' % product.length
-    elif product.category in [CATEGORY_JET]:
+    elif product.category_id == CATEGORY_JET:
         data['short_desc'] = '%s ft. jet' % product.length
 
     data['images'] = [i.image.url for i in ProductImage.objects.filter(product=product)]
