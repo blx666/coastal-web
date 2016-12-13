@@ -39,7 +39,7 @@ def get_similar_products(product):
     return similar_product
 
 
-def bond_product_image(products):
+def bind_product_image(products):
     product_images = ProductImage.objects.filter(product__in=products)
     for product in products:
         product.images = []

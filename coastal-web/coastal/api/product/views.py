@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 
 from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
-from coastal.api.product.utils import get_similar_products, bond_product_image
+from coastal.api.product.utils import get_similar_products, bind_product_image
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.product import defines as defs
@@ -52,7 +52,7 @@ def product_list(request):
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
 
-    bond_product_image(products)
+    bind_product_image(products)
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
@@ -105,14 +105,15 @@ def product_detail(request, pid):
             "content": "This is a sample rating of this listing."
         }
     }
-
+    similar_products =get_similar_products(product)
+    bind_product_image(similar_products)
     similar_product_dict = []
-    for p in get_similar_products(product):
+    for p in similar_products:
         content = model_to_dict(p, fields=['id', 'category', 'liked', 'for_rental', 'for_sale', 'rental_price',
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        content['images'] = bond_product_image(p)
+        content['images'] = p
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
