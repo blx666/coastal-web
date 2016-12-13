@@ -42,9 +42,18 @@ def get_similar_products(product):
 
 
 def bind_product_image(products):
+    """
+    It will bind images into product to avoid n+1 select.
+    :param products: product obj list
+    :return: None
+    """
     product_images = ProductImage.objects.filter(product__in=products)
+
+    image_group = {}
+    for image in product_images:
+        if image.product.id not in image_group:
+            image_group[image.product.id] = []
+        image_group[image.product.id].append(image)
+
     for product in products:
-        product.images = []
-        for image in product_images:
-            if image.product == product:
-                product.images.append(image.image.url)
+        product.images = image_group.get(product.id, [])

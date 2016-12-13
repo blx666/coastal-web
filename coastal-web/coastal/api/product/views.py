@@ -9,6 +9,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.product import defines as defs
 
+
 def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
@@ -52,6 +53,7 @@ def product_list(request):
         products = products.order_by(sort.replace('price', 'rental_price'))
 
     bind_product_image(products)
+
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
@@ -59,7 +61,7 @@ def product_list(request):
                                              'max_guests'])
         product_data.update({
             "category": product.category_id,
-            "images": product.images,
+            "images": [i.image.url for i in product.images],
             "sale_price": None,
             "lon": product.point[1],
             "lat": product.point[0],
@@ -112,7 +114,7 @@ def product_detail(request, pid):
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        content['images'] = p
+        content['images'] = [i.image.url for i in p.images]
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
