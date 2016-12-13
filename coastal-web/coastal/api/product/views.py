@@ -112,7 +112,7 @@ def product_detail(request, pid):
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        content['images'] = product_image_url(p)
+        content['images'] = bond_product_image(p)
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
