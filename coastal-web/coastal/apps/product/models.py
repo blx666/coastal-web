@@ -89,41 +89,73 @@ class Category(MP_Node):
 
 class Product(models.Model):
     CHARGE_UNIT_CHOICES = (
-        (1, 'Day'),
-        (2, 'Week'),
-        (3, 'Month'),
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
     )
-
+    RENTAL_TYPE_CHOICES = (
+        ('rental_true', 'direct_rental_true'),
+        ('rental_false', 'direct_rental_false'),
+    )
     category = models.ForeignKey(Category)
-    owner = models.ForeignKey(User, related_name='properties')
-
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    amenities = models.TextField()
-    max_guests = models.PositiveSmallIntegerField()
-    beds = models.PositiveSmallIntegerField()
-    bathrooms = models.PositiveSmallIntegerField()
-    sleeps = models.PositiveSmallIntegerField()
-
-    country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-    address = models.CharField(max_length=255)
-
     for_rental = models.BooleanField()
     for_sale = models.BooleanField()
+    owner = models.ForeignKey(User, related_name='properties')
 
+    # address info
+    country = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    address = models.CharField(max_length=255, blank=True)
+    point = models.PointField(blank=True, null=True)
+
+    # basic info
+    max_guests = models.PositiveSmallIntegerField()
+    beds = models.PositiveSmallIntegerField(blank=True, null=True)
+    bathrooms = models.PositiveSmallIntegerField(blank=True, null=True)
+    sleeps = models.PositiveSmallIntegerField(blank=True, null=True)
+    rooms = models.PositiveSmallIntegerField(blank=True, null=True)
+    marina = models.CharField(max_length=255, blank=True)
+    basin = models.CharField(max_length=255, blank=True)
+    stall = models.CharField(max_length=255, blank=True)
+    length = models.PositiveSmallIntegerField(blank=True, null=True)
+    depth = models.PositiveSmallIntegerField(blank=True, null=True)
+    cabins = models.PositiveSmallIntegerField(blank=True, null=True)
+    year = models.PositiveSmallIntegerField(blank=True, null=True)
+    speed = models.PositiveSmallIntegerField(blank=True, null=True)
+
+    # rental info
     rental_price = models.FloatField(help_text='here is the price per day')
     # rental_currency = models.ForeignKey()
     rental_usd_price = models.FloatField('Rental USD Price')
-    rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES)
-    point = models.PointField()
+    rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
+    rental_type = models.PositiveSmallIntegerField(choices=RENTAL_TYPE_CHOICES, help_text='Who can book instantly', null=True, blank=True)
+    rental_rule = models.TextField(blank=True)
+    # sale info
+    sale_price = models.FloatField(null=True, blank=True)
 
-    liker = models.ManyToManyField(User, related_name='favorites')
-    viewer = models.ManyToManyField(User, related_name='recently_viewed')
+    # description
+    name = models.CharField(max_length=255, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
+    amenities = models.ManyToManyField('Amenity', null=True, blank=True)
+    desc_about_it = models.TextField(max_length=255, null=True, blank=True)
+    desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
+    desc_interaction = models.TextField(max_length=255, null=True, blank=True)
+    desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
+    desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
+
+
+class Amenity(models.Model):
+    TYPE_CHOICES = (
+        ('common', 'Common'),
+        ('extra', 'Extra'),
+    )
+
+    name = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
+    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES,  null=True, blank=True)
 
 
 class ProductImage(models.Model):
-    product = models.ForeignKey(Product)
+    product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
 
