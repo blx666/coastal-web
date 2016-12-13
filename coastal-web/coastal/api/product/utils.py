@@ -37,3 +37,12 @@ def get_similar_products(product):
             if pi.product == product:
                 product.images.append(pi)
     return similar_product
+
+
+def bind_product_image(products):
+    product_images = ProductImage.objects.filter(product__in=products)
+    for product in products:
+        product.images = []
+        for image in product_images:
+            if image.product == product:
+                product.images.append(image.image.url)
