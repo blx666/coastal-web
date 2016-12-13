@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'coastal.apps.product',
     'coastal.apps.account',
+    'coastal.apps.rental'
 ]
 
 MIDDLEWARE = [
