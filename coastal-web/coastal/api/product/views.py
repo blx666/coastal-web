@@ -3,13 +3,11 @@ from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
 
 from coastal.core import response
-from coastal.api.product.forms import ImageUploadForm, ProductForm
-from coastal.api.product.utils import get_similar_products
+from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
+from coastal.api.product.utils import get_similar_products, bond_product_image
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.product import defines as defs
-from coastal.api.product.forms import ProductListFilterForm
-
 
 
 def product_list(request):
@@ -53,12 +51,8 @@ def product_list(request):
         products = products.filter(rentaldaterange__end_date__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
-    product_images = ProductImage.objects.filter(product__in=products)
-    for product in products:
-        product.images = []
-        for image in product_images:
-            if image.product == product:
-                product.images.append(image.image.url)
+
+    bond_product_image(products)
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
@@ -73,12 +67,6 @@ def product_list(request):
         })
         data.append(product_data)
     return CoastalJsonResponse(data)
-
-
-def product_image_url(product):
-
-    images = [i.image.url for i in ProductImage.objects.filter(product=product)]
-    return images
 
 
 def product_detail(request, pid):
