@@ -11,7 +11,6 @@ from coastal.apps.product import defines as defs
 from coastal.api.product.forms import ProductListFilterForm
 
 
-
 def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():

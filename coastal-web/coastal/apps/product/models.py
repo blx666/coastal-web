@@ -137,7 +137,7 @@ class Product(models.Model):
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity', null=True, blank=True)
+    amenities = models.ManyToManyField('Amenity')
     desc_about_it = models.TextField(max_length=255, null=True, blank=True)
     desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
     desc_interaction = models.TextField(max_length=255, null=True, blank=True)
@@ -167,3 +167,20 @@ class ProductImage(models.Model):
 class ProductViewCount(models.Model):
     product = models.ForeignKey(Product)
     view_count = models.PositiveIntegerField(default=0)
+
+
+class FavouriteProduct(models.Model):
+    user = models.ForeignKey(User)
+    product = models.ForeignKey(Product)
+    create_on = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s likes product %s' % (self.user, self.product)
+
+
+class HomeImage(models.Model):
+    city = models.CharField(max_length=100)
+    image = models.ImageField(upload_to='product/home_page/%Y/%m', max_length=255)
+
+    def __str__(self):
+        return self.city

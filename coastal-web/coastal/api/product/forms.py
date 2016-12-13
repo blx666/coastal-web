@@ -11,7 +11,7 @@ class ImageUploadForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        exclude = ['owner']
+        exclude = ['owner', 'liker', 'viewer', 'amenities']
 
 
 class ProductListFilterForm(forms.Form):
