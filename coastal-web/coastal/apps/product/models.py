@@ -127,8 +127,9 @@ class Product(models.Model):
     rental_price = models.FloatField(help_text='here is the price per day')
     # rental_currency = models.ForeignKey()
     rental_usd_price = models.FloatField('Rental USD Price')
-    rental_unit = models.PositiveSmallIntegerField(choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
-    rental_type = models.PositiveSmallIntegerField(choices=RENTAL_TYPE_CHOICES, help_text='Who can book instantly', null=True, blank=True)
+    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
+    rental_type = models.CharField(max_length=32, choices=RENTAL_TYPE_CHOICES, null=True, blank=True,
+                                   help_text='Who can book instantly')
     rental_rule = models.TextField(blank=True)
     # sale info
     sale_price = models.FloatField(null=True, blank=True)
@@ -151,7 +152,7 @@ class Amenity(models.Model):
     )
 
     name = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
-    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES,  null=True, blank=True)
+    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
 
 
 class ProductImage(models.Model):
