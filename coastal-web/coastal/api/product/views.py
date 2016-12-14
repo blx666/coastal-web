@@ -153,11 +153,13 @@ def product_add(request):
 
 
 # @login_required
-def add_favorite(request, pid):
+def toggle_favorite(request, pid):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=405)
     user = request.user
     favorite_item = FavoriteItem.objects.filter(favorite__user=user, product_id=pid)
     if not favorite_item:
-        favorite = Favorites.objects.create(user=user)
+        favorite = Favorites.objects.get_or_create(user=user)
         FavoriteItem.objects.create(product_id=pid, favorite=favorite)
         data = {
             'product_id': pid,
