@@ -1,6 +1,8 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
+from django.contrib.auth.decorators import login_required
+
 
 from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
@@ -8,7 +10,7 @@ from coastal.api.product.utils import get_similar_products, bind_product_image
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.product import defines as defs
-
+from coastal.apps.account.models import FavoriteItem, Favorites
 
 def product_list(request):
     form = ProductListFilterForm(request.GET)
@@ -28,7 +30,7 @@ def product_list(request):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
-    target = Point(lat, lon)
+    target = Point(lon, lat)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
 
     if guests:
@@ -63,8 +65,8 @@ def product_list(request):
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
             "sale_price": None,
-            "lon": product.point[1],
-            "lat": product.point[0],
+            "lon": product.point[0],
+            "lat": product.point[1],
         })
         data.append(product_data)
     return CoastalJsonResponse(data)
@@ -147,4 +149,26 @@ def product_add(request):
     data = {
         'product_id': product.id
     }
+    return CoastalJsonResponse(data)
+
+
+# @login_required
+def toggle_favorite(request, pid):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=405)
+    user = request.user
+    favorite_item = FavoriteItem.objects.filter(favorite__user=user, product_id=pid)
+    if not favorite_item:
+        favorite = Favorites.objects.get_or_create(user=user)
+        FavoriteItem.objects.create(product_id=pid, favorite=favorite)
+        data = {
+            'product_id': pid,
+            'is_liked': True,
+        }
+    else:
+        favorite_item.delete()
+        data = {
+            'product_id': pid,
+            'is_liked': False,
+        }
     return CoastalJsonResponse(data)
