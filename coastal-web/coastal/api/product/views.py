@@ -1,21 +1,21 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
-from django.contrib.auth.decorators import login_required
 
-
-from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
 from coastal.api.product.utils import get_similar_products, bind_product_image
+from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
+from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.product import defines as defs
 from coastal.apps.account.models import FavoriteItem, Favorites
 
+
 def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
-        return CoastalJsonResponse(form.errors, status=400)
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
     lon = form.cleaned_data['lon']
     lat = form.cleaned_data['lat']
@@ -95,14 +95,14 @@ def product_detail(request, pid):
     data['owner'] = {
         'user_id': product.owner_id,
         'name': product.owner.first_name,
-        'photo': "/media/user/photo001.jpg",
+        'photo': "http://54.169.88.72/media/user/photo001.jpg",
     }
     data['reviews'] = {
         "count": 8,
         "avg_score": 4.3,
         "latest_review": {
             "reviewer_name": "Sandra Ravikal",
-            "reviewer_photo": "/media/user/photo012.jpg",
+            "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
             "stayed_range": "02/27 - 02/28",
             "score": 5,
             "content": "This is a sample rating of this listing."
@@ -122,12 +122,15 @@ def product_detail(request, pid):
     return CoastalJsonResponse(data)
 
 
+@login_required
 def product_image_upload(request):
     if request.method != 'POST':
-        return CoastalJsonResponse(status=405)
+        return CoastalJsonResponse(status=response.STATUS_405)
+
     form = ImageUploadForm(request.POST, request.FILES)
     if not form.is_valid():
-        return CoastalJsonResponse(form.errors, status=400)
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
     image = form.save()
     data = {
         'image_id': image.id
@@ -135,13 +138,14 @@ def product_image_upload(request):
     return CoastalJsonResponse(data)
 
 
+@login_required
 def product_add(request):
     if request.method != 'POST':
-        return CoastalJsonResponse(status=405)
+        return CoastalJsonResponse(status=response.STATUS_405)
 
     form = ProductForm(request.POST)
     if not form.is_valid():
-        return CoastalJsonResponse(form.errors, status=400)
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
     product = form.save(commit=False)
     product.owner = request.user
@@ -155,6 +159,7 @@ def product_add(request):
 
 def amenity_list(request):
     amenities = Amenity.objects.values_list('id', 'name', 'amenity_type')
+
     group_dict = {}
     for aid, name, amenity_type in amenities:
         if amenity_type not in group_dict:
@@ -175,10 +180,11 @@ def amenity_list(request):
     return CoastalJsonResponse(result)
 
 
-# @login_required
+@login_required
 def toggle_favorite(request, pid):
     if request.method != 'POST':
-        return CoastalJsonResponse(status=405)
+        return CoastalJsonResponse(status=response.STATUS_405)
+
     user = request.user
     favorite_item = FavoriteItem.objects.filter(favorite__user=user, product_id=pid)
     if not favorite_item:
