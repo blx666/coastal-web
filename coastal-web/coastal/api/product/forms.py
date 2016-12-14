@@ -1,5 +1,6 @@
 from django import forms
 from coastal.apps.product.models import ProductImage, Product
+from django.contrib.gis.geos import Point
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -9,6 +10,18 @@ class ImageUploadForm(forms.ModelForm):
 
 
 class ProductForm(forms.ModelForm):
+    lon = forms.FloatField(required=False)
+    lat = forms.FloatField(required=False)
+
+    def clean(self):
+        lon = self.cleaned_data.get('lon')
+        lat = self.cleaned_data.get('lat')
+        if lon and lat:
+            try:
+                self.cleaned_data['point'] = Point(lon, lat)
+            except:
+                raise forms.ValidationError('lon or lat is invalid.')
+
     class Meta:
         model = Product
         exclude = ['owner', 'liker', 'viewer', 'amenities']

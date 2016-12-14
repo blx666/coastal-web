@@ -80,7 +80,9 @@ def product_detail(request, pid):
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score', 'liked'])
+                                          'reviews_avg_score'])
+    data['lon'] = product.point[0]
+    data['lat'] = product.point[1]
     if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
         data['short_desc'] = '%s rooms' % product.rooms
     elif product.category_id == defs.CATEGORY_ROOM:
@@ -149,7 +151,7 @@ def product_add(request):
 
     product = form.save(commit=False)
     product.owner = request.user
-    # product.amenities = str([p.id for p in product.amenities])
+
     product.save()
     data = {
         'product_id': product.id
