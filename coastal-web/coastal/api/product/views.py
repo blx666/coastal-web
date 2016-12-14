@@ -8,7 +8,7 @@ from coastal.core import response
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
 from coastal.api.product.utils import get_similar_products, bind_product_image
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.product import defines as defs
 from coastal.apps.account.models import FavoriteItem, Favorites
 
@@ -145,11 +145,34 @@ def product_add(request):
 
     product = form.save(commit=False)
     product.owner = request.user
+    # product.amenities = str([p.id for p in product.amenities])
     product.save()
     data = {
         'product_id': product.id
     }
     return CoastalJsonResponse(data)
+
+
+def amenity_list(request):
+    amenities = Amenity.objects.values_list('id', 'name', 'amenity_type')
+    group_dict = {}
+    for aid, name, amenity_type in amenities:
+        if amenity_type not in group_dict:
+            group_dict[amenity_type] = []
+        group_dict[amenity_type].append({
+            'id': aid,
+            'name': name,
+        })
+
+    result = []
+    amenity_type_dict = dict(Amenity.TYPE_CHOICES)
+    for group, items in group_dict.items():
+        result.append({
+            'group': amenity_type_dict[group],
+            'items': items
+        })
+
+    return CoastalJsonResponse(result)
 
 
 # @login_required

@@ -137,23 +137,30 @@ class Product(models.Model):
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity')
+    amenities = models.ManyToManyField('Amenity', blank=True, null=True)
     desc_about_it = models.TextField(max_length=255, null=True, blank=True)
     desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
     desc_interaction = models.TextField(max_length=255, null=True, blank=True)
     desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
     desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
 
+    @property
+    def short_desc(self):
+        return ''
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
-        ('common', 'Common'),
-        ('extra', 'Extra'),
+        ('common', 'Most common'),
+        ('extra', 'Extras'),
+        ('special', 'Special')
     )
 
-    name = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
-    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
+    name = models.CharField(max_length=32)
+    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES)
 
+    def __str__(self):
+        return self.name
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True)
