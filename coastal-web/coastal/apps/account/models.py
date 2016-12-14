@@ -5,9 +5,10 @@ from coastal.apps.product.models import Product
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
     is_agent = models.NullBooleanField()
-    agency_email = models.EmailField(max_length=128, null=True)
-    agency_name = models.CharField(max_length=128, null=True)
-    agency_address = models.CharField(max_length=256, null=True)
+    agency_email = models.EmailField(max_length=128, null=True, blank=True)
+    agency_name = models.CharField(max_length=128, null=True, blank=True)
+    agency_address = models.CharField(max_length=256, null=True, blank=True)
+    photo = models.ImageField(upload_to='user/%Y/%m', null=True, blank=True)
 
     @property
     def has_agency_info(self):
