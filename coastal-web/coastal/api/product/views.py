@@ -188,7 +188,7 @@ def toggle_favorite(request, pid):
     user = request.user
     favorite_item = FavoriteItem.objects.filter(favorite__user=user, product_id=pid)
     if not favorite_item:
-        favorite = Favorites.objects.get_or_create(user=user)
+        favorite, _ = Favorites.objects.get_or_create(user=user)
         FavoriteItem.objects.create(product_id=pid, favorite=favorite)
         data = {
             'product_id': pid,
