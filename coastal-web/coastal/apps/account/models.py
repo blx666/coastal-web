@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from coastal.apps.product.models import Product
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User)
@@ -12,3 +12,15 @@ class UserProfile(models.Model):
     @property
     def has_agency_info(self):
         return self.is_agent is not None
+
+
+class Favorites(models.Model):
+    user = models.ForeignKey(User, related_name='favorites')
+
+    class Meta:
+        verbose_name_plural = 'Favorites'
+
+
+class FavoriteItem(models.Model):
+    favorite = models.ForeignKey(Favorites, related_name='items')
+    product = models.OneToOneField(Product)

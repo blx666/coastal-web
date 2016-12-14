@@ -144,9 +144,6 @@ class Product(models.Model):
     desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
     desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
 
-    liker = models.ManyToManyField(User, related_name='favorites')
-    viewer = models.ManyToManyField(User, related_name='recently_viewed')
-
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
