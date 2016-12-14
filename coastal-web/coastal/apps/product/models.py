@@ -159,8 +159,10 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
+    caption = models.CharField(max_length=64, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
 
 
 class ProductViewCount(models.Model):
-    product = models.ForeignKey(Product)
-    view_count = models.PositiveIntegerField(default=0)
+    product = models.OneToOneField(Product)
+    count = models.PositiveIntegerField(default=0)
