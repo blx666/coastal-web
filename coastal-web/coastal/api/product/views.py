@@ -30,7 +30,7 @@ def product_list(request):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
-    target = Point(lat, lon)
+    target = Point(lon, lat)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
 
     if guests:
@@ -65,8 +65,8 @@ def product_list(request):
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
             "sale_price": None,
-            "lon": product.point[1],
-            "lat": product.point[0],
+            "lon": product.point[0],
+            "lat": product.point[1],
         })
         data.append(product_data)
     return CoastalJsonResponse(data)
