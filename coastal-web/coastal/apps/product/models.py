@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 
 from treebeard.mp_tree import MP_Node
+from coastal.apps.product import defines as defs
 
 
 class Category(MP_Node):
@@ -146,7 +147,15 @@ class Product(models.Model):
 
     @property
     def short_desc(self):
-        return ''
+        if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+            short_desc = '%s rooms' % self.rooms
+        elif self.category_id == defs.CATEGORY_ROOM:
+            short_desc = 'single room'
+        elif self.category_id == defs.CATEGORY_YACHT:
+            short_desc = '%s ft. yacht' % self.length
+        elif self.category_id == defs.CATEGORY_JET:
+            short_desc = '%s ft. jet' % self.length
+        return short_desc
 
 
 class Amenity(models.Model):
@@ -161,6 +170,7 @@ class Amenity(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True)

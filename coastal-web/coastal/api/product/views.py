@@ -88,18 +88,11 @@ def product_detail(request, pid):
     for p in product.amenities.values_list('name'):
         amenities += '%s, ' % p
     data['amenities'] = amenities
+    data['short_desc'] = product.short_desc
     if product in FavoriteItem.objects.filter(favorite__user=request.user):
         data['liked'] = True
     else:
         data['liked'] = False
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-        data['short_desc'] = '%s rooms' % product.rooms
-    elif product.category_id == defs.CATEGORY_ROOM:
-        data['short_desc'] = 'single room'
-    elif product.category_id == defs.CATEGORY_YACHT:
-        data['short_desc'] = '%s ft. yacht' % product.length
-    elif product.category_id == defs.CATEGORY_JET:
-        data['short_desc'] = '%s ft. jet' % product.length
 
     data['images'] = [i.image.url for i in ProductImage.objects.filter(product=product)]
 
