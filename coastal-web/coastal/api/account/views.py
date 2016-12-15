@@ -29,7 +29,7 @@ def login(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
-    user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
+    user = authenticate(username=request.POST.get('user'), password=request.POST.get('password'))
     if user:
         auth_login(request, user)
         data = {
