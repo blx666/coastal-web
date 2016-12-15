@@ -12,6 +12,7 @@ class ImageUploadForm(forms.ModelForm):
 class ProductForm(forms.ModelForm):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
+    amenities = forms.CharField(required=False)
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
@@ -24,7 +25,7 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'liker', 'viewer', 'amenities']
+        exclude = ['owner', 'liker', 'viewer']
 
 
 class ProductListFilterForm(forms.Form):
