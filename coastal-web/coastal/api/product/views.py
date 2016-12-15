@@ -1,15 +1,16 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
+from django.db.models import F
 
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
 from coastal.api.product.utils import get_similar_products, bind_product_image
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
-from coastal.apps.product.models import Product, ProductImage, Amenity
+from coastal.apps.product.models import Product, ProductImage, Amenity, ProductViewCount
 from coastal.apps.product import defines as defs
-from coastal.apps.account.models import FavoriteItem, Favorites
+from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 
 
 def product_list(request):
@@ -60,11 +61,10 @@ def product_list(request):
     for product in products[0:20]:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
-                                             'max_guests'])
+                                             'max_guests', 'sale_price'])
         product_data.update({
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
-            "sale_price": None,
             "lon": product.point[0],
             "lat": product.point[1],
         })
@@ -77,6 +77,11 @@ def product_detail(request, pid):
         product = Product.objects.get(id=pid)
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
+
+    user = request.user
+    if user.is_authenticated():
+        RecentlyViewed.objects.create(user=user, product=product)
+    ProductViewCount.objects.update_or_create({'count': F('count')+1}, product=product)
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
