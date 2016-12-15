@@ -20,6 +20,7 @@ def register(request):
                                     email=register_form.cleaned_data['email'],
                                     password=register_form.cleaned_data['password'])
     UserProfile.objects.create(user=user)
+    auth_login(request, user)
     data = {"has_agency_info": user.userprofile.has_agency_info, 'user_id': user.id}
     return CoastalJsonResponse(data)
 
@@ -65,3 +66,8 @@ def update_profile(request):
         form.save()
         return CoastalJsonResponse()
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
+
+
+
+
