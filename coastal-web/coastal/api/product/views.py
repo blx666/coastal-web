@@ -61,11 +61,10 @@ def product_list(request):
     for product in products[0:20]:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
-                                             'max_guests'])
+                                             'max_guests', 'sale_price'])
         product_data.update({
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
-            "sale_price": None,
             "lon": product.point[0],
             "lat": product.point[1],
         })
