@@ -62,9 +62,12 @@ def check_email(request):
 def update_profile(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
-    form = UserProfileForm(request.POST, instance=request.user.userprofile)
+
+    form = UserProfileForm(request.POST, request.FILES)
     if form.is_valid():
         user = request.user
+        if request.FILES:
+            setattr(user.userprofile, 'photo', form.cleaned_data['photo'])
         for key in form.data:
             if key in ('first_name', 'last_name'):
                 setattr(user, key, form.cleaned_data[key])
