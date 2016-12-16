@@ -105,11 +105,14 @@ def product_detail(request, pid):
         })
 
     data['images'] = images
-
+    if product.owner.userprofile.photo:
+        photo = product.owner.userprofile.photo.url
+    else:
+        photo = ''
     data['owner'] = {
         'user_id': product.owner_id,
-        'name': product.owner.first_name,
-        'photo': "http://54.169.88.72/media/user/photo001.jpg",
+        'name': product.owner.get_full_name(),
+        'photo': photo,
     }
     data['reviews'] = {
         "count": 8,
