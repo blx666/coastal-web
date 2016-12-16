@@ -6,7 +6,7 @@ from django.contrib.gis.geos import Point
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ['image']
+        fields = ['image', 'caption']
 
 
 class ProductForm(forms.ModelForm):
@@ -25,7 +25,7 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'liker', 'viewer']
+        exclude = ['owner']
 
 
 class ProductListFilterForm(forms.Form):

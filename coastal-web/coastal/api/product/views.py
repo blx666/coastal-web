@@ -93,8 +93,10 @@ def product_detail(request, pid):
         data['liked'] = True
     else:
         data['liked'] = False
-
-    data['images'] = [i.image.url for i in ProductImage.objects.filter(product=product)]
+    images = []
+    for p in ProductImage.objects.filter(product=product):
+        images.append('%s,%s' % (p.image.url, p.caption))
+    data['images'] = images
 
     data['owner'] = {
         'user_id': product.owner_id,
@@ -120,7 +122,14 @@ def product_detail(request, pid):
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        content['images'] = [i.image.url for i in p.images]
+        if p in FavoriteItem.objects.filter(favorite__user=request.user):
+            content['liked'] = True
+        else:
+            content['liked'] = False
+        similar_images = []
+        for product_image in ProductImage.objects.filter(product=p):
+            similar_images.append('%s,%s' % (product_image.image.url, product_image.caption))
+        content['images'] = similar_images
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)

@@ -173,10 +173,14 @@ class Amenity(models.Model):
 
 
 class ProductImage(models.Model):
+    TYPE_CHOICE = (
+        ('', '----'),
+        ('360 views', '360 views')
+    )
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
-    caption = models.CharField(max_length=64, blank=True)
+    caption = models.CharField(max_length=32, choices=TYPE_CHOICE, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
 
