@@ -1,14 +1,13 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
-from django.db.models import F
 
 from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
-from coastal.api.product.utils import get_similar_products, bind_product_image
+from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
-from coastal.apps.product.models import Product, ProductImage, Amenity, ProductViewCount
+from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.product import defines as defs
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 
@@ -81,7 +80,7 @@ def product_detail(request, pid):
     user = request.user
     if user.is_authenticated():
         RecentlyViewed.objects.create(user=user, product=product)
-    ProductViewCount.objects.update_or_create({'count': F('count')+1}, product=product)
+    count_product_view(product)
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
