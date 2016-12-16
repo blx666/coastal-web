@@ -108,7 +108,7 @@ def product_detail(request, pid):
     if product.owner.userprofile.photo:
         photo = product.owner.userprofile.photo.url
     else:
-        photo = ''
+        photo = None
     data['owner'] = {
         'user_id': product.owner_id,
         'name': product.owner.get_full_name(),
