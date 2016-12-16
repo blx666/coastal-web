@@ -1,7 +1,8 @@
 # coding:utf-8
-from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db.models import F
 
 
 def get_similar_products(product):
@@ -57,3 +58,13 @@ def bind_product_image(products):
 
     for product in products:
         product.images = image_group.get(product.id, [])
+
+
+def count_product_view(product):
+    try:
+        product_view = ProductViewCount.objects.get(product=product)
+        product_view.count = F('count') + 1
+        product_view.save()
+    except ProductViewCount.DoesNotExist:
+        ProductViewCount.objects.create(product=product, count=1)
+

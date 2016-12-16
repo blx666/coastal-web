@@ -21,6 +21,7 @@ from django.contrib import admin
 urlpatterns = [
     url(r'^api/products/', include('coastal.api.product.urls')),
     url(r'^api/account/', include('coastal.api.account.urls')),
+    url(r'^api/page/', include('coastal.api.page.urls')),
     url(r'^admin/', admin.site.urls),
 ]
 
