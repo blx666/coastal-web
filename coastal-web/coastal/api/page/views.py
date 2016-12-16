@@ -7,24 +7,22 @@ from coastal.api.product.utils import bind_product_image
 
 
 def home(request):
-    home_banners = HomeBanner.objects.all()
-    products = Product.objects.order_by('-score')
-    show_products = products[0:50]
-    data = []
-    total_banners = []
-    total_products = []
+    # get home_banner
+    home_banners = HomeBanner.objects.order_by('display_order')
+    home_banners_list = []
     for banner in home_banners:
-        banners = model_to_dict(banner, fields=['city_name', 'display_order'])
-        banners.update({
+        home_banners_list.append({
+            'city_name': banner.city_name,
             'image': banner.image.url,
             'lon': banner.point[0],
             'lat': banner.point[1],
         })
-        total_banners.append(banners)
 
-    bind_product_image(show_products)
-
-    for product in show_products:
+    # get recommended products
+    products = Product.objects.order_by('-score')[:50]
+    bind_product_image(products)
+    product_list = []
+    for product in products:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
                                              'max_guests', 'sale_price'])
@@ -37,13 +35,13 @@ def home(request):
                 "lon": product.point[0],
                 "lat": product.point[1],
             })
-        total_products.append(product_data)
+            product_list.append(product_data)
 
-    data.append({
-        'home_banner': total_banners,
-        'products': total_products,
-    })
-    return CoastalJsonResponse(data)
+    result = {
+        'home_banner': home_banners_list,
+        'products': product_list,
+    }
+    return CoastalJsonResponse(result)
 
 
 def images(request):
