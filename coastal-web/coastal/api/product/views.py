@@ -84,17 +84,27 @@ def product_detail(request, pid):
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score', 'liked'])
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-        data['short_desc'] = '%s rooms' % product.rooms
-    elif product.category_id == defs.CATEGORY_ROOM:
-        data['short_desc'] = 'single room'
-    elif product.category_id == defs.CATEGORY_YACHT:
-        data['short_desc'] = '%s ft. yacht' % product.length
-    elif product.category_id == defs.CATEGORY_JET:
-        data['short_desc'] = '%s ft. jet' % product.length
+                                          'reviews_avg_score'])
+    if product.point:
+        data['lon'] = product.point[0]
+        data['lat'] = product.point[1]
+    data['amenities'] = product.get_amenities_display()
+    data['short_desc'] = product.short_desc
 
-    data['images'] = [i.image.url for i in ProductImage.objects.filter(product=product)]
+    liked_product_id_list = []
+    if request.user.is_authenticated:
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+            'product_id', flat=True)
+
+    data['liked'] = product.id in liked_product_id_list
+    images = []
+    for pi in ProductImage.objects.filter(product=product):
+        images.append({
+            'url': pi.image.url,
+            'caption': pi.caption
+        })
+
+    data['images'] = images
 
     data['owner'] = {
         'user_id': product.owner_id,
@@ -120,7 +130,16 @@ def product_detail(request, pid):
                                            'sale_price', 'city', 'max_guests'])
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
-        content['images'] = [i.image.url for i in p.images]
+        content['liked'] = p.id in liked_product_id_list
+        if p.images:
+            image = p.images[0]
+            image_dict = {
+                'url': image.image.url,
+                'caption': image.caption
+            }
+        else:
+            image_dict = None
+        content['image'] = image_dict
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
@@ -153,8 +172,11 @@ def product_add(request):
 
     product = form.save(commit=False)
     product.owner = request.user
-    # product.amenities = str([p.id for p in product.amenities])
+
     product.save()
+    amenities = form.cleaned_data.get('amenities')
+    for a in amenities:
+        product.amenities.add(a)
     data = {
         'product_id': product.id
     }

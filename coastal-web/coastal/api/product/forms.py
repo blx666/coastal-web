@@ -1,17 +1,43 @@
 from django import forms
-from coastal.apps.product.models import ProductImage, Product
+from coastal.apps.product.models import ProductImage, Product, Amenity
+from django.contrib.gis.geos import Point
 
 
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ['image']
+        fields = ['image', 'caption']
 
 
 class ProductForm(forms.ModelForm):
+    lon = forms.FloatField(required=False)
+    lat = forms.FloatField(required=False)
+    amenities = forms.CharField(required=False)
+
+    def clean_amenities(self):
+        value = self.cleaned_data.get('amenities')
+        amenities = []
+        try:
+            for i in value.split(','):
+                amenities.append(Amenity.objects.get(id=int(i)))
+        except Amenity.DoesNotExist:
+            raise forms.ValidationError('The amenity does not exist.')
+        except:
+            raise forms.ValidationError('The amenities value is invalid.')
+        return amenities
+
+    def clean(self):
+        lon = self.cleaned_data.get('lon')
+        lat = self.cleaned_data.get('lat')
+        if lon and lat:
+            try:
+                self.cleaned_data['point'] = Point(lon, lat)
+            except:
+                raise forms.ValidationError('lon or lat is invalid.')
+
     class Meta:
         model = Product
-        exclude = ['owner', 'liker', 'viewer', 'amenities']
+        exclude = ['owner']
 
 
 class ProductListFilterForm(forms.Form):
