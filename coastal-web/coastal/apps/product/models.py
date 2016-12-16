@@ -180,7 +180,7 @@ class Amenity(models.Model):
 class ProductImage(models.Model):
     TYPE_CHOICE = (
         ('', '----'),
-        ('360-view', '360-View')
+        ('360-view', '360 View')
     )
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
