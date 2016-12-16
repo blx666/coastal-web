@@ -165,6 +165,7 @@ class Amenity(models.Model):
     def __str__(self):
         return self.name
 
+
 class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
