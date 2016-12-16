@@ -15,7 +15,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='productimage',
             name='caption',
-            field=models.CharField(blank=True, choices=[('', '----'), ('360-view', '360 View')], default='null', max_length=32),
+            field=models.CharField(blank=True, choices=[('', '----'), ('360-view', '360 View')], default='', max_length=32),
             preserve_default=False,
         ),
     ]
