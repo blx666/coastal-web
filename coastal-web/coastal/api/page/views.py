@@ -31,9 +31,12 @@ def home(request):
         product_data.update({
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
-            "lon": product.point[0],
-            "lat": product.point[1],
         })
+        if product.point:
+            product_data.update({
+                "lon": product.point[0],
+                "lat": product.point[1],
+            })
         total_products.append(product_data)
 
     data.append({
