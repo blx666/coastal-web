@@ -2,7 +2,7 @@ from django.forms.models import model_to_dict
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
-from coastal.apps.product.models import Product
+from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_image
 
 
@@ -44,4 +44,12 @@ def home(request):
 
 
 def images(request):
-    return CoastalJsonResponse()
+    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30].values(
+        'product__for_rental', 'product__for_sale', 'product__rental_price', 'product__rental_unit',
+        'product__sale_price', 'product__id')
+    data = []
+    for i in images_view:
+        i['image_url'] = i.image.url
+        i['currency'] = 'USD'
+        data.append(i)
+    return CoastalJsonResponse(data)
