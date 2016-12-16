@@ -6,3 +6,9 @@ class HomeBanner(models.Model):
     city_name = models.CharField(max_length=64)
     display_order = models.PositiveSmallIntegerField(default=0)
     point = models.PointField()
+
+    def __str__(self):
+        return self.city_name
+
+    class Meta:
+        ordering = ['display_order']
