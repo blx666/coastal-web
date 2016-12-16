@@ -155,7 +155,12 @@ class Product(models.Model):
             short_desc = '%s ft. yacht' % self.length
         elif self.category_id == defs.CATEGORY_JET:
             short_desc = '%s ft. jet' % self.length
+        elif self.category_id == defs.CATEGORY_BOAT_SLIP:
+            short_desc = '%s tf. boat slip' % self.length
         return short_desc
+
+    def get_amenities_display(self):
+        return ', '.join(self.amenities.values_list('name', flat=True))
 
 
 class Amenity(models.Model):
@@ -175,12 +180,12 @@ class Amenity(models.Model):
 class ProductImage(models.Model):
     TYPE_CHOICE = (
         ('', '----'),
-        ('360 views', '360 views')
+        ('360-view', '360-View')
     )
     product = models.ForeignKey(Product, null=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
     display_order = models.PositiveSmallIntegerField(default=0)
-    caption = models.CharField(max_length=32, choices=TYPE_CHOICE, null=True, blank=True)
+    caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
 

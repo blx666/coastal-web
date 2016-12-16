@@ -1,5 +1,5 @@
 from django import forms
-from coastal.apps.product.models import ProductImage, Product
+from coastal.apps.product.models import ProductImage, Product, Amenity
 from django.contrib.gis.geos import Point
 
 
@@ -13,6 +13,18 @@ class ProductForm(forms.ModelForm):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
+
+    def clean_amenities(self):
+        value = self.cleaned_data.get('amenities')
+        amenities = []
+        try:
+            for i in value.split(','):
+                amenities.append(Amenity.objects.get(id=int(i)))
+        except Amenity.DoesNotExist:
+            raise forms.ValidationError('The amenity does not exist.')
+        except:
+            raise forms.ValidationError('The amenities value is invalid.')
+        return amenities
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
