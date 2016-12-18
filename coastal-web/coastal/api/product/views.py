@@ -2,13 +2,12 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
 
-from coastal.api.product.forms import ImageUploadForm, ProductForm, ProductListFilterForm
+from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
-from coastal.apps.product import defines as defs
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 
 
@@ -169,7 +168,7 @@ def product_add(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
-    form = ProductForm(request.POST)
+    form = ProductAddForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
@@ -184,6 +183,28 @@ def product_add(request):
         'product_id': product.id
     }
     return CoastalJsonResponse(data)
+
+
+@login_required
+def product_update(request, pid):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        product = Product.objects.get(id=pid)
+    except Product.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    form = ProductUpdateForm(request.POST, instance=product)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
+    form.save()
+    if 'amenities' in form.cleaned_data:
+        for a in form.cleaned_data.get('amenities'):
+            product.amenities.add(a)
+
+    return CoastalJsonResponse()
 
 
 def amenity_list(request):

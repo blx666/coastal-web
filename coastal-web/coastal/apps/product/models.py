@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
+from django.utils.functional import cached_property
 
 from treebeard.mp_tree import MP_Node
 from coastal.apps.product import defines as defs
@@ -98,6 +99,14 @@ class Product(models.Model):
         ('meet-cr', 'Guests who meet Coastal\'s requirements'),
         ('no-one', 'No one. I will read and approve every request within 24 hours'),
     )
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('cancelled', 'Cancelled')
+    )
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
     category = models.ForeignKey(Category)
     for_rental = models.BooleanField()
     for_sale = models.BooleanField()
@@ -125,9 +134,9 @@ class Product(models.Model):
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
 
     # rental info
-    rental_price = models.FloatField(help_text='here is the price per day')
+    rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
     # rental_currency = models.ForeignKey()
-    rental_usd_price = models.FloatField('Rental USD Price')
+    rental_usd_price = models.FloatField('Rental USD Price', null=True, blank=True)
     rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
     rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
                                    help_text='Who can book instantly')
@@ -148,22 +157,27 @@ class Product(models.Model):
     # score
     score = models.PositiveIntegerField(default=0)
 
-    @property
+    def __str__(self):
+        return self.name
+
+    @cached_property
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
             short_desc = '%s rooms' % self.rooms
         elif self.category_id == defs.CATEGORY_ROOM:
             short_desc = 'single room'
-        elif self.category_id == defs.CATEGORY_YACHT:
-            short_desc = '%s ft. yacht' % self.length
-        elif self.category_id == defs.CATEGORY_JET:
-            short_desc = '%s ft. jet' % self.length
-        elif self.category_id == defs.CATEGORY_BOAT_SLIP:
-            short_desc = '%s tf. boat slip' % self.length
+        else:
+            short_desc = '%s ft. %s' % (self.length, self.category.name.lower())
         return short_desc
 
     def get_amenities_display(self):
         return ', '.join(self.amenities.values_list('name', flat=True))
+
+    def publish(self):
+        self.status = 'published'
+
+    def cancel(self):
+        self.status = 'cancelled'
 
 
 class Amenity(models.Model):
@@ -190,6 +204,12 @@ class ProductImage(models.Model):
     display_order = models.PositiveSmallIntegerField(default=0)
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+
+
+class RentalBlackOutDate(models.Model):
+    product = models.ForeignKey(Product)
+    start_date = models.DateField()
+    end_date = models.DateField()
 
 
 class ProductViewCount(models.Model):
