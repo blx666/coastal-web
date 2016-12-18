@@ -195,6 +195,7 @@ class Amenity(models.Model):
 
 
 class ProductImage(models.Model):
+    CAPTION_360 = '360-view'
     TYPE_CHOICE = (
         ('', '----'),
         ('360-view', '360 View')
