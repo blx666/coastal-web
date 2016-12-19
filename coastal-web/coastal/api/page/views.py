@@ -25,7 +25,7 @@ def home(request):
     for product in products:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
-                                             'max_guests', 'sale_price'])
+                                             'max_guests', 'sale_price', 'city'])
         product_data.update({
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
