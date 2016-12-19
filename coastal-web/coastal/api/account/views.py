@@ -90,6 +90,6 @@ def my_profile(request):
         'is_agent': user.userprofile.is_agent,
         'agency_email': user.userprofile.agency_email,
         'agency_name': user.userprofile.agency_name,
-        'agency_address': user.agency_address.agency_address,
+        'agency_address': user.userprofile.agency_address,
     }
     return CoastalJsonResponse(data)
