@@ -13,6 +13,7 @@ class ProductAddForm(forms.ModelForm):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
+    images = forms.CharField(required=False)
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -28,6 +29,21 @@ class ProductAddForm(forms.ModelForm):
         except:
             raise forms.ValidationError('The amenities value is invalid.')
         return amenities
+
+    def clean_images(self):
+        value = self.cleaned_data.get('images')
+        if not value:
+            return []
+
+        images = []
+        try:
+            for i in value.split(','):
+                images.append(ProductImage.objects.get(id=int(i)))
+        except ProductImage.DoesNotExist:
+            raise forms.ValidationError('The product image does not exist.')
+        except:
+            raise forms.ValidationError('The images value is invalid.')
+        return images
 
     def clean(self):
         lon = self.cleaned_data.get('lon')

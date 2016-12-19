@@ -172,6 +172,12 @@ def product_add(request):
     amenities = form.cleaned_data.get('amenities')
     for a in amenities:
         product.amenities.add(a)
+
+    images = form.cleaned_data.get('images')
+    for i in images:
+        i.product = product
+        i.save()
+
     data = {
         'product_id': product.id
     }
@@ -196,6 +202,11 @@ def product_update(request, pid):
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
+
+    if 'images' in form.cleaned_data:
+        for i in form.cleaned_data.get('images'):
+            i.product = product
+            i.save()
 
     return CoastalJsonResponse()
 
