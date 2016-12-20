@@ -133,7 +133,7 @@ class Product(models.Model):
                                    help_text='Who can book instantly')
     rental_rule = models.TextField(blank=True)
     # sale info
-    sale_price = models.FloatField(blank=True, default=0)
+    sale_price = models.FloatField(default=0)
 
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
