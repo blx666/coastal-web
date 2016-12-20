@@ -28,8 +28,17 @@ def home(request):
                                              'max_guests', 'sale_price', 'city'])
         product_data.update({
             "category": product.category_id,
-            "images": [i.image.url for i in product.images],
         })
+        liked_product_id_list = []
+        if request.user.is_authenticated:
+            liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+                'product_id', flat=True)
+
+        product_data['liked'] = product.id in liked_product_id_list
+        if product.images:
+            product_data['image'] = [i.image.url for i in product.images][0]
+        else:
+            product_data['image'] = None
         if product.point:
             product_data.update({
                 "lon": product.point[0],
