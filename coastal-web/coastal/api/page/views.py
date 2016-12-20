@@ -58,8 +58,9 @@ def images(request):
         'product__for_rental', 'product__for_sale', 'product__rental_price', 'product__rental_unit',
         'product__sale_price', 'product__id')
     data = []
-    for i in images_view:
-        i['image_url'] = i.image.url
-        i['currency'] = 'USD'
-        data.append(i)
+    for image_360 in images_view:
+        image = ProductImage.objects.get(product=Product.objects.get(id=image_360['product__id']))
+        image_360['image_url'] = image.image.url
+        image_360['currency'] = 'USD'
+        data.append(image_360)
     return CoastalJsonResponse(data)
