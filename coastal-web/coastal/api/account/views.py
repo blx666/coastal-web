@@ -21,7 +21,14 @@ def register(request):
                                     password=register_form.cleaned_data['password'])
     UserProfile.objects.create(user=user)
     auth_login(request, user)
-    data = {"has_agency_info": user.userprofile.has_agency_info, 'user_id': user.id, 'currency': 'USD'}
+    data = {"has_agency_info": user.userprofile.has_agency_info,
+            'user_id': user.id,
+            'currency': 'USD',
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            }
     return CoastalJsonResponse(data)
 
 
@@ -36,7 +43,11 @@ def login(request):
             'logged': request.user.is_authenticated(),
             'has_agency_info': user.userprofile.has_agency_info,
             'user_id': user.id,
-            'currency': 'USD'
+            'currency': 'USD',
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         }
     else:
         data = {
@@ -75,7 +86,13 @@ def update_profile(request):
                 setattr(user.userprofile, key, form.cleaned_data[key])
         user.save()
         user.userprofile.save()
-        return CoastalJsonResponse()
+        data = {
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'email': user.email,
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        }
+        return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
 
@@ -86,7 +103,7 @@ def my_profile(request):
         'first_name': user.first_name,
         'last_name': user.last_name,
         'email': user.email,
-        'photo': user.userprofile.photo.url,
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         'is_agent': user.userprofile.is_agent,
         'agency_email': user.userprofile.agency_email,
         'agency_name': user.userprofile.agency_name,
