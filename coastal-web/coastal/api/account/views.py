@@ -21,14 +21,15 @@ def register(request):
                                     password=register_form.cleaned_data['password'])
     UserProfile.objects.create(user=user)
     auth_login(request, user)
-    data = {"has_agency_info": user.userprofile.has_agency_info,
-            'user_id': user.id,
-            'currency': 'USD',
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-            'email': user.email,
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
-            }
+    data = {
+        "has_agency_info": user.userprofile.has_agency_info,
+        'user_id': user.id,
+        'currency': 'USD',
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'email': user.email,
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+    }
     return CoastalJsonResponse(data)
 
 
