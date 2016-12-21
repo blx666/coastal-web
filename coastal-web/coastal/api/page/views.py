@@ -56,11 +56,23 @@ def home(request):
 def images(request):
     images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30].values(
         'product__for_rental', 'product__for_sale', 'product__rental_price', 'product__rental_unit',
-        'product__sale_price', 'product__id')
+        'product__sale_price', 'product__id', 'image')
     data = []
     for image_360 in images_view:
-        image = ProductImage.objects.get(product=Product.objects.get(id=image_360['product__id']))
-        image_360['image_url'] = image.image.url
+        image_360['product_id'] = image_360['product__id']
+        image_360['for_rental'] = image_360['product__for_rental']
+        image_360['for_sale'] = image_360['product__for_sale']
+        image_360['rental_price'] = image_360['product__rental_price']
+        image_360['rental_unit'] = image_360['product__rental_unit']
+        image_360['sale_price'] = image_360['product__sale_price']
+        image_360['image_url'] = image_360['image']
         image_360['currency'] = 'USD'
+        image_360.pop('product__for_rental')
+        image_360.pop('product__for_sale')
+        image_360.pop('product__rental_price')
+        image_360.pop('product__rental_unit')
+        image_360.pop('product__sale_price')
+        image_360.pop('product__id')
+        image_360.pop('image')
         data.append(image_360)
     return CoastalJsonResponse(data)
