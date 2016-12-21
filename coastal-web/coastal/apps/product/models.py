@@ -206,6 +206,7 @@ class ProductImage(models.Model):
     display_order = models.PositiveSmallIntegerField(default=0)
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    id_product = models.IntegerField(blank=True, null=True)
 
 
 class RentalBlackOutDate(models.Model):
