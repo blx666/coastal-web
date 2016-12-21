@@ -4,6 +4,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_image
+from coastal.apps.account.models import FavoriteItem
 
 
 def home(request):
