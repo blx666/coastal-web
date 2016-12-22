@@ -4,6 +4,8 @@ from django.contrib.gis.geos import Point
 
 
 class ImageUploadForm(forms.ModelForm):
+    pid = forms.FloatField(required=False)
+
     class Meta:
         model = ProductImage
         fields = ['image', 'caption']
@@ -14,6 +16,8 @@ class ProductAddForm(forms.ModelForm):
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
+    for_sale = forms.CharField(required=False)
+    for_rental = forms.CharField(required=False)
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -46,8 +50,14 @@ class ProductAddForm(forms.ModelForm):
         return images
 
     def clean(self):
+        cleaned_data = super(ProductAddForm, self).clean()
+        for_sale = cleaned_data['for_sale']
+        for_rental = cleaned_data['for_rental']
+        self.cleaned_data['for_rental'] = for_sale in '1'
+        self.cleaned_data['for_sale'] = for_rental in '1'
         lon = self.cleaned_data.get('lon')
         lat = self.cleaned_data.get('lat')
+
         if lon and lat:
             try:
                 self.cleaned_data['point'] = Point(lon, lat)
@@ -56,23 +66,27 @@ class ProductAddForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status']
+        exclude = ['owner', 'score']
 
 
 class ProductUpdateForm(ProductAddForm):
-    city = forms.CharField(max_length=100, required=False)
-    country = forms.CharField(max_length=100, required=False)
-    max_guests = forms.IntegerField(required=False)
+    name = forms.CharField(max_length=255, required=True)
+    city = forms.CharField(max_length=100, required=True)
+    address = forms.CharField(max_length=255, required=True)
+    country = forms.CharField(max_length=100, required=True)
+    max_guests = forms.IntegerField(required=True)
+    status = forms.CharField(max_length=32, required=False)
 
     def clean(self):
+        cleaned_data = super(ProductUpdateForm, self).clean()
+        print(cleaned_data)
         for key in self.cleaned_data.copy():
             if key not in self.data:
                 self.cleaned_data.pop(key)
-        super(ProductUpdateForm, self).clean()
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status', 'category']
+        exclude = ['owner', 'score']
 
 
 class ProductListFilterForm(forms.Form):
