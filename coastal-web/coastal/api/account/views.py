@@ -115,7 +115,5 @@ def my_profile(request):
 
 @login_required
 def logout(request):
-    if request.method != 'POST':
-        return CoastalJsonResponse(status=response.STATUS_405)
     auth_logout(request)
     return CoastalJsonResponse()
