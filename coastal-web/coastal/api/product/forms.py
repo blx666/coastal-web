@@ -49,15 +49,23 @@ class ProductAddForm(forms.ModelForm):
             raise forms.ValidationError('The images value is invalid.')
         return images
 
+    def clean_for_rental(self):
+        value = self.cleaned_data.get('for_rental')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
+
+    def clean_for_sale(self):
+        value = self.cleaned_data.get('for_sale')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
+
     def clean(self):
-        cleaned_data = super(ProductAddForm, self).clean()
-        for_sale = cleaned_data['for_sale']
-        for_rental = cleaned_data['for_rental']
-        self.cleaned_data['for_rental'] = for_sale in '1'
-        self.cleaned_data['for_sale'] = for_rental in '1'
         lon = self.cleaned_data.get('lon')
         lat = self.cleaned_data.get('lat')
-
         if lon and lat:
             try:
                 self.cleaned_data['point'] = Point(lon, lat)
@@ -70,16 +78,9 @@ class ProductAddForm(forms.ModelForm):
 
 
 class ProductUpdateForm(ProductAddForm):
-    name = forms.CharField(max_length=255, required=True)
-    city = forms.CharField(max_length=100, required=True)
-    address = forms.CharField(max_length=255, required=True)
-    country = forms.CharField(max_length=100, required=True)
-    max_guests = forms.IntegerField(required=True)
-    status = forms.CharField(max_length=32, required=False)
+    action = forms.CharField()
 
     def clean(self):
-        cleaned_data = super(ProductUpdateForm, self).clean()
-        print(cleaned_data)
         for key in self.cleaned_data.copy():
             if key not in self.data:
                 self.cleaned_data.pop(key)
