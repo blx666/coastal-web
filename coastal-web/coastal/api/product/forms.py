@@ -4,6 +4,8 @@ from django.contrib.gis.geos import Point
 
 
 class ImageUploadForm(forms.ModelForm):
+    pid = forms.FloatField(required=False)
+
     class Meta:
         model = ProductImage
         fields = ['image', 'caption']
@@ -14,6 +16,8 @@ class ProductAddForm(forms.ModelForm):
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
+    for_sale = forms.CharField(required=False)
+    for_rental = forms.CharField(required=False)
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -45,6 +49,20 @@ class ProductAddForm(forms.ModelForm):
             raise forms.ValidationError('The images value is invalid.')
         return images
 
+    def clean_for_rental(self):
+        value = self.cleaned_data.get('for_rental')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
+
+    def clean_for_sale(self):
+        value = self.cleaned_data.get('for_sale')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
+
     def clean(self):
         lon = self.cleaned_data.get('lon')
         lat = self.cleaned_data.get('lat')
@@ -56,23 +74,20 @@ class ProductAddForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status']
+        exclude = ['owner', 'score']
 
 
 class ProductUpdateForm(ProductAddForm):
-    city = forms.CharField(max_length=100, required=False)
-    country = forms.CharField(max_length=100, required=False)
-    max_guests = forms.IntegerField(required=False)
+    action = forms.CharField()
 
     def clean(self):
         for key in self.cleaned_data.copy():
             if key not in self.data:
                 self.cleaned_data.pop(key)
-        super(ProductUpdateForm, self).clean()
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status', 'category']
+        exclude = ['owner', 'score']
 
 
 class ProductListFilterForm(forms.Form):
