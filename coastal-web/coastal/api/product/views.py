@@ -218,6 +218,13 @@ def product_update(request, pid):
             i.product = product
             i.save()
 
+    if form.cleaned_data.get('action') == 'published':
+        if product.validate_publish_data():
+            product.publish()
+            product.save()
+        else:
+            return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
+
     return CoastalJsonResponse()
 
 

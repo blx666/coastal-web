@@ -87,7 +87,7 @@ class ProductUpdateForm(ProductAddForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score']
+        exclude = ['owner', 'score', 'category']
 
 
 class ProductListFilterForm(forms.Form):

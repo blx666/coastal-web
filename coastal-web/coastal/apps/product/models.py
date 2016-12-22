@@ -177,6 +177,38 @@ class Product(models.Model):
     def publish(self):
         self.status = 'published'
 
+    def validate_publish_data(self):
+        if self.status == 'published':
+            if not (self.for_sale and self.for_rental):
+                return False
+            else:
+                if self.for_rental == 'true':
+                    if self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.currency:
+                        return True
+                if self.for_sale == 'true':
+                    if self.currency:
+                        return True
+
+                if self.category_id == defs.CATEGORY_JET:
+                    if self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year:
+                        return True
+
+                if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+                    if self.rooms and self.sleeps and self.beds and self.bathrooms:
+                        return True
+
+                if self.category_id == defs.CATEGORY_ROOM:
+                    if self.sleeps and self.beds and self.bathrooms:
+                        return True
+
+                if self.category.id == defs.CATEGORY_YACHT:
+                    if self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.depth and self.year and self.speed:
+                        return True
+
+        else:
+
+            return False
+
     def cancel(self):
         self.status = 'cancelled'
 
