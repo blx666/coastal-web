@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'coastal.apps.product',
     'coastal.apps.account',
     'coastal.apps.promotion',
+    'coastal.apps.currency',
 ]
 
 MIDDLEWARE = [
