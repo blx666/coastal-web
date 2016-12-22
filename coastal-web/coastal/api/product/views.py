@@ -110,7 +110,7 @@ def product_detail(request, pid):
     if product.owner.userprofile.photo:
         photo = product.owner.userprofile.photo.url
     else:
-        photo = None
+        photo = ""
     data['owner'] = {
         'user_id': product.owner_id,
         'name': product.owner.get_full_name(),
@@ -136,10 +136,11 @@ def product_detail(request, pid):
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
         content['liked'] = p.id in liked_product_id_list
-        content['image'] = None
+        content['image'] = ""
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
                 content['image'] = img.image.url
+                break
 
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict

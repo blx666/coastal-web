@@ -39,7 +39,7 @@ def home(request):
         if product.images:
             product_data['image'] = [i.image.url for i in product.images][0]
         else:
-            product_data['image'] = None
+            product_data['image'] = ""
         if product.point:
             product_data.update({
                 "lon": product.point[0],
