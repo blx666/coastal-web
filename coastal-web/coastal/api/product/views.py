@@ -61,10 +61,9 @@ def product_list(request):
                                      fields=['id', 'for_rental', 'for_sale', 'rental_unit', 'beds',
                                              'max_guests', 'sale_price'])
         rental_price = product.rental_price
-        rental_unit = product.rental_unit
-        if rental_unit == "half-day":
+        if product.rental_unit == "half-day":
             rental_price *= 4
-        if rental_unit == 'hour':
+        if product.rental_unit == 'hour':
             rental_price *= 24
         product_data.update({
             'rental_price': rental_price,
