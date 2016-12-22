@@ -58,9 +58,15 @@ def product_list(request):
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
+                                     fields=['id', 'for_rental', 'for_sale', 'rental_unit', 'beds',
                                              'max_guests', 'sale_price'])
+        rental_price = product.rental_price
+        if product.rental_unit == "half-day":
+            rental_price *= 4
+        if product.rental_unit == 'hour':
+            rental_price *= 24
         product_data.update({
+            'rental_price': rental_price,
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
             "lon": product.point[0],
