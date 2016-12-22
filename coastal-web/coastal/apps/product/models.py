@@ -1,9 +1,10 @@
-from django.contrib.gis.db import models
 from django.contrib.auth.models import User
+from django.contrib.gis.db import models
 from django.utils.functional import cached_property
-
 from treebeard.mp_tree import MP_Node
+
 from coastal.apps.product import defines as defs
+from coastal.core.storage import ImageStorage
 
 
 class Category(MP_Node):
@@ -201,10 +202,11 @@ class ProductImage(models.Model):
         ('360-view', '360 View')
     )
     product = models.ForeignKey(Product, null=True)
-    image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
+    image = models.ImageField(upload_to='product/%Y/%m', max_length=255, storage=ImageStorage())
     display_order = models.PositiveSmallIntegerField(default=0)
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    id_product = models.IntegerField(blank=True, null=True)
 
 
 class RentalBlackOutDate(models.Model):
