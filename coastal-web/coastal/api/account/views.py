@@ -1,4 +1,4 @@
-from django.contrib.auth import authenticate, login as auth_login
+from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
@@ -111,3 +111,9 @@ def my_profile(request):
         'agency_address': user.userprofile.agency_address,
     }
     return CoastalJsonResponse(data)
+
+
+@login_required
+def logout(request):
+    auth_logout(request)
+    return CoastalJsonResponse()
