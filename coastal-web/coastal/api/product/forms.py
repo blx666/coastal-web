@@ -1,3 +1,6 @@
+import json
+import datetime
+
 from django import forms
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from django.contrib.gis.geos import Point
@@ -14,6 +17,7 @@ class ProductAddForm(forms.ModelForm):
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
+    black_out_days = forms.CharField(required=False)
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -53,6 +57,24 @@ class ProductAddForm(forms.ModelForm):
                 self.cleaned_data['point'] = Point(lon, lat)
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
+
+    def clean_black_out_day(self):
+        black_out_days = self.cleaned_data['black_out_days']
+        black_out_days = json.loads(black_out_days)
+        date_list = []
+        for day in black_out_days:
+            if len(day) != 2:
+                raise forms.ValidationError('the list is illegal.')
+            try:
+                first_date = datetime.datetime.strptime(day[0],'%Y-%m-%d').date()
+                second_date = datetime.datetime.strptime(day[1],'%Y-%m-%d').date()
+            except:
+                raise forms.ValidationError('the date is illegal.')
+            if first_date < second_date:
+                date_list.append([first_date, second_date])
+            else:
+                date_list.append([second_date,first_date])
+        self.cleaned_data['date_list'] = date_list
 
     class Meta:
         model = Product
