@@ -157,9 +157,10 @@ def product_image_upload(request):
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
     image = form.save()
-    if form.cleaned_data.get('id_product'):
+    pid = form.cleaned_data.get('pid')
+    if pid:
         image = ProductImage.objects.get(id=image.id)
-        image.product = Product.objects.get(id=form.cleaned_data.get('id_product'))
+        image.product = Product.objects.get(id=pid)
     image.save()
     data = {
         'image_id': image.id,
@@ -208,27 +209,7 @@ def product_update(request, pid):
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    action = form.cleaned_data.get('status')
 
-    if action != 'publish':
-        form.save()
-    else:
-        if form.cleaned_data.get('for_rental') != 'true' and form.cleaned_data.get('for_rental') != 'true':
-            pass
-        elif form.cleaned_data.get('for_rental') == 'true':
-            pass
-        elif form.cleaned_data.get('for_rental') == 'true':
-            pass
-        elif form.category.id == 3:
-            pass
-        elif form.category.id == 4:
-            pass
-        elif form.category.id == 5:
-            pass
-        elif form.category.id == 6:
-            pass
-        elif form.category.id == 7:
-            pass
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
