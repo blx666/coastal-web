@@ -4,11 +4,9 @@ from django.contrib.gis.geos import Point
 
 
 class ImageUploadForm(forms.ModelForm):
-    pid = forms.FloatField(required=False)
-
     class Meta:
         model = ProductImage
-        fields = ['image', 'caption']
+        fields = ['image', 'caption', 'product']
 
 
 class ProductAddForm(forms.ModelForm):
@@ -74,20 +72,25 @@ class ProductAddForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score']
+        exclude = ['owner', 'score', 'status']
 
 
 class ProductUpdateForm(ProductAddForm):
+    city = forms.CharField(max_length=100, required=False)
+    country = forms.CharField(max_length=100, required=False)
+    max_guests = forms.IntegerField(required=False)
     action = forms.CharField()
 
     def clean(self):
         for key in self.cleaned_data.copy():
             if key not in self.data:
                 self.cleaned_data.pop(key)
+        # run clean func on ProductAddForm
+        super(ProductUpdateForm, self).clean()
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'category']
+        exclude = ['owner', 'score', 'status', 'category']
 
 
 class ProductListFilterForm(forms.Form):
