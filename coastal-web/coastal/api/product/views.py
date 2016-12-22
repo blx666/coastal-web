@@ -152,16 +152,14 @@ def product_image_upload(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
-    form = ImageUploadForm(request.POST, request.FILES)
+    data = request.POST.copy()
+    if 'product_id' in data:
+        data['product'] = data.get('product_id')
+    form = ImageUploadForm(data, request.FILES)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
     image = form.save()
-    pid = form.cleaned_data.get('pid')
-    if pid:
-        image = ProductImage.objects.get(id=image.id)
-        image.product = Product.objects.get(id=pid)
-    image.save()
     data = {
         'image_id': image.id,
     }

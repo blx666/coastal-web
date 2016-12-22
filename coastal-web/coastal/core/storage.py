@@ -1,6 +1,5 @@
 # -*- coding: UTF-8 -*-
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse
 
 
 class ImageStorage(FileSystemStorage):
@@ -14,6 +13,6 @@ class ImageStorage(FileSystemStorage):
         ext = os.path.splitext(name)[1]
         d = os.path.dirname(name)
         fn = time.strftime('%Y%m%d%H%M%S')
-        fn = fn + '_%d' % random.randint(0, 100)
+        fn += '_%d' % random.randint(0, 100)
         name = os.path.join(d, fn + ext)
         return super(ImageStorage, self)._save(name, content)

@@ -204,7 +204,7 @@ class ProductImage(models.Model):
         ('', '----'),
         ('360-view', '360 View')
     )
-    product = models.ForeignKey(Product, null=True)
+    product = models.ForeignKey(Product, null=True, blank=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255, storage=ImageStorage())
     display_order = models.PositiveSmallIntegerField(default=0)
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
