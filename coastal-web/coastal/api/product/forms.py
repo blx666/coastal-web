@@ -80,16 +80,16 @@ class ProductAddForm(forms.ModelForm):
             try:
                 black_out_days = json.loads(black_out_days)
             except:
-                raise forms.ValidationError('the params is invalid.')
+                raise forms.ValidationError('the black_out_days is invalid.')
             date_list = []
             for day in black_out_days:
                 if len(day) != 2:
-                    raise forms.ValidationError('the list is invalid.')
+                    raise forms.ValidationError('the black_out_days list is invalid.')
                 try:
                     first_date = datetime.datetime.strptime(day[0],'%Y-%m-%d').date()
                     second_date = datetime.datetime.strptime(day[1],'%Y-%m-%d').date()
                 except:
-                    raise forms.ValidationError('the date is invalid.')
+                    raise forms.ValidationError('the black_out_days is invalid.')
                 if first_date < second_date:
                     date_list.append([first_date, second_date])
                 else:
