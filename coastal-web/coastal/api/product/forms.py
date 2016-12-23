@@ -74,7 +74,7 @@ class ProductAddForm(forms.ModelForm):
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
 
-    def clean_black_out_day(self):
+    def clean_black_out_days(self):
         black_out_days = self.cleaned_data['black_out_days']
         black_out_days = json.loads(black_out_days)
         date_list = []
@@ -91,6 +91,7 @@ class ProductAddForm(forms.ModelForm):
             else:
                 date_list.append([second_date,first_date])
         self.cleaned_data['date_list'] = date_list
+        return self.cleaned_data
 
     class Meta:
         model = Product
