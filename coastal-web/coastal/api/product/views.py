@@ -275,11 +275,8 @@ def toggle_favorite(request, pid):
 
 
 def currency_list(request):
-    currencies = Currency.objects.values_list('code', 'symbol')
+    currencies = Currency.objects.values('code', 'symbol')
     data = []
-    for code, symbol in currencies:
-        data.append({
-            'code': code,
-            'symbol': symbol,
-        })
+    for currency in currencies:
+        data.append(currency)
     return CoastalJsonResponse(data)
