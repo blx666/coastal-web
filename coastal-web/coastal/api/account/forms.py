@@ -24,6 +24,7 @@ class UserProfileForm(forms.ModelForm):
     is_agent = forms.CharField(required=False)
 
     def clean_is_agent(self):
+        # TODO: is_agent is not required
         value = self.cleaned_data['is_agent']
         if value not in ('0', '1'):
             raise forms.ValidationError("The value should be boolean: 0/1")
