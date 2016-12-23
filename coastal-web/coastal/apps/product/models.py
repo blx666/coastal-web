@@ -185,11 +185,11 @@ class Product(models.Model):
             return False
 
         if self.for_rental:
-            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.currency):
+            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.rental_currency):
                 return False
 
         if self.for_sale:
-            if not self.currency:
+            if not self.rental_currency:
                 return False
 
         if self.category_id == defs.CATEGORY_JET:
