@@ -297,7 +297,8 @@ def toggle_favorite(request, pid):
 
 
 def black_out_date(pid, form):
-    date_list = form.cleaned_data['date_list']
-    BlackOutDate.objects.all().delete()
-    for black_date in date_list:
-        BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
+    date_list = form.cleaned_data.get('black_out_days')
+    if date_list:
+        BlackOutDate.objects.all().delete()
+        for black_date in date_list:
+            BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
