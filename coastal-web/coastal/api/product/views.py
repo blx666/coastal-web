@@ -9,6 +9,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
+from coastal.apps.currency.models import Currency
 
 
 def product_list(request):
@@ -270,4 +271,15 @@ def toggle_favorite(request, pid):
             'product_id': pid,
             'is_liked': False,
         }
+    return CoastalJsonResponse(data)
+
+
+def currency_list(request):
+    currencies = Currency.objects.values_list('code', 'symbol')
+    data = []
+    for code, symbol in currencies:
+        data.append({
+            'code': code,
+            'symbol': symbol,
+        })
     return CoastalJsonResponse(data)
