@@ -77,7 +77,10 @@ class ProductAddForm(forms.ModelForm):
     def clean_black_out_days(self):
         black_out_days = self.cleaned_data.get('black_out_days')
         if black_out_days:
-            black_out_days = json.loads(black_out_days)
+            try:
+                black_out_days = json.loads(black_out_days)
+            except:
+                raise forms.ValidationError('the list is invalid.')
             date_list = []
             for day in black_out_days:
                 if len(day) != 2:
