@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'django_crontab',
     'coastal.apps.product',
     'coastal.apps.account',
     'coastal.apps.promotion',
@@ -129,3 +130,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# cronjob
+CRONJOBS = [
+    ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
+]
