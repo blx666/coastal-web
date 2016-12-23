@@ -209,28 +209,7 @@ def product_update(request, pid):
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    action = form.cleaned_data.get('status')
     black_out_date(pid, form)
-    if action != 'publish':
-        form.save()
-    else:
-        if form.cleaned_data.get('for_rental') != 'true' and form.cleaned_data.get('for_rental') != 'true':
-            pass
-        elif form.cleaned_data.get('for_rental') == 'true':
-            pass
-        elif form.cleaned_data.get('for_rental') == 'true':
-            pass
-        elif form.category.id == 3:
-            pass
-        elif form.category.id == 4:
-            pass
-        elif form.category.id == 5:
-            pass
-        elif form.category.id == 6:
-            pass
-        elif form.category.id == 7:
-            pass
-
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)

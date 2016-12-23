@@ -86,15 +86,16 @@ class ProductAddForm(forms.ModelForm):
                 if len(day) != 2:
                     raise forms.ValidationError('the black_out_days list is invalid.')
                 try:
-                    first_date = datetime.datetime.strptime(day[0],'%Y-%m-%d').date()
-                    second_date = datetime.datetime.strptime(day[1],'%Y-%m-%d').date()
+                    first_date = datetime.datetime.strptime(day[0], '%Y-%m-%d').date()
+                    second_date = datetime.datetime.strptime(day[1], '%Y-%m-%d').date()
                 except:
                     raise forms.ValidationError('the black_out_days is invalid.')
                 if first_date < second_date:
                     date_list.append([first_date, second_date])
                 else:
-                    date_list.append([second_date,first_date])
-            return date_list
+                    date_list.append([second_date, first_date])
+            black_out_days = date_list
+            return black_out_days
 
     class Meta:
         model = Product
