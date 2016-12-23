@@ -81,12 +81,12 @@ class ProductAddForm(forms.ModelForm):
             date_list = []
             for day in black_out_days:
                 if len(day) != 2:
-                    raise forms.ValidationError('the list is illegal.')
+                    raise forms.ValidationError('the list is invalid.')
                 try:
                     first_date = datetime.datetime.strptime(day[0],'%Y-%m-%d').date()
                     second_date = datetime.datetime.strptime(day[1],'%Y-%m-%d').date()
                 except:
-                    raise forms.ValidationError('the date is illegal.')
+                    raise forms.ValidationError('the date is invalid.')
                 if first_date < second_date:
                     date_list.append([first_date, second_date])
                 else:
