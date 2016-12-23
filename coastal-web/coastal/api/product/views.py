@@ -10,6 +10,7 @@ from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
+from coastal.apps.rental.models import BlackOutDate
 
 
 def product_list(request):
@@ -175,11 +176,12 @@ def product_add(request):
     form = ProductAddForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-
     product = form.save(commit=False)
     product.owner = request.user
 
     product.save()
+    pid = product.id
+    black_out_date(pid, form)
     amenities = form.cleaned_data.get('amenities')
     for a in amenities:
         product.amenities.add(a)
@@ -208,7 +210,7 @@ def product_update(request, pid):
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-
+    black_out_date(pid, form)
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
@@ -280,3 +282,11 @@ def currency_list(request):
     for currency in currencies:
         data.append(currency)
     return CoastalJsonResponse(data)
+
+
+def black_out_date(pid, form):
+    date_list = form.cleaned_data.get('black_out_days')
+    if date_list:
+        BlackOutDate.objects.all().delete()
+        for black_date in date_list:
+            BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
