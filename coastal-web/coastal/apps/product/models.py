@@ -136,7 +136,7 @@ class Product(models.Model):
 
     # rental info
     rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
-    rental_currency = models.CharField(max_length=3, default='USD')
+    currency = models.CharField(max_length=3, default='USD')
     rental_usd_price = models.FloatField('Rental USD Price', null=True, blank=True)
     rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
     rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
