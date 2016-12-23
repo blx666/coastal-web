@@ -136,7 +136,7 @@ class Product(models.Model):
 
     # rental info
     rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
-    rental_currency = models.CharField(max_length=3, default='USD')
+    currency = models.CharField(max_length=3, default='USD')
     rental_usd_price = models.FloatField('Rental USD Price', null=True, blank=True)
     rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
     rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
@@ -185,11 +185,11 @@ class Product(models.Model):
             return False
 
         if self.for_rental:
-            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.rental_currency):
+            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.currency):
                 return False
 
         if self.for_sale:
-            if not self.rental_currency:
+            if not self.currency:
                 return False
 
         if self.category_id == defs.CATEGORY_JET:
