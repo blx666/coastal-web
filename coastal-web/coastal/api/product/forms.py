@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Point
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ['image', 'caption']
+        fields = ['image', 'caption', 'product']
 
 
 class ProductAddForm(forms.ModelForm):
@@ -18,6 +18,8 @@ class ProductAddForm(forms.ModelForm):
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
     black_out_days = forms.CharField(required=False)
+    for_sale = forms.CharField(required=False)
+    for_rental = forms.CharField(required=False)
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -48,6 +50,20 @@ class ProductAddForm(forms.ModelForm):
         except:
             raise forms.ValidationError('The images value is invalid.')
         return images
+
+    def clean_for_rental(self):
+        value = self.cleaned_data.get('for_rental')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
+
+    def clean_for_sale(self):
+        value = self.cleaned_data.get('for_sale')
+        if value:
+            if value not in ('0', '1'):
+                raise forms.ValidationError("The value should be boolean: 0/1")
+            return value == '1'
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
@@ -85,11 +101,13 @@ class ProductUpdateForm(ProductAddForm):
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
+    action = forms.CharField()
 
     def clean(self):
         for key in self.cleaned_data.copy():
             if key not in self.data:
                 self.cleaned_data.pop(key)
+        # run clean func on ProductAddForm
         super(ProductUpdateForm, self).clean()
 
     class Meta:
