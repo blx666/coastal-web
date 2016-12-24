@@ -8,4 +8,6 @@ urlpatterns = [
     url(r'^logout/$', views.logout, name='logout'),
     url(r'^update-profile/$', views.update_profile, name='update-profile'),
     url(r'^my-profile/$', views.my_profile, name='my-profile'),
+    url(r'^validate-email/$', views.validate_email, name='validate-email'),
+    url(r'^validate-email-url/$', views.validate_email_url, name='validate_email_url'),
 ]
