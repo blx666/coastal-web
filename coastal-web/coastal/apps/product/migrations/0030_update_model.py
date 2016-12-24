@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('product', '0029_rename_currency'),
     ]
@@ -20,13 +19,16 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='product',
             name='rental_type',
-            field=models.CharField(blank=True, choices=[('meet-cr', "Guests who meet Coastal's requirements"), ('no-one', 'No one. I will read and approve every request within 24 hours')], default='', help_text='Who can book instantly', max_length=32),
+            field=models.CharField(blank=True, choices=[('meet-cr', "Guests who meet Coastal's requirements"), (
+            'no-one', 'No one. I will read and approve every request within 24 hours')], default='',
+                                   help_text='Who can book instantly', max_length=32),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='product',
             name='rental_unit',
-            field=models.CharField(blank=True, choices=[('day', 'Day'), ('half-day', 'Half-Day'), ('hour', 'Hour')], max_length=32),
+            field=models.CharField(blank=True, choices=[('day', 'Day'), ('half-day', 'Half-Day'), ('hour', 'Hour')],
+                                   max_length=32, default='day'),
         ),
         migrations.AlterField(
             model_name='product',
