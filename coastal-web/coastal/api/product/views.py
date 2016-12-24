@@ -226,7 +226,7 @@ def product_update(request, pid):
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
-
+    product.save()
     return CoastalJsonResponse()
 
 

@@ -114,7 +114,7 @@ class ProductUpdateForm(ProductAddForm):
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
-    action = forms.CharField()
+    action = forms.CharField(required=False)
 
     def clean(self):
         for key in self.cleaned_data.copy():
