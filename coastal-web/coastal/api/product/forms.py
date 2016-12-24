@@ -153,7 +153,12 @@ class ProductListFilterForm(forms.Form):
 
 
 class DiscountCalculatorFrom(forms.Form):
+    CHARGE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
+    )
     rental_price = forms.FloatField()
-    rental_unit = forms.CharField()
+    rental_unit = forms.ChoiceField(choices=CHARGE_UNIT_CHOICES)
     discount_weekly	= forms.IntegerField(required=False)
     discount_monthly = forms.IntegerField(required=False)
