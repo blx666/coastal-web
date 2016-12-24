@@ -32,3 +32,8 @@ class ProductListFilterForm(forms.Form):
         purchase_or_rent = cleaned_data['purchase_or_rent']
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
+
+
+class RentalDateForm(forms.Form):
+    arrival_date = forms.DateTimeField()
+    checkout_date = forms.DateTimeField()
