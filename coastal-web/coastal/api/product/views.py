@@ -312,7 +312,7 @@ def discount_calculator(request):
         weekly_price = int(rental_price * 7 * discount_weekly / 100)+1
     if discount_monthly:
         monthly_price = int(rental_price * 30 * discount_monthly / 100)+1
-    print(rental_price, rental_unit)
+
     data = {
             'weekly_price': weekly_price,
             'monthly_price': monthly_price,
