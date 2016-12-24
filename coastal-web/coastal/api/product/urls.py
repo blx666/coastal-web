@@ -14,4 +14,5 @@ urlpatterns = [
     url(r'^currency-list/$', views.currency_list, name='currency-list'),
     url(r'^recommended', views.recommend_product_list, name='recommend-product-list'),
     # url(r'^home_page/$', views.home_page, name='home-page'),
+    url(r'^discount-calculator/$', views.discount_calculator, name='discount-calculator'),
 ]

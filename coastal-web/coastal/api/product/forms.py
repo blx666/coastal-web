@@ -150,3 +150,10 @@ class ProductListFilterForm(forms.Form):
         purchase_or_rent = cleaned_data['purchase_or_rent']
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
+
+
+class DiscountCalculatorFrom(forms.Form):
+    rental_price = forms.FloatField()
+    rental_unit = forms.CharField()
+    discount_weekly	= forms.IntegerField(required=False)
+    discount_monthly = forms.IntegerField(required=False)
