@@ -60,7 +60,7 @@ def product_list(request):
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'rental_unit', 'beds',
+                                     fields=['id', 'for_rental', 'for_sale', 'beds',
                                              'max_guests', 'sale_price'])
         rental_price = product.rental_price
         if product.rental_unit == "half-day":
@@ -73,6 +73,7 @@ def product_list(request):
             "images": [i.image.url for i in product.images],
             "lon": product.point[0],
             "lat": product.point[1],
+            'rental_unit': 'Day',
         })
         data.append(product_data)
     return CoastalJsonResponse(data)
@@ -89,7 +90,7 @@ def product_detail(request, pid):
         RecentlyViewed.objects.create(user=user, product=product)
     count_product_view(product)
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
+    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
                                           'reviews_avg_score'])
     if product.point:
@@ -97,6 +98,7 @@ def product_detail(request, pid):
         data['lat'] = product.point[1]
     data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
+    data['rental_unit'] = product.get_rental_unit_display()
 
     liked_product_id_list = []
     if request.user.is_authenticated:
