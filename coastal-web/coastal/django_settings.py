@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
-    'django_crontab',
+    # 'django_crontab',
     'coastal.apps.product',
     'coastal.apps.account',
     'coastal.apps.promotion',
