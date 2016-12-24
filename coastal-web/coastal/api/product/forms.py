@@ -19,8 +19,8 @@ class ProductAddForm(forms.ModelForm):
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
     black_out_days = forms.CharField(required=False)
-    for_sale = forms.CharField(required=True)
-    for_rental = forms.CharField(required=True)
+    for_sale = forms.CharField(required=False)
+    for_rental = forms.CharField(required=False)
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
@@ -61,17 +61,21 @@ class ProductAddForm(forms.ModelForm):
 
     def clean_for_rental(self):
         value = self.cleaned_data.get('for_rental')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        if not value:
+            return False
+
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean_for_sale(self):
         value = self.cleaned_data.get('for_sale')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        if not value:
+            return False
+
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
@@ -115,8 +119,6 @@ class ProductUpdateForm(ProductAddForm):
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
     action = forms.CharField(required=False)
-    for_sale = forms.CharField(required=False)
-    for_rental = forms.CharField(required=False)
 
     def clean(self):
         for key in self.cleaned_data.copy():
