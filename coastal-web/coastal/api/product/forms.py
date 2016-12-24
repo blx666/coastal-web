@@ -60,18 +60,16 @@ class ProductAddForm(forms.ModelForm):
         return images
 
     def clean_for_rental(self):
-        value = self.cleaned_data.get('for_rental')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        value = self.cleaned_data.get('for_rental', '0')
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean_for_sale(self):
-        value = self.cleaned_data.get('for_sale')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        value = self.cleaned_data.get('for_sale', '0')
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
