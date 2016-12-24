@@ -27,8 +27,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='product',
             name='rental_unit',
-            field=models.CharField(blank=True, choices=[('day', 'Day'), ('half-day', 'Half-Day'), ('hour', 'Hour')],
-                                   max_length=32, default='day'),
+            field=models.CharField(blank=True, default='day', choices=[('day', 'Day'), ('half-day', 'Half-Day'), ('hour', 'Hour')],
+                                   max_length=32),
         ),
         migrations.AlterField(
             model_name='product',
