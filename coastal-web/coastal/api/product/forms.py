@@ -4,6 +4,7 @@ import datetime
 from django import forms
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from django.contrib.gis.geos import Point
+from coastal.apps.currency.models import Currency
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -20,6 +21,13 @@ class ProductAddForm(forms.ModelForm):
     black_out_days = forms.CharField(required=False)
     for_sale = forms.CharField(required=False)
     for_rental = forms.CharField(required=False)
+
+    def clean_currency(self):
+        currency_code = Currency.objects.values_list('code')
+        value = self.cleaned_data.get('currency')
+        for currency in currency_code:
+            if value in currency:
+                return value
 
     def clean_amenities(self):
         value = self.cleaned_data.get('amenities')
@@ -106,7 +114,7 @@ class ProductUpdateForm(ProductAddForm):
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
-    action = forms.CharField()
+    action = forms.CharField(required=False)
 
     def clean(self):
         for key in self.cleaned_data.copy():

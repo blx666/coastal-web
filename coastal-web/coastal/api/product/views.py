@@ -9,6 +9,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
+from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate
 
 
@@ -225,7 +226,7 @@ def product_update(request, pid):
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
-
+    product.save()
     return CoastalJsonResponse()
 
 
@@ -272,6 +273,14 @@ def toggle_favorite(request, pid):
             'product_id': pid,
             'is_liked': False,
         }
+    return CoastalJsonResponse(data)
+
+
+def currency_list(request):
+    currencies = Currency.objects.values('code', 'symbol')
+    data = []
+    for currency in currencies:
+        data.append(currency)
     return CoastalJsonResponse(data)
 
 

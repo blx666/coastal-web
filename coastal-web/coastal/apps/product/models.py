@@ -134,19 +134,20 @@ class Product(models.Model):
     year = models.PositiveSmallIntegerField(blank=True, null=True)
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
 
+    currency = models.CharField(max_length=3, default='USD', blank=True)
+
     # rental info
     rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
-    currency = models.CharField(max_length=3, default='USD')
     rental_usd_price = models.FloatField('Rental USD Price', null=True, blank=True)
-    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
-    rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
+    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, blank=True)
+    rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, blank=True,
                                    help_text='Who can book instantly')
     rental_rule = models.TextField(blank=True)
     discount_weekly = models.IntegerField(null=True, blank=True, help_text="The unit is %. e.g. 60 means 60%")
     discount_monthly = models.IntegerField(null=True, blank=True, help_text="The unit is %. e.g. 60 means 60%")
 
     # sale info
-    sale_price = models.FloatField(default=0)
+    sale_price = models.FloatField(default=0, null=True, blank=True)
 
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
