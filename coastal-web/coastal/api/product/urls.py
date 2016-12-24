@@ -12,5 +12,6 @@ urlpatterns = [
     url(r'^amenities/$', views.amenity_list, name='amenity-list'),
     url(r'^(?P<pid>\d+)/like-toggle/$', views.toggle_favorite, name='product-like-toggle'),
     url(r'^currency-list/$', views.currency_list, name='currency-list'),
+    url(r'^recommended', views.recommend_product_list, name='recommend-product-list'),
     # url(r'^home_page/$', views.home_page, name='home-page'),
 ]

@@ -290,3 +290,26 @@ def black_out_date(pid, form):
         BlackOutDate.objects.all().delete()
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
+
+
+def recommend_product_list(request):
+    recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
+    bind_product_image(recommend_products)
+    data = []
+    for product in recommend_products:
+        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
+                                                      'rental_unit', 'beds', 'max_guests'])
+        product_data.update({
+            'category': product.category_id
+        })
+        if product.images:
+            product_data['images'] = [i.image.url for i in product.images]
+        else:
+            product_data['images'] = []
+        if product.point:
+            product_data.update({
+                'lon': product.point[0],
+                'lat': product.point[1],
+            })
+        data.append(product_data)
+    return CoastalJsonResponse(data)
