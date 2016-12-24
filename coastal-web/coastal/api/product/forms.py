@@ -19,8 +19,8 @@ class ProductAddForm(forms.ModelForm):
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
     black_out_days = forms.CharField(required=False)
-    for_sale = forms.CharField(required=True)
-    for_rental = forms.CharField(required=True)
+    for_sale = forms.CharField(required=False)
+    for_rental = forms.CharField(required=False)
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
@@ -115,8 +115,6 @@ class ProductUpdateForm(ProductAddForm):
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
     action = forms.CharField(required=False)
-    for_sale = forms.CharField(required=False)
-    for_rental = forms.CharField(required=False)
 
     def clean(self):
         for key in self.cleaned_data.copy():
