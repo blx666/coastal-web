@@ -25,10 +25,11 @@ def home(request):
     product_list = []
     for product in products:
         product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit', 'beds',
+                                     fields=['id', 'for_rental', 'for_sale', 'rental_price', 'beds',
                                              'max_guests', 'sale_price', 'city'])
         product_data.update({
             "category": product.category_id,
+            'rental_unit': product.get_rental_unit_display(),
         })
         liked_product_id_list = []
         if request.user.is_authenticated:

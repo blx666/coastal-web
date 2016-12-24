@@ -2,7 +2,8 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
 
-from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, DiscountCalculatorFrom
+from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
+    DiscountCalculatorFrom
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -300,9 +301,10 @@ def recommend_product_list(request):
     data = []
     for product in recommend_products:
         product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
-                                                      'rental_unit', 'beds', 'max_guests'])
+                                                      'beds', 'max_guests'])
         product_data.update({
-            'category': product.category_id
+            'category': product.category_id,
+            'rental_unit': product.get_rental_unit_display(),
         })
         if product.images:
             product_data['images'] = [i.image.url for i in product.images]
@@ -333,12 +335,12 @@ def discount_calculator(request):
     if rental_unit == 'hour':
         rental_price *= 24
     if discount_weekly:
-        weekly_price = int(rental_price * 7 * discount_weekly / 100)+1
+        weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
     if discount_monthly:
-        monthly_price = int(rental_price * 30 * discount_monthly / 100)+1
+        monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
 
     data = {
-            'weekly_price': weekly_price,
-            'monthly_price': monthly_price,
-        }
+        'weekly_price': weekly_price,
+        'monthly_price': monthly_price,
+    }
     return CoastalJsonResponse(data)
