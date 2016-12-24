@@ -316,6 +316,7 @@ def recommend_product_list(request):
                 'lat': product.point[1],
             })
         data.append(product_data)
+    return CoastalJsonResponse(data)
 
 
 def discount_calculator(request):
