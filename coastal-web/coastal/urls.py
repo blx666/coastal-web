@@ -19,10 +19,9 @@ from django.conf.urls.static import static
 from django.contrib import admin
 
 urlpatterns = [
-
-    # url(r'^api/products/', include('coastal.apps.product.urls')),
-    url(r'^api/products/', include('coastal.api.product.urls')),
-    url(r'^api/account/', include('coastal.api.account.urls')),
+    url(r'^api/products/', include('coastal.api.product.urls', namespace='product')),
+    url(r'^api/account/', include('coastal.api.account.urls', namespace='account')),
+    url(r'^api/page/', include('coastal.api.page.urls', namespace='page')),
     url(r'^admin/', admin.site.urls),
 ]
 

@@ -1,15 +1,18 @@
 # coding:utf-8
-from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from django.db.models import F
 
 
 def get_similar_products(product):
     point = product.point
 
-    similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35))).exclude(
-        id=product.id).order_by(
-        Distance('point', point))[0:12]
+    if point:
+        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35))).exclude(
+            id=product.id).order_by(Distance('point', point))[0:12]
+    else:
+        similar_distance_product = Product.objects.all()[0:12]
 
     price = product.rental_price
     price_order = Product.objects.order_by('rental_price')
@@ -37,3 +40,28 @@ def get_similar_products(product):
             if pi.product == product:
                 product.images.append(pi)
     return similar_product
+
+
+def bind_product_image(products):
+    """
+    It will bind images into product to avoid n+1 select.
+    :param products: product obj list
+    :return: None
+    """
+    product_images = ProductImage.objects.filter(product__in=products)
+
+    image_group = {}
+    for image in product_images:
+        if image.product.id not in image_group:
+            image_group[image.product.id] = []
+        image_group[image.product.id].append(image)
+
+    for product in products:
+        product.images = image_group.get(product.id, [])
+
+
+def count_product_view(product):
+    product_view = ProductViewCount.objects.filter(product=product).update(count=F('count') + 1)
+    if not product_view:
+        ProductViewCount.objects.create(product=product, count=1)
+

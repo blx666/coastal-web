@@ -19,18 +19,22 @@ class RegistrationForm(forms.ModelForm):
 
 
 class UserProfileForm(forms.ModelForm):
-    is_agent = forms.BooleanField(required=True)
-    agency_email = forms.EmailField(required=False)
-    agency_name = forms.CharField(max_length=64, required=False)
-    agency_address = forms.CharField(max_length=128, required=False)
+    first_name = forms.CharField(max_length=128, required=False)
+    last_name = forms.CharField(max_length=128, required=False)
+    is_agent = forms.CharField(required=False)
+
+    def clean_is_agent(self):
+        # TODO: is_agent is not required
+        value = self.cleaned_data['is_agent']
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     class Meta:
         model = UserProfile
-        fields = ['is_agent', 'agency_email', 'agency_name', 'agency_address']
+        fields = ['agency_email', 'agency_name', 'agency_address', 'photo']
 
 
 class CheckEmailForm(forms.Form):
     email = forms.EmailField(required=True)
-
-
 

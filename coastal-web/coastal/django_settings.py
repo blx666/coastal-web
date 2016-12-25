@@ -38,9 +38,12 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.gis',
+    'django_crontab',
     'coastal.apps.product',
     'coastal.apps.account',
     'coastal.apps.rental'
+    'coastal.apps.promotion',
+    'coastal.apps.currency',
 ]
 
 MIDDLEWARE = [
@@ -123,6 +126,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.10/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
+# cronjob
+CRONJOBS = [
+    ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
+]

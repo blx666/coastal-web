@@ -1,7 +1,10 @@
-from django.contrib.gis.db import models
 from django.contrib.auth.models import User
-
+from django.contrib.gis.db import models
+from django.utils.functional import cached_property
 from treebeard.mp_tree import MP_Node
+
+from coastal.apps.product import defines as defs
+from coastal.core.storage import ImageStorage
 
 
 class Category(MP_Node):
@@ -97,6 +100,14 @@ class Product(models.Model):
         ('meet-cr', 'Guests who meet Coastal\'s requirements'),
         ('no-one', 'No one. I will read and approve every request within 24 hours'),
     )
+    STATUS_CHOICES = (
+        ('draft', 'Draft'),
+        ('published', 'Published'),
+        ('cancelled', 'Cancelled')
+    )
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
+
     category = models.ForeignKey(Category)
     for_rental = models.BooleanField()
     for_sale = models.BooleanField()
@@ -109,7 +120,7 @@ class Product(models.Model):
     point = models.PointField(blank=True, null=True)
 
     # basic info
-    max_guests = models.PositiveSmallIntegerField()
+    max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
     beds = models.PositiveSmallIntegerField(blank=True, null=True)
     bathrooms = models.PositiveSmallIntegerField(blank=True, null=True)
     sleeps = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -123,47 +134,120 @@ class Product(models.Model):
     year = models.PositiveSmallIntegerField(blank=True, null=True)
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
 
+    currency = models.CharField(max_length=3, default='USD', blank=True)
+
     # rental info
-    rental_price = models.FloatField(help_text='here is the price per day')
-    # rental_currency = models.ForeignKey()
-    rental_usd_price = models.FloatField('Rental USD Price')
-    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, null=True, blank=True)
-    rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, null=True, blank=True,
+    rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
+    rental_usd_price = models.FloatField('Rental USD Price', null=True, blank=True)
+    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, blank=True)
+    rental_type = models.CharField(max_length=32, choices=ALLOW_RENTAL_CHOICES, blank=True,
                                    help_text='Who can book instantly')
     rental_rule = models.TextField(blank=True)
+    discount_weekly = models.IntegerField(null=True, blank=True, help_text="The unit is %. e.g. 60 means 60%")
+    discount_monthly = models.IntegerField(null=True, blank=True, help_text="The unit is %. e.g. 60 means 60%")
+
     # sale info
-    sale_price = models.FloatField(null=True, blank=True)
+    sale_price = models.FloatField(default=0, null=True, blank=True)
 
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity', null=True, blank=True)
+    amenities = models.ManyToManyField('Amenity')
     desc_about_it = models.TextField(max_length=255, null=True, blank=True)
     desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
     desc_interaction = models.TextField(max_length=255, null=True, blank=True)
     desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
     desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
 
-    liker = models.ManyToManyField(User, related_name='favorites')
-    viewer = models.ManyToManyField(User, related_name='recently_viewed')
+    # score
+    score = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return self.name
+
+    @cached_property
+    def short_desc(self):
+        if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+            short_desc = '%s rooms' % self.rooms
+        elif self.category_id == defs.CATEGORY_ROOM:
+            short_desc = 'single room'
+        else:
+            short_desc = '%s ft. %s' % (self.length, self.category.name.lower())
+        return short_desc
+
+    def get_amenities_display(self):
+        return ', '.join(self.amenities.values_list('name', flat=True))
+
+    def publish(self):
+        self.status = 'published'
+
+    def validate_publish_data(self):
+        if not (self.for_sale or self.for_rental):
+            return False
+
+        if self.for_rental:
+            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.currency):
+                return False
+
+        if self.for_sale:
+            if not self.currency:
+                return False
+
+        if self.category_id == defs.CATEGORY_JET:
+            if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year):
+                return False
+        elif self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+            if not (self.rooms and self.sleeps and self.beds and self.bathrooms):
+                return False
+        elif self.category_id == defs.CATEGORY_ROOM:
+            if not (self.sleeps and self.beds and self.bathrooms):
+                return False
+        elif self.category_id == defs.CATEGORY_YACHT:
+            if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.depth and self.year and self.speed):
+                return False
+        elif self.category_id == defs.CATEGORY_BOAT_SLIP:
+            if not (self.marina and self.basin and self.stall):
+                return False
+
+        return True
+
+    def cancel(self):
+        self.status = 'cancelled'
 
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
-        ('common', 'Common'),
-        ('extra', 'Extra'),
+        ('common', 'Most common'),
+        ('extra', 'Extras'),
+        ('special', 'Special')
     )
 
-    name = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
-    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES, null=True, blank=True)
+    name = models.CharField(max_length=32)
+    amenity_type = models.CharField(max_length=32, choices=TYPE_CHOICES)
+
+    def __str__(self):
+        return self.name
 
 
 class ProductImage(models.Model):
-    product = models.ForeignKey(Product, null=True)
-    image = models.ImageField(upload_to='product/%Y/%m', max_length=255)
+    CAPTION_360 = '360-view'
+    TYPE_CHOICE = (
+        ('', '----'),
+        ('360-view', '360 View')
+    )
+    product = models.ForeignKey(Product, null=True, blank=True)
+    image = models.ImageField(upload_to='product/%Y/%m', max_length=255, storage=ImageStorage())
     display_order = models.PositiveSmallIntegerField(default=0)
+    caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+
+class RentalBlackOutDate(models.Model):
+    product = models.ForeignKey(Product)
+    start_date = models.DateField()
+    end_date = models.DateField()
 
 
 class ProductViewCount(models.Model):
-    product = models.ForeignKey(Product)
-    view_count = models.PositiveIntegerField(default=0)
+    product = models.OneToOneField(Product)
+    count = models.PositiveIntegerField(default=0)
