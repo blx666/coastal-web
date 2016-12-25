@@ -16,6 +16,17 @@ class RentalDateRange(models.Model):
 
 
 class RentalOrder(models.Model):
+    STATUS_CHOICES = (
+        ('request', 'Request'),
+        ('approved', 'Approved'),
+        ('declined', 'Declined'),
+        ('charge', 'Charge'),
+        ('booked', 'Booked'),
+        ('check-in', 'Check-In'),
+        ('paid', 'Paid Host'),
+        ('check-out', 'Check-out'),
+        ('finished', 'Finished'),
+    )
     number = models.CharField(max_length=32)
     product = models.ForeignKey(Product)
     owner = models.ForeignKey(User, related_name="owner_orders")
