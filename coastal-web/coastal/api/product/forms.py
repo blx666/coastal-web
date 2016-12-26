@@ -159,5 +159,5 @@ class RentalDateForm(forms.Form):
 class DiscountCalculatorFrom(forms.Form):
     rental_price = forms.FloatField()
     rental_unit = forms.CharField()
-    discount_weekly	= forms.IntegerField(required=False)
+    discount_weekly = forms.IntegerField(required=False)
     discount_monthly = forms.IntegerField(required=False)

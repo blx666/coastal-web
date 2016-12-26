@@ -61,7 +61,7 @@ def product_list(request):
     data = []
     for product in products[0:20]:
         product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'rental_unit', 'beds',
+                                     fields=['id', 'for_rental', 'for_sale', 'beds',
                                              'max_guests', 'sale_price'])
         rental_price = product.rental_price
         if product.rental_unit == "half-day":
@@ -74,6 +74,7 @@ def product_list(request):
             "images": [i.image.url for i in product.images],
             "lon": product.point[0],
             "lat": product.point[1],
+            'rental_unit': 'Day',
         })
         data.append(product_data)
     return CoastalJsonResponse(data)
@@ -90,7 +91,7 @@ def product_detail(request, pid):
         RecentlyViewed.objects.create(user=user, product=product)
     count_product_view(product)
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price', 'rental_unit',
+    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
                                           'reviews_avg_score'])
     if product.point:
@@ -98,6 +99,7 @@ def product_detail(request, pid):
         data['lat'] = product.point[1]
     data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
+    data['rental_unit'] = product.get_rental_unit_display()
 
     liked_product_id_list = []
     if request.user.is_authenticated:
@@ -208,7 +210,7 @@ def get_rental_amount(request, pid):
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
     rental_price = product[0].rental_price
-    rental_date = (checkout_date - arrival_date).seconds/3600/24 + (checkout_date - arrival_date).days
+    rental_date = (checkout_date - arrival_date).seconds / 3600 / 24 + (checkout_date - arrival_date).days
     rental_amount = rental_date * rental_price
     data = [{
         'total_amount': rental_amount,
@@ -315,6 +317,30 @@ def black_out_date(pid, form):
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
 
+def recommend_product_list(request):
+    recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
+    bind_product_image(recommend_products)
+    data = []
+    for product in recommend_products:
+        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
+                                                      'beds', 'max_guests'])
+        product_data.update({
+            'category': product.category_id,
+            'rental_unit': product.get_rental_unit_display(),
+        })
+        if product.images:
+            product_data['images'] = [i.image.url for i in product.images]
+        else:
+            product_data['images'] = []
+        if product.point:
+            product_data.update({
+                'lon': product.point[0],
+                'lat': product.point[1],
+            })
+        data.append(product_data)
+    return CoastalJsonResponse(data)
+
+
 def discount_calculator(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
@@ -332,12 +358,12 @@ def discount_calculator(request):
     if rental_unit == 'hour':
         rental_price *= 24
     if discount_weekly:
-        weekly_price = int(rental_price * 7 * discount_weekly / 100)+1
+        weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
     if discount_monthly:
-        monthly_price = int(rental_price * 30 * discount_monthly / 100)+1
+        monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
 
     data = {
-            'weekly_price': weekly_price,
-            'monthly_price': monthly_price,
-        }
+        'weekly_price': weekly_price,
+        'monthly_price': monthly_price,
+    }
     return CoastalJsonResponse(data)

@@ -9,13 +9,13 @@ def get_similar_products(product):
     point = product.point
 
     if point:
-        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35))).exclude(
+        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35)), status='published').exclude(
             id=product.id).order_by(Distance('point', point))[0:12]
     else:
         similar_distance_product = Product.objects.all()[0:12]
 
     price = product.rental_price
-    price_order = Product.objects.order_by('rental_price')
+    price_order = Product.objects.filter(status='published').order_by('rental_price')
     product_index = list(price_order).index(product)
     if product_index >= 20:
         price_order_product = price_order[product_index - 20: product_index + 20]
