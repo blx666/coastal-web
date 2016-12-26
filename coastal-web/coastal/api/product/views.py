@@ -3,7 +3,7 @@ from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
-    DiscountCalculatorFrom
+    DiscountCalculatorFrom, RentalDateForm
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -197,6 +197,28 @@ def product_add(request):
     data = {
         'product_id': product.id
     }
+    return CoastalJsonResponse(data)
+
+
+def get_rental_amount(request, pid):
+    form = RentalDateForm(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=400)
+    arrival_date = form.cleaned_data['arrival_date']
+    checkout_date = form.cleaned_data['checkout_date']
+    product = Product.objects.filter(id=pid)
+    if not product:
+        return CoastalJsonResponse(form.errors, status=404)
+    rental_price = product[0].rental_price
+    rental_date = (checkout_date - arrival_date).seconds / 3600 / 24 + (checkout_date - arrival_date).days
+    rental_amount = rental_date * rental_price
+    data = [{
+        'total_amount': rental_amount,
+        # 'rental_price': rental_price,
+        # 'rental_date': rental_date,
+        # 'a': arrival_date,
+        # 'b': checkout_date,
+    }]
     return CoastalJsonResponse(data)
 
 
