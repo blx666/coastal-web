@@ -120,7 +120,7 @@ class Product(models.Model):
     point = models.PointField(blank=True, null=True)
 
     # basic info
-    max_guests = models.PositiveSmallIntegerField()
+    max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
     beds = models.PositiveSmallIntegerField(blank=True, null=True)
     bathrooms = models.PositiveSmallIntegerField(blank=True, null=True)
     sleeps = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -152,7 +152,7 @@ class Product(models.Model):
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity', blank=True, null=True)
+    amenities = models.ManyToManyField('Amenity')
     desc_about_it = models.TextField(max_length=255, null=True, blank=True)
     desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
     desc_interaction = models.TextField(max_length=255, null=True, blank=True)
