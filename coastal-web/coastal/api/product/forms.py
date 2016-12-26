@@ -18,7 +18,7 @@ class ProductAddForm(forms.ModelForm):
     lat = forms.FloatField(required=False)
     amenities = forms.CharField(required=False)
     images = forms.CharField(required=False)
-    black_out_days = forms.CharField(required=False)
+    black_out_dates = forms.CharField(required=False)
     for_sale = forms.CharField(required=False)
     for_rental = forms.CharField(required=False)
 
@@ -86,15 +86,15 @@ class ProductAddForm(forms.ModelForm):
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
 
-    def clean_black_out_days(self):
-        black_out_days = self.cleaned_data.get('black_out_days')
-        if black_out_days:
+    def clean_black_out_dates(self):
+        black_out_dates = self.cleaned_data.get('black_out_dates')
+        if black_out_dates:
             try:
-                black_out_days = json.loads(black_out_days)
+                black_out_dates = json.loads(black_out_dates)
             except:
                 raise forms.ValidationError('the black_out_days is invalid.')
             date_list = []
-            for day in black_out_days:
+            for day in black_out_dates:
                 if len(day) != 2:
                     raise forms.ValidationError('the black_out_days list is invalid.')
                 try:
@@ -106,8 +106,7 @@ class ProductAddForm(forms.ModelForm):
                     date_list.append([first_date, second_date])
                 else:
                     date_list.append([second_date, first_date])
-            black_out_days = date_list
-            return black_out_days
+            return date_list
 
     class Meta:
         model = Product

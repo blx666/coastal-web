@@ -135,3 +135,20 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
 ]
+
+# email conf
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'localhost'
+EMAIL_PORT = 25
+
+EMAIL_HOST_USER = '2421133939@qq.com'
+EMAIL_HOST_PASSWORD = '********'
+
+EMAIL_USE_TLS = False
+
+SUBSCRIBE_EMAIL = '2421133939@qq.com'
+# DEFAULT_FROM_EMAIL = "aragoncs@brilliantearth.com"
+
+# site DOMAIN
+SITE_DOMAIN='192.168.2.52:8000'
