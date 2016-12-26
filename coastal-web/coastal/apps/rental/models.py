@@ -59,7 +59,7 @@ class RentalOrderDiscount(models.Model):
 class ApproveEvent(models.Model):
     order = models.ForeignKey(RentalOrder)
     approve = models.BooleanField()
-    notes = models.TextField()
+    notes = models.TextField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
 
