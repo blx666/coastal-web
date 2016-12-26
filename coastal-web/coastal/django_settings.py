@@ -41,9 +41,9 @@ INSTALLED_APPS = [
     'django_crontab',
     'coastal.apps.product',
     'coastal.apps.account',
+    'coastal.apps.rental',
     'coastal.apps.promotion',
     'coastal.apps.currency',
-    'coastal.apps.rental',
 ]
 
 MIDDLEWARE = [

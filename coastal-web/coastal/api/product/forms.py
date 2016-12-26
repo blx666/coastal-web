@@ -61,17 +61,21 @@ class ProductAddForm(forms.ModelForm):
 
     def clean_for_rental(self):
         value = self.cleaned_data.get('for_rental')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        if not value:
+            return False
+
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean_for_sale(self):
         value = self.cleaned_data.get('for_sale')
-        if value:
-            if value not in ('0', '1'):
-                raise forms.ValidationError("The value should be boolean: 0/1")
-            return value == '1'
+        if not value:
+            return False
+
+        if value not in ('0', '1'):
+            raise forms.ValidationError("The value should be boolean: 0/1")
+        return value == '1'
 
     def clean(self):
         lon = self.cleaned_data.get('lon')
@@ -146,3 +150,15 @@ class ProductListFilterForm(forms.Form):
         purchase_or_rent = cleaned_data['purchase_or_rent']
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
+
+
+class RentalDateForm(forms.Form):
+    arrival_date = forms.DateTimeField()
+    checkout_date = forms.DateTimeField()
+
+
+class DiscountCalculatorFrom(forms.Form):
+    rental_price = forms.FloatField()
+    rental_unit = forms.CharField()
+    discount_weekly	= forms.IntegerField(required=False)
+    discount_monthly = forms.IntegerField(required=False)

@@ -2,7 +2,8 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
 
-from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm
+from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
+    DiscountCalculatorFrom, RentalDateForm
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -197,6 +198,28 @@ def product_add(request):
     return CoastalJsonResponse(data)
 
 
+def get_rental_amount(request, pid):
+    form = RentalDateForm(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=400)
+    arrival_date = form.cleaned_data['arrival_date']
+    checkout_date = form.cleaned_data['checkout_date']
+    product = Product.objects.filter(id=pid)
+    if not product:
+        return CoastalJsonResponse(form.errors, status=404)
+    rental_price = product[0].rental_price
+    rental_date = (checkout_date - arrival_date).seconds/3600/24 + (checkout_date - arrival_date).days
+    rental_amount = rental_date * rental_price
+    data = [{
+        'total_amount': rental_amount,
+        # 'rental_price': rental_price,
+        # 'rental_date': rental_date,
+        # 'a': arrival_date,
+        # 'b': checkout_date,
+    }]
+    return CoastalJsonResponse(data)
+
+
 @login_required
 def product_update(request, pid):
     if request.method != 'POST':
@@ -290,3 +313,31 @@ def black_out_date(pid, form):
         BlackOutDate.objects.all().delete()
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
+
+
+def discount_calculator(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+    form = DiscountCalculatorFrom(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+    rental_price = form.cleaned_data['rental_price']
+    rental_unit = form.cleaned_data['rental_unit']
+    discount_weekly = form.cleaned_data.get('discount_weekly')
+    discount_monthly = form.cleaned_data.get('discount_monthly')
+    weekly_price = 0
+    monthly_price = 0
+    if rental_unit == "half-day":
+        rental_price *= 4
+    if rental_unit == 'hour':
+        rental_price *= 24
+    if discount_weekly:
+        weekly_price = int(rental_price * 7 * discount_weekly / 100)+1
+    if discount_monthly:
+        monthly_price = int(rental_price * 30 * discount_monthly / 100)+1
+
+    data = {
+            'weekly_price': weekly_price,
+            'monthly_price': monthly_price,
+        }
+    return CoastalJsonResponse(data)
