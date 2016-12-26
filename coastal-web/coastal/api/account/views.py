@@ -1,11 +1,15 @@
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.conf import settings
+from django.http.response import HttpResponse
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import UserProfile
+from coastal.apps.account.models import UserProfile, ValidateEmail
+from datetime import datetime, timedelta
 
 
 def register(request):
@@ -117,3 +121,39 @@ def my_profile(request):
 def logout(request):
     auth_logout(request)
     return CoastalJsonResponse()
+
+
+@login_required
+def validate_email(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+    user = request.user
+    expiration_date = ValidateEmail.create_date()
+    token = ValidateEmail.create_token(user)
+    ValidateEmail.objects.create(user=user, expiration_date=expiration_date, token=token)
+
+    subject = 'user validate email'
+    message = 'This is a validate email, please complete certification within 24 hours http://192.168.2.52:8000/api' \
+              '/account/validate-email-url?token=' + token
+    send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
+    return CoastalJsonResponse()
+
+
+def validate_email_url(request):
+    validate_email_list = ValidateEmail.objects.filter(token=request.GET["token"])
+    if not validate_email_list:
+        # token is null
+        return HttpResponse('token is not exist')
+    for validate in validate_email_list:
+        time_span = validate.expiration_date.replace(tzinfo=None) - datetime.now()
+        user = validate.user.userprofile
+        if user.email_confirmed:
+            return HttpResponse('user already  validate')
+        if time_span.days >= 0:
+            # not expiration date
+            user.email_confirmed = True
+            user.save()
+            return CoastalJsonResponse()
+    return HttpResponse('token already  expire')
+
+
