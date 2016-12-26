@@ -152,6 +152,11 @@ class ProductListFilterForm(forms.Form):
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
 
 
+class RentalDateForm(forms.Form):
+    arrival_date = forms.DateTimeField()
+    checkout_date = forms.DateTimeField()
+
+
 class DiscountCalculatorFrom(forms.Form):
     CHARGE_UNIT_CHOICES = (
         ('day', 'Day'),

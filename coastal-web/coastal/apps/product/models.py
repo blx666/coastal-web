@@ -153,11 +153,11 @@ class Product(models.Model):
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
     amenities = models.ManyToManyField('Amenity')
-    desc_about_it = models.TextField(max_length=255, null=True, blank=True)
-    desc_guest_access = models.TextField(max_length=255, null=True, blank=True)
-    desc_interaction = models.TextField(max_length=255, null=True, blank=True)
-    desc_getting_around = models.TextField(max_length=255, null=True, blank=True)
-    desc_other_to_note = models.TextField(max_length=255, null=True, blank=True)
+    desc_about_it = models.TextField(null=True, blank=True)
+    desc_guest_access = models.TextField(null=True, blank=True)
+    desc_interaction = models.TextField(null=True, blank=True)
+    desc_getting_around = models.TextField(null=True, blank=True)
+    desc_other_to_note = models.TextField(null=True, blank=True)
 
     # score
     score = models.PositiveIntegerField(default=0)
