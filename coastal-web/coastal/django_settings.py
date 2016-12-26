@@ -149,3 +149,6 @@ EMAIL_USE_TLS = False
 
 SUBSCRIBE_EMAIL = '2421133939@qq.com'
 # DEFAULT_FROM_EMAIL = "aragoncs@brilliantearth.com"
+
+# site DOMAIN
+SITE_DOMAIN='192.168.2.52:8000'

@@ -42,18 +42,28 @@ class ValidateEmail(models.Model):
     token = models.CharField(null=True, unique=True, max_length=256)
     expiration_date = models.DateTimeField()
 
-    @classmethod
-    def create_token(cls, user):
+    def create_token(self, user):
         token = user.email + str(datetime.now())
         md5token = hashlib.md5()
         md5token.update(token.encode('utf-8'))
         token = md5token.hexdigest()
         return token
 
-    @classmethod
-    def create_date(cls):
+    def create_date(self):
         now = datetime.now().replace(tzinfo=None)
         tomorrow = now + timedelta(days=1)
         return tomorrow
+
+    def save(self, user, *args, **kwargs):
+        self.user = user
+        self.token = self.create_token(user)
+        self.expiration_date = self.create_date()
+        super(ValidateEmail, self).save(*args, **kwargs)
+
+
+
+
+
+
 
 
