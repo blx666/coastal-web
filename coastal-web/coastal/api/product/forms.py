@@ -132,9 +132,9 @@ class ProductUpdateForm(ProductAddForm):
 
 
 class ProductListFilterForm(forms.Form):
-    lon = forms.FloatField()
-    lat = forms.FloatField()
-    distance = forms.IntegerField()
+    lon = forms.FloatField(required=False)
+    lat = forms.FloatField(required=False)
+    distance = forms.IntegerField(required=False)
     guests = forms.IntegerField(required=False)
     arrival_date = forms.DateField(required=False)
     checkout_date = forms.DateField(required=False)
@@ -157,7 +157,12 @@ class RentalDateForm(forms.Form):
 
 
 class DiscountCalculatorFrom(forms.Form):
+    CHARGE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
+    )
     rental_price = forms.FloatField()
-    rental_unit = forms.CharField()
-    discount_weekly = forms.IntegerField(required=False)
+    rental_unit = forms.ChoiceField(choices=CHARGE_UNIT_CHOICES)
+    discount_weekly	= forms.IntegerField(required=False)
     discount_monthly = forms.IntegerField(required=False)
