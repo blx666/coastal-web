@@ -128,19 +128,17 @@ def validate_email(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     user = request.user
-    expiration_date = ValidateEmail.create_date()
-    token = ValidateEmail.create_token(user)
-    ValidateEmail.objects.create(user=user, expiration_date=expiration_date, token=token)
-
+    validate_instance = ValidateEmail()
+    validate_instance.save(user=user)
     subject = 'user validate email'
-    message = 'This is a validate email, please complete certification within 24 hours http://192.168.2.52:8000/api' \
-              '/account/validate-email-url?token=' + token
+    message = 'This is a validate email, please complete certification within 24 hours http://'+settings.SITE_DOMAIN+'/api' \
+              '/account/validate-email/confirm/?token=' + validate_instance.token
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
     return CoastalJsonResponse()
 
 
-def validate_email_url(request):
-    validate_email_list = ValidateEmail.objects.filter(token=request.GET["token"])
+def validate_email_confirm(request):
+    validate_email_list = ValidateEmail.objects.filter(token=request.GET.get("token"))
     if not validate_email_list:
         # token is null
         return HttpResponse('token is not exist')
