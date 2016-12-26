@@ -1,6 +1,10 @@
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
+from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage
+from django.core.paginator import PageNotAnInteger
+from django.conf import settings
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom, RentalDateForm
@@ -14,7 +18,7 @@ from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate
 
 
-def product_list(request):
+def product_list(request,page):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -32,9 +36,15 @@ def product_list(request):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
-    target = Point(lon, lat)
-    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
-
+    products = Product.objects.all()
+    if lon and lat:
+        target = Point(lon, lat)
+    else:
+        target = Point(settings.LON, settings.LAT)
+    if distance:
+        products = products.filter(point__distance_lte=(target, D(mi=distance)))
+    else:
+        products = products.filter(point__distance_lte=(target, D(mi=settings.DISTANCE)))
     if guests:
         products = products.filter(max_guests__gte=guests)
     if for_sale and for_rental:
@@ -57,9 +67,23 @@ def product_list(request):
         products = products.order_by(sort.replace('price', 'rental_price'))
 
     bind_product_image(products)
+    item = settings.PER_PAGE_ITEM
+    paginator = Paginator(products, item)
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
 
     data = []
-    for product in products[0:20]:
+
+    for product in products:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'beds',
                                              'max_guests', 'sale_price'])
@@ -77,7 +101,11 @@ def product_list(request):
             'rental_unit': 'Day',
         })
         data.append(product_data)
-    return CoastalJsonResponse(data)
+    result = {
+        'next_page': next_page,
+        'products': data,
+    }
+    return CoastalJsonResponse(result)
 
 
 def product_detail(request, pid):
@@ -317,10 +345,23 @@ def black_out_date(pid, form):
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
 
-def recommend_product_list(request):
+def recommend_product_list(request,page):
     recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
     bind_product_image(recommend_products)
     data = []
+    item = settings.PER_PAGE_ITEM
+    paginator = Paginator(recommend_products, item)
+    try:
+        recommend_products = paginator.page(page)
+    except PageNotAnInteger:
+        recommend_products = paginator.page(1)
+    except EmptyPage:
+        recommend_products = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
     for product in recommend_products:
         product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
                                                       'beds', 'max_guests'])
@@ -338,7 +379,11 @@ def recommend_product_list(request):
                 'lat': product.point[1],
             })
         data.append(product_data)
-    return CoastalJsonResponse(data)
+    result ={
+        'recommend_products': data,
+        'next_page': next_page
+    }
+    return CoastalJsonResponse(result)
 
 
 def discount_calculator(request):
@@ -367,3 +412,5 @@ def discount_calculator(request):
         'monthly_price': monthly_price,
     }
     return CoastalJsonResponse(data)
+
+

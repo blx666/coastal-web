@@ -132,9 +132,9 @@ class ProductUpdateForm(ProductAddForm):
 
 
 class ProductListFilterForm(forms.Form):
-    lon = forms.FloatField()
-    lat = forms.FloatField()
-    distance = forms.IntegerField()
+    lon = forms.FloatField(required=False)
+    lat = forms.FloatField(required=False)
+    distance = forms.IntegerField(required=False)
     guests = forms.IntegerField(required=False)
     arrival_date = forms.DateField(required=False)
     checkout_date = forms.DateField(required=False)

@@ -1,4 +1,8 @@
 from django.forms.models import model_to_dict
+from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage
+from django.core.paginator import PageNotAnInteger
+from django.conf import settings
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
@@ -7,7 +11,7 @@ from coastal.api.product.utils import bind_product_image
 from coastal.apps.account.models import FavoriteItem
 
 
-def home(request):
+def home(request,page):
     # get home_banner
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
@@ -20,8 +24,20 @@ def home(request):
         })
 
     # get recommended products
-    products = Product.objects.order_by('-score')[:50]
+    products = Product.objects.order_by('-score')
     bind_product_image(products)
+    item = settings.PER_PAGE_ITEM
+    paginator = Paginator(products, item)
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
     product_list = []
     for product in products:
         product_data = model_to_dict(product,
@@ -51,6 +67,7 @@ def home(request):
     result = {
         'home_banner': home_banners_list,
         'products': product_list,
+        'next_page': next_page
     }
     return CoastalJsonResponse(result)
 
