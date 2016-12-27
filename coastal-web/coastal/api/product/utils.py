@@ -9,13 +9,14 @@ def get_similar_products(product):
     point = product.point
 
     if point:
-        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35)), status='published').exclude(
+        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35)),
+                                                          status='published').exclude(
             id=product.id).order_by(Distance('point', point))[0:12]
     else:
         similar_distance_product = Product.objects.all()[0:12]
 
     price = product.rental_price
-    price_order = Product.objects.filter(status='published').order_by('rental_price')
+    price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
     product_index = list(price_order).index(product)
     if product_index >= 20:
         price_order_product = price_order[product_index - 20: product_index + 20]
@@ -27,7 +28,9 @@ def get_similar_products(product):
     similar_distance_product = list(similar_distance_product)
     similar_price_product.reverse()
     similar_price_product.remove(product)
-
+    if len(similar_distance_product) < 20:
+        similar_price_product += Product.objects.filter(status='published', sale_price__gt=0, for_rental=False).order_by('rental_price')[
+            0:20 - len(similar_distance_product)]
     for similar_price in similar_price_product:
         if similar_price in similar_distance_product:
             similar_price_product.remove(similar_price)
@@ -39,6 +42,7 @@ def get_similar_products(product):
         for pi in pis:
             if pi.product == product:
                 product.images.append(pi)
+
     return similar_product
 
 
@@ -64,4 +68,3 @@ def count_product_view(product):
     product_view = ProductViewCount.objects.filter(product=product).update(count=F('count') + 1)
     if not product_view:
         ProductViewCount.objects.create(product=product, count=1)
-
