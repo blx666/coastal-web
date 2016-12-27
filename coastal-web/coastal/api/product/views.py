@@ -278,14 +278,14 @@ def product_update(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     try:
-        product = Product.objects.get(id=request.POST.pid)
+        product = Product.objects.get(id=request.POST.get('product_id'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
 
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    black_out_date(request.POST.pid, form)
+    black_out_date(request.POST.get('product_id'), form)
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
@@ -435,4 +435,11 @@ def discount_calculator(request):
     }
     return CoastalJsonResponse(data)
 
+
+def delete_image(request):
+    images = request.POST.get('images').split(',')
+    for image in images:
+        image = ProductImage.objects.filter(id=image)
+        image.delete()
+    return CoastalJsonResponse(message='OK')
 
