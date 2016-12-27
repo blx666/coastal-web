@@ -285,7 +285,7 @@ def product_update(request):
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    black_out_date(pid, form)
+    black_out_date(request.POST.pid, form)
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
