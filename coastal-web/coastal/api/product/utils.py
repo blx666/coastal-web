@@ -68,3 +68,20 @@ def count_product_view(product):
     product_view = ProductViewCount.objects.filter(product=product).update(count=F('count') + 1)
     if not product_view:
         ProductViewCount.objects.create(product=product, count=1)
+
+
+def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_monthly=0):
+    updated_weekly_price = 0
+    updated_monthly_price = 0
+    if rental_unit == "half-day":
+        rental_price *= 4
+    if rental_unit == 'hour':
+        rental_price *= 24
+    if discount_weekly:
+        updated_weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
+    if discount_monthly:
+        updated_monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
+
+    data = [updated_weekly_price, updated_monthly_price]
+    return data
+
