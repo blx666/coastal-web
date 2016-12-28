@@ -3,6 +3,7 @@ from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
+import math
 
 
 def get_similar_products(product):
@@ -78,9 +79,9 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
     if rental_unit == 'hour':
         rental_price *= 24
     if discount_weekly:
-        updated_weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
+        updated_weekly_price = math.ceil(rental_price * 7 * discount_weekly / 100)
     if discount_monthly:
-        updated_monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
+        updated_monthly_price = math.ceil(rental_price * 30 * discount_monthly / 100)
 
     data = [updated_weekly_price, updated_monthly_price]
     return data
