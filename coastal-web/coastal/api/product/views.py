@@ -235,6 +235,7 @@ def product_image_upload(request):
     image = form.save()
     data = {
         'image_id': image.id,
+        'url': image.image.url,
     }
     return CoastalJsonResponse(data)
 

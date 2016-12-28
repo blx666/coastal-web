@@ -11,7 +11,8 @@ from coastal.api.product.utils import bind_product_image
 from coastal.apps.account.models import FavoriteItem
 
 
-def home(request,page):
+def home(request):
+    page = request.GET.get('page', 1)
     # get home_banner
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
