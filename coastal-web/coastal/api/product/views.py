@@ -15,7 +15,7 @@ from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
-from coastal.apps.rental.models import BlackOutDate
+from coastal.apps.rental.models import BlackOutDate, RentalOrder
 
 
 def product_list(request, page):
@@ -272,8 +272,8 @@ def product_add(request):
     return CoastalJsonResponse(data)
 
 
-def get_rental_amount(request, pid):
-    form = RentalDateForm(request.POST)
+def calc_total_price(request, pid):
+    form = RentalDateForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=400)
     arrival_date = form.cleaned_data['arrival_date']
@@ -281,17 +281,29 @@ def get_rental_amount(request, pid):
     product = Product.objects.filter(id=pid)
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
-    rental_price = product[0].rental_price
-    rental_date = (checkout_date - arrival_date).seconds / 3600 / 24 + (checkout_date - arrival_date).days
-    rental_amount = rental_date * rental_price
+    rental_amount = calc_price(product[0], arrival_date, checkout_date)
+    currency = product[0].currency
+    symbol = Currency.objects.get(code=currency).symbol
+
     data = [{
-        'total_amount': rental_amount,
-        # 'rental_price': rental_price,
-        # 'rental_date': rental_date,
-        # 'a': arrival_date,
-        # 'b': checkout_date,
+        'amount': rental_amount,
+        'currency': currency,
+        'symbol': symbol,
     }]
     return CoastalJsonResponse(data)
+
+
+def calc_price(product,start_date,end_date):
+    rental_unit = product.rental_unit
+    rental_price = product.rental_price
+    if rental_unit == 'hour':
+        rental_price *= 24
+    if rental_unit == 'half-day':
+        rental_price *= 4
+    rental_date = (end_date - start_date).seconds / 3600 / 24 + (end_date - start_date).days
+    rental_amount = rental_date * rental_price
+    return rental_amount
+
 
 
 @login_required
@@ -456,3 +468,20 @@ def delete_image(request):
         image = ProductImage.objects.filter(id=image)
         image.delete()
     return CoastalJsonResponse(message='OK')
+
+
+def black_dates_for_rental(request,pid):
+    try:
+        product = Product.objects.get(id=pid)
+    except:
+        return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
+    black_date_for_rental = product.blackoutdate_set.all()
+    data = []
+    for date in black_date_for_rental:
+        date_data = [date.start_date, date.end_date]
+        data.append(date_data)
+    rental_order = RentalOrder.objects.filter(product=product)
+    for date in rental_order:
+        date_data = [date.start_datetime.date(), date.end_datetime.date()]
+        data.append(date_data)
+    return CoastalJsonResponse(data)
