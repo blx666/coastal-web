@@ -19,8 +19,7 @@ class RegistrationForm(forms.ModelForm):
 
 
 class UserProfileForm(forms.ModelForm):
-    first_name = forms.CharField(max_length=128, required=False)
-    last_name = forms.CharField(max_length=128, required=False)
+    name = forms.CharField(max_length=128, required=False)
     is_agent = forms.CharField(required=False)
 
     def clean_is_agent(self):
