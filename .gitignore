@@ -1,0 +1,7 @@
+# ignore the following files
+
+settings.py
+__pycache__/
+*.pyc
+.idea/
+media/
