@@ -8,7 +8,7 @@ from django.conf import settings
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom, RentalDateForm
-from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view
+from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view, get_product_discount
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
@@ -18,7 +18,7 @@ from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate
 
 
-def product_list(request,page):
+def product_list(request, page):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -114,20 +114,32 @@ def product_detail(request, pid):
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
 
-    user = request.user
-    if user.is_authenticated():
-        RecentlyViewed.objects.create(user=user, product=product)
-    count_product_view(product)
+    if request.POST.get('preview') == '1':
+        user = request.user
+        if user.is_authenticated():
+            RecentlyViewed.objects.create(user=user, product=product)
+            count_product_view(product)
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price',
+    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score', 'description'])
+                                          'reviews_avg_score', 'currency'])
     if product.point:
         data['lon'] = product.point[0]
         data['lat'] = product.point[1]
     data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
-    data['rental_unit'] = product.get_rental_unit_display()
+    if product.get_rental_unit_display():
+        data['rental_unit'] = product.get_rental_unit_display()
+    else:
+        data['rental_unit'] = 'Day'
+    if product.description:
+        data['description'] = product.description
+    else:
+        data['description'] = 'description'
+    if product.rental_price:
+        data['rental_price'] = product.rental_price
+    else:
+        data['rental_price'] = 0
 
     liked_product_id_list = []
     if request.user.is_authenticated:
@@ -145,6 +157,10 @@ def product_detail(request, pid):
 
     data['360-images'] = views
     data['images'] = images
+    if product.name:
+        data['name'] = product.name
+    else:
+        data['name'] = 'Your Listing Name'
     if product.owner.userprofile.photo:
         photo = product.owner.userprofile.photo.url
     else:
@@ -165,6 +181,7 @@ def product_detail(request, pid):
             "content": "This is a sample rating of this listing."
         }
     }
+    price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
             'name': '%s Rules' % product.category.name,
@@ -172,16 +189,20 @@ def product_detail(request, pid):
         },
         'cancel_policy': {
             'name': 'Cancellation Policy',
-            'content': 'Cancellations must be made within atleast 2 weeks of reservation'
+            'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs'
         },
         'discount': {
             'name': 'Additional Price',
             'Weekly Discount': product.discount_weekly,
-            'Updated weekly price': '',
+            'Updated weekly price': price[0],
             'Monthly Discount': product.discount_monthly,
-            'Update weekly price': '',
+            'Update weekly price': price[1],
         },
     }
+
+    if product.for_sale == 1 and product.for_rental == 0:
+        data.get('extra_info').pop('discount')
+
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
     similar_product_dict = []
@@ -402,7 +423,7 @@ def recommend_product_list(request, page):
                 'lat': product.point[1],
             })
         data.append(product_data)
-    result ={
+    result = {
         'recommend_products': data,
         'next_page': next_page
     }
@@ -419,20 +440,12 @@ def discount_calculator(request):
     rental_unit = form.cleaned_data['rental_unit']
     discount_weekly = form.cleaned_data.get('discount_weekly')
     discount_monthly = form.cleaned_data.get('discount_monthly')
-    weekly_price = 0
-    monthly_price = 0
-    if rental_unit == "half-day":
-        rental_price *= 4
-    if rental_unit == 'hour':
-        rental_price *= 24
-    if discount_weekly:
-        weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
-    if discount_monthly:
-        monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
+
+    price = get_product_discount(rental_price, rental_unit, discount_weekly, discount_monthly)
 
     data = {
-        'weekly_price': weekly_price,
-        'monthly_price': monthly_price,
+        'weekly_price': price[0],
+        'monthly_price': price[1],
     }
     return CoastalJsonResponse(data)
 
@@ -443,4 +456,3 @@ def delete_image(request):
         image = ProductImage.objects.filter(id=image)
         image.delete()
     return CoastalJsonResponse(message='OK')
-
