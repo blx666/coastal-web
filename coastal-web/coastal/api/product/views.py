@@ -1,3 +1,4 @@
+import math
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
@@ -426,9 +427,9 @@ def discount_calculator(request):
     if rental_unit == 'hour':
         rental_price *= 24
     if discount_weekly:
-        weekly_price = int(rental_price * 7 * discount_weekly / 100) + 1
+        weekly_price = math.ceil(rental_price * 7 * discount_weekly / 100)
     if discount_monthly:
-        monthly_price = int(rental_price * 30 * discount_monthly / 100) + 1
+        monthly_price = math.ceil(rental_price * 30 * discount_monthly / 100)
 
     data = {
         'weekly_price': weekly_price,
