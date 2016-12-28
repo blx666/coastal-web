@@ -122,7 +122,7 @@ def product_detail(request, pid):
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'rental_price',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score'])
+                                          'reviews_avg_score', 'description'])
     if product.point:
         data['lon'] = product.point[0]
         data['lat'] = product.point[1]
@@ -137,9 +137,14 @@ def product_detail(request, pid):
 
     data['liked'] = product.id in liked_product_id_list
     images = []
-    for pi in ProductImage.objects.filter(product=product).exclude(caption=ProductImage.CAPTION_360):
-        images.append(pi.image.url)
+    views = []
+    for pi in ProductImage.objects.filter(product=product):
+        if pi.caption != ProductImage.CAPTION_360:
+            images.append(pi.image.url)
+        else:
+            views.append(pi.image.url)
 
+    data['360-images'] = views
     data['images'] = images
     if product.owner.userprofile.photo:
         photo = product.owner.userprofile.photo.url
@@ -160,6 +165,23 @@ def product_detail(request, pid):
             "score": 5,
             "content": "This is a sample rating of this listing."
         }
+    }
+    data['extra_info'] = {
+        'rules': {
+            'name': '%s Rules' % product.category.name,
+            'content': 'No jumping off side Must refilled with fuel',
+        },
+        'cancel_policy': {
+            'name': 'Cancellation Policy',
+            'content': 'Cancellations must be made within atleast 2 weeks of reservation'
+        },
+        'discount': {
+            'name': 'Additional Price',
+            'Weekly Discount': product.discount_weekly,
+            'Updated weekly price': '',
+            'Monthly Discount': product.discount_monthly,
+            'Update weekly price': '',
+        },
     }
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
@@ -196,6 +218,7 @@ def product_image_upload(request):
     image = form.save()
     data = {
         'image_id': image.id,
+        'url': image.image.url,
     }
     return CoastalJsonResponse(data)
 
@@ -252,19 +275,19 @@ def get_rental_amount(request, pid):
 
 
 @login_required
-def product_update(request, pid):
+def product_update(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
     try:
-        product = Product.objects.get(id=pid)
+        product = Product.objects.get(id=request.POST.get('product_id'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
 
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    black_out_date(pid, form)
+    black_out_date(request.POST.get('product_id'), form)
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
             product.amenities.add(a)
@@ -346,7 +369,7 @@ def black_out_date(pid, form):
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
 
-def recommend_product_list(request,page):
+def recommend_product_list(request, page):
     recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
     bind_product_image(recommend_products)
     data = []
@@ -414,4 +437,11 @@ def discount_calculator(request):
     }
     return CoastalJsonResponse(data)
 
+
+def delete_image(request):
+    images = request.POST.get('images').split(',')
+    for image in images:
+        image = ProductImage.objects.filter(id=image)
+        image.delete()
+    return CoastalJsonResponse(message='OK')
 
