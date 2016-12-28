@@ -33,14 +33,14 @@ def get_similar_products(product):
         if len(similar_distance_product) < 20:
             similar_price_product += Product.objects.filter(status='published', sale_price__gt=0, for_rental=False).order_by('rental_price')[
                 0:20 - len(similar_distance_product)]
-        for similar_price in similar_price_product:
-            if similar_price in similar_distance_product:
-                similar_price_product.remove(similar_price)
     elif product.sale_price:
         similar_price_product = []
     else:
         similar_price_product = []
 
+    for similar_price in similar_price_product:
+        if similar_price in similar_distance_product:
+            similar_price_product.remove(similar_price)
     similar_product = similar_distance_product + similar_price_product
     similar_product = similar_product[0:20]
     pis = ProductImage.objects.filter(product__in=similar_product)
