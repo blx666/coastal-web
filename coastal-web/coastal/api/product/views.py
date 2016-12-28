@@ -117,7 +117,8 @@ def product_detail(request, pid):
     user = request.user
     if user.is_authenticated():
         RecentlyViewed.objects.create(user=user, product=product)
-    count_product_view(product)
+    if request.POST.get('preview') == 1:
+        count_product_view(product)
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
