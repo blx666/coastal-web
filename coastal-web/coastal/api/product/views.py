@@ -200,6 +200,10 @@ def product_detail(request, pid):
             'Update weekly price': price[1],
         },
     }
+
+    if product.for_sale == 1 and product.for_rental == 0:
+        data.get('extra_info').pop('discount')
+
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
     similar_product_dict = []
