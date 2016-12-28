@@ -114,11 +114,11 @@ def product_detail(request, pid):
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
 
-    user = request.user
-    if user.is_authenticated():
-        RecentlyViewed.objects.create(user=user, product=product)
-    if request.POST.get('preview') == 1:
-        count_product_view(product)
+    if request.POST.get('preview') == '1':
+        user = request.user
+        if user.is_authenticated():
+            RecentlyViewed.objects.create(user=user, product=product)
+            count_product_view(product)
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale',
                                           'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
@@ -181,7 +181,6 @@ def product_detail(request, pid):
             "content": "This is a sample rating of this listing."
         }
     }
-    data['preview'] = request.POST.get('preview')
     price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
