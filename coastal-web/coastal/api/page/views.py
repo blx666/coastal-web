@@ -9,15 +9,16 @@ from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_image
 from coastal.apps.account.models import FavoriteItem
-from coastal.api.product.forms import PageFrom
+# from coastal.api.product.forms import PageFrom
 from coastal.api.core import response
 
 
 def home(request):
-    page_form = PageFrom(request.GET)
-    if not page_form.is_valid():
-        return CoastalJsonResponse(page_form.errors, status=response.STATUS_400)
-    page = page_form.cleaned_data.get('page')
+    page = request.GET.get('page', '1')
+    # page_form = PageFrom(request.GET)
+    # if not page_form.is_valid():
+    #     return CoastalJsonResponse(page_form.errors, status=response.STATUS_400)
+    # page = page_form.cleaned_data.get('page')
     # get home_banner
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
