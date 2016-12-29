@@ -129,25 +129,16 @@ def validate_email(request):
     validate_instance = ValidateEmail()
     validate_list = user.validateemail_set.values('id')
 
-    if len(validate_list) == 0:
-        validate_instance.save(user=user)
-        subject = 'user validate email'
-        message = 'This is a validate email, please complete certification within 24 hours http://' + settings.SITE_DOMAIN \
-                  + '/api/account/validate-email/confirm/?token=' + validate_instance.token
-        send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
-
+    if len(validate_list) != 0:
+        validate_id = max([id_dict['id'] for id_dict in validate_list])
+        exit_validate = ValidateEmail.objects.get(id=validate_id)
+        timespan = timezone.now() - exit_validate.created_date
+        if timespan.total_seconds() < 300:
+            data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
+            return CoastalJsonResponse(data)
+    else:
         user.userprofile.email_confirmed = 'sending'
         user.userprofile.save()
-        data = {'email_confirmed': user.userprofile.email_confirmed}
-        return CoastalJsonResponse(data)
-
-    validate_id = max([id_dict['id'] for id_dict in validate_list])
-    exit_validate = ValidateEmail.objects.get(id=validate_id)
-    timespan = timezone.now() - exit_validate.created_date
-
-    if timespan.total_seconds() < 300:
-        data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
-        return CoastalJsonResponse(data)
     validate_instance.save(user=user)
     subject = 'user validate email'
     message = 'This is a validate email, please complete certification within 24 hours http://' + settings.SITE_DOMAIN \
