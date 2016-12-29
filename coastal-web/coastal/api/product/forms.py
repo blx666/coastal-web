@@ -114,10 +114,15 @@ class ProductAddForm(forms.ModelForm):
 
 
 class ProductUpdateForm(ProductAddForm):
+    ACTION_CHOICES = (
+        ('', '-----'),
+        ('publish', 'publish'),
+        ('cancel', 'cancel'),
+    )
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
-    action = forms.CharField(required=False)
+    action = forms.ChoiceField(required=False, choices=ACTION_CHOICES)
 
     def clean(self):
         for key in self.cleaned_data.copy():
