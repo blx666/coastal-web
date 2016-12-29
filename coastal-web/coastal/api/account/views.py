@@ -126,7 +126,6 @@ def validate_email(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     user = request.user
-    validate_instance = ValidateEmail()
     validate_list = user.validateemail_set.values('id')
 
     if len(validate_list) != 0:
@@ -139,10 +138,15 @@ def validate_email(request):
     else:
         user.userprofile.email_confirmed = 'sending'
         user.userprofile.save()
+    validate_instance = ValidateEmail()
     validate_instance.save(user=user)
     subject = 'user validate email'
-    message = 'This is a validate email, please complete certification within 24 hours http://' + settings.SITE_DOMAIN \
-              + '/api/account/validate-email/confirm/?token=' + validate_instance.token
+    message = '''Hi ''' + user.eamil + ''',
+                To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
+                http://''' + settings.SITE_DOMAIN + '''' /api/account/validate-email/confirm/?token=''' + validate_instance.token + '''`
+                The link will be valid 24 hours later. Please resend if this happens.
+                Thanks,
+                The Coastal Team'''
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
