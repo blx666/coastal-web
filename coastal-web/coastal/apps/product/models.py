@@ -168,13 +168,11 @@ class Product(models.Model):
     @cached_property
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-            short_desc = 'Entire %s with %s Rooms hosted by %s' % (self.category.name, self.rooms, self.owner.get_full_name())
-        elif self.category_id == defs.CATEGORY_ROOM:
-            short_desc = 'Private Room hosted by %s' % self.owner.get_full_name()
+            short_desc = 'Entire %s with %s Rooms' % (self.category.name, self.rooms)
         elif self.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET, defs.CATEGORY_YACHT):
-            short_desc = '%s ft. %s hosted by %s' % (self.length, self.category.name, self.owner.get_full_name())
+            short_desc = '%s ft. %s' % (self.length, self.category.name)
         else:
-            short_desc = '%s ft. %s' % (self.length, self.category.name.lower())
+            short_desc = 'Private Room'
         return short_desc
 
     def get_amenities_display(self):
