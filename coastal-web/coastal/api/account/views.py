@@ -32,6 +32,7 @@ def register(request):
         'name': user.get_full_name(),
         'email': user.email,
         'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'email_confirmed': user.userprofile.email_confirmed,
     }
     return CoastalJsonResponse(data)
 
@@ -51,6 +52,7 @@ def login(request):
             'name': user.get_full_name(),
             'email': user.email,
             'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'email_confirmed': user.userprofile.email_confirmed,
         }
     else:
         data = {
@@ -95,6 +97,7 @@ def update_profile(request):
             'name': user.get_full_name(),
             'email': user.email,
             'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'email_confirmed': user.userprofile.email_confirmed,
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -111,6 +114,7 @@ def my_profile(request):
         'agency_email': user.userprofile.agency_email,
         'agency_name': user.userprofile.agency_name,
         'agency_address': user.userprofile.agency_address,
+        'email_confirmed': user.userprofile.email_confirmed,
     }
     return CoastalJsonResponse(data)
 
