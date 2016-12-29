@@ -214,6 +214,13 @@ class Product(models.Model):
     def cancel(self):
         self.status = 'cancelled'
 
+    @property
+    def is_no_one(self):
+        if self.rental_type == 'no-one':
+            return True
+        else:
+            return False
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
