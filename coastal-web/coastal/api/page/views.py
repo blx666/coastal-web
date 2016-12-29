@@ -9,10 +9,15 @@ from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_image
 from coastal.apps.account.models import FavoriteItem
+from coastal.api.product.forms import PageFrom
+from coastal.api.core import response
 
 
 def home(request):
-    page = request.GET.get('page', 1)
+    page_form = PageFrom(request.GET)
+    if not page_form.is_valid():
+        return CoastalJsonResponse(page_form.errors, status=response.STATUS_400)
+    page = page_form.cleaned_data.get('page')
     # get home_banner
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
@@ -74,25 +79,18 @@ def home(request):
 
 
 def images(request):
-    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30].values(
-        'product__for_rental', 'product__for_sale', 'product__rental_price', 'product__rental_unit',
-        'product__sale_price', 'product__id', 'image')
+    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30].all()
     data = []
     for image_360 in images_view:
-        image_360['product_id'] = image_360['product__id']
-        image_360['for_rental'] = image_360['product__for_rental']
-        image_360['for_sale'] = image_360['product__for_sale']
-        image_360['rental_price'] = image_360['product__rental_price']
-        image_360['rental_unit'] = image_360['product__rental_unit']
-        image_360['sale_price'] = image_360['product__sale_price']
-        image_360['image_url'] = image_360['image']
-        image_360['currency'] = 'USD'
-        image_360.pop('product__for_rental')
-        image_360.pop('product__for_sale')
-        image_360.pop('product__rental_price')
-        image_360.pop('product__rental_unit')
-        image_360.pop('product__sale_price')
-        image_360.pop('product__id')
-        image_360.pop('image')
-        data.append(image_360)
+        content = {
+            'product_id': image_360.product_id,
+            'for_rental': image_360.product.for_rental,
+            'for_sale': image_360.product.for_sale,
+            'rental_price': image_360.product.rental_price,
+            'sale_price': image_360.product.sale_price,
+            'currency': image_360.product.currency,
+            'rental_unit': image_360.product.rental_unit,
+            'image': image_360.image.url,
+        }
+        data.append(content)
     return CoastalJsonResponse(data)
