@@ -168,7 +168,7 @@ class Product(models.Model):
     @cached_property
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-            short_desc = 'Entire %s with %s Rooms' % (self.category.name, self.rooms)
+            short_desc = 'Entire %s with %s rooms' % (self.category.name, self.rooms)
         elif self.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET, defs.CATEGORY_YACHT):
             short_desc = '%s ft. %s' % (self.length, self.category.name)
         else:
