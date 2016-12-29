@@ -7,17 +7,16 @@ import math
 
 
 def get_similar_products(product):
-    point = product.point
+    if product.point:
+        similar_distance_product = Product.objects.filter(
+            status='published', point__distance_lte=(product.point, D(mi=35))).exclude(id=product.id).order_by(
+            Distance('point', product.point))[0:12]
+    elif product.country and product.city:
+        similar_distance_product = Product.objects.filter(
+            status='published', country=product.country, city=product.city).exclude(id=product.id).order_by(
+            '-score')[0:12]
 
-    if point:
-        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35)),
-                                                          status='published').exclude(
-            id=product.id).order_by(Distance('point', point))[0:12]
-    else:
-        similar_distance_product = Product.objects.all().exclude(id=product.id).order_by('-score')[0:12]
-    similar_distance_product = list(similar_distance_product)
-
-    if product.rental_price or product.sale_price:
+    if product.status == 'published' and (product.rental_price or product.sale_price):
         if product.rental_price:
             price = product.rental_price
             price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
@@ -42,7 +41,7 @@ def get_similar_products(product):
     for similar_price in similar_price_product:
         if similar_price in similar_distance_product:
             similar_price_product.remove(similar_price)
-    similar_product = similar_distance_product + similar_price_product
+    similar_product = similar_distance_product
     similar_product = similar_product[0:20]
     pis = ProductImage.objects.filter(product__in=similar_product)
     for product in similar_product:
