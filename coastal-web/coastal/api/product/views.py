@@ -114,7 +114,7 @@ def product_detail(request, pid):
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
 
-    if request.POST.get('preview') == '1':
+    if request.POST.get('preview') != '1':
         user = request.user
         if user.is_authenticated():
             RecentlyViewed.objects.create(user=user, product=product)
@@ -307,6 +307,7 @@ def product_update(request):
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
     black_out_date(request.POST.get('product_id'), form)
     if 'amenities' in form.cleaned_data:
         for a in form.cleaned_data.get('amenities'):
@@ -316,14 +317,15 @@ def product_update(request):
         for i in form.cleaned_data.get('images'):
             i.product = product
             i.save()
+    product.save()
 
-    if form.cleaned_data.get('action') == 'published':
+    if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
             product.publish()
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
-    product.save()
+
     return CoastalJsonResponse()
 
 
