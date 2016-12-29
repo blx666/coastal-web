@@ -1,3 +1,4 @@
+import math
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
@@ -301,7 +302,10 @@ def calc_price(product,start_date,end_date):
     if rental_unit == 'half-day':
         rental_price *= 4
     rental_date = (end_date - start_date).seconds / 3600 / 24 + (end_date - start_date).days
-    rental_amount = rental_date * rental_price
+    if rental_date >= 30:
+        rental_amount = math.ceil(rental_date * rental_price * (1 - product.discount_monthly/100))
+    elif rental_date >= 7:
+        rental_amount = math.ceil(rental_date * rental_price * (1 - product.discount_monthly/100))
     return rental_amount
 
 
