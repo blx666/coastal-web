@@ -14,27 +14,28 @@ def get_similar_products(product):
                                                           status='published').exclude(
             id=product.id).order_by(Distance('point', point))[0:12]
     else:
-        similar_distance_product = Product.objects.all().order_by('-score')[0:12]
+        similar_distance_product = Product.objects.all().exclude(id=product.id).order_by('-score')[0:12]
+    similar_distance_product = list(similar_distance_product)
 
-    if product.rental_price:
-        price = product.rental_price
-        price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
-        product_index = list(price_order).index(product)
-        if product_index >= 20:
-            price_order_product = price_order[product_index - 20: product_index + 20]
+    if product.rental_price or product.sale_price:
+        if product.rental_price:
+            price = product.rental_price
+            price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
         else:
-            price_order_product = price_order[0:product_index + 20]
+            price = product.sale_price
+            price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+
+        product_index = list(price_order).index(product)
+        if product_index >= 8:
+            price_order_product = price_order[product_index - 8: product_index + 8]
+        else:
+            price_order_product = price_order[0:product_index + 8]
         similar_price_product = sorted(price_order_product,
                                        key=lambda price_order_product: abs(price_order_product.rental_price - price))
         similar_price_product = list(similar_price_product)
-        similar_distance_product = list(similar_distance_product)
+
         similar_price_product.reverse()
         similar_price_product.remove(product)
-        if len(similar_distance_product) < 20:
-            similar_price_product += Product.objects.filter(status='published', sale_price__gt=0, for_rental=False).order_by('rental_price')[
-                0:20 - len(similar_distance_product)]
-    elif product.sale_price:
-        similar_price_product = []
     else:
         similar_price_product = []
 
