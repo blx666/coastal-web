@@ -277,12 +277,12 @@ def calc_total_price(request, pid):
     form = RentalDateForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=400)
-    arrival_date = form.cleaned_data['arrival_date']
-    checkout_date = form.cleaned_data['checkout_date']
+    start_datetime = form.cleaned_data['start_datetime']
+    end_datetime = form.cleaned_data['end_datetime']
     product = Product.objects.filter(id=pid)
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
-    rental_amount = calc_price(product[0], arrival_date, checkout_date)
+    rental_amount = calc_price(product[0], start_datetime, end_datetime)
     currency = product[0].currency
     symbol = Currency.objects.get(code=currency).symbol
 
@@ -294,7 +294,7 @@ def calc_total_price(request, pid):
     return CoastalJsonResponse(data)
 
 
-def calc_price(product,start_date,end_date):
+def calc_price(product, start_date , end_date):
     rental_unit = product.rental_unit
     rental_price = product.rental_price
     if rental_unit == 'hour':
