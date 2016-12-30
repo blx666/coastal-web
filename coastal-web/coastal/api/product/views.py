@@ -136,7 +136,7 @@ def product_detail(request, pid):
     if product.description:
         data['description'] = product.description
     else:
-        data['description'] = 'description'
+        data['description'] = 'Description'
     if product.rental_price:
         data['rental_price'] = product.rental_price
     else:
@@ -172,15 +172,15 @@ def product_detail(request, pid):
         'photo': photo,
     }
     data['reviews'] = {
-        "count": 8,
-        "avg_score": 4.3,
-        "latest_review": {
-            "reviewer_name": "Sandra Ravikal",
-            "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
-            "stayed_range": "02/27 - 02/28",
-            "score": 5,
-            "content": "This is a sample rating of this listing."
-        }
+        "count": 0,
+        "avg_score": 0,
+        # "latest_review": {
+        #     "reviewer_name": "Sandra Ravikal",
+        #     "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
+        #     "stayed_range": "02/27 - 02/28",
+        #     "score": 5,
+        #     "content": "This is a sample rating of this listing."
+        # }
     }
     price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
