@@ -302,10 +302,12 @@ def calc_price(product, start_date , end_date):
     if rental_unit == 'half-day':
         rental_price *= 4
     rental_date = (end_date - start_date).seconds / 3600 / 24 + (end_date - start_date).days
+    discount_weekly = product.discount_weekly or 0
+    discount_monthly = product.discount_monthly or 0
     if rental_date >= 30:
-        rental_amount = math.ceil(rental_date * rental_price * (1 - product.discount_monthly/100))
+        rental_amount = math.ceil(rental_date * rental_price * (1 - discount_monthly/100))
     elif rental_date >= 7:
-        rental_amount = math.ceil(rental_date * rental_price * (1 - product.discount_monthly/100))
+        rental_amount = math.ceil(rental_date * rental_price * (1 - discount_weekly/100))
     else:
         rental_amount = math.ceil(rental_date * rental_price)
     return rental_amount
