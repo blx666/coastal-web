@@ -512,3 +512,59 @@ def black_dates_for_rental(request,pid):
         date_data = [date.start_datetime.date(), date.end_datetime.date()]
         data.append(date_data)
     return CoastalJsonResponse(data)
+
+
+def search(request):
+    products = Product.objects.filter(address__contains=request.GET.get('q')).order_by('-score', '-rental_usd_price', '-sale_price')
+    bind_product_image(products)
+    page = request.GET.get('page', 1)
+    item = settings.PER_PAGE_ITEM
+    paginator = Paginator(products, item)
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
+    liked_product_id_list = []
+    if request.user.is_authenticated:
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list('product_id',
+                                                                                                     flat=True)
+    products_list = []
+    for product in products:
+        data = {
+            'type': product.category.name or '',
+            'address': product.address or '',
+            'reviews':  0,
+            'rental_price': product.rental_price or 0,
+            'sale_price': product.sale_price or 0,
+            'beds': product.beds or 0,
+            'length': product.length or 0,
+            'city': product.city or '',
+            'id': product.id,
+            'category': product.category_id,
+            'liked': product.id in liked_product_id_list,
+            'for_rental': product.for_rental or '',
+            'for_sale': product.for_sale or '',
+            'max_guests': product.max_guests or 0,
+            'rental_unit': product.get_rental_unit_display(),
+        }
+        if product.point:
+            data['lon'] = product.point[0]
+            data['lat'] = product.point[1]
+        if product.images:
+            data['image'] = product.images[0].image.url
+        else:
+            data['image'] = ''
+        products_list.append(data)
+    result = {
+        'count': len(products),
+        'products': products_list,
+        'next_page': next_page
+    }
+    return CoastalJsonResponse(result)
