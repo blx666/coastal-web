@@ -169,10 +169,12 @@ class Product(models.Model):
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
             short_desc = 'Entire %s with %s rooms' % (self.category.name, self.rooms)
-        elif self.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET, defs.CATEGORY_YACHT):
+        elif self.category_id == defs.CATEGORY_ROOM:
+            short_desc = 'Private Room'
+        elif self.category_id in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET):
             short_desc = '%s ft. %s' % (self.length, self.category.name)
         else:
-            short_desc = 'Private Room'
+            short_desc = self.category.name
         return short_desc
 
     def get_amenities_display(self):
