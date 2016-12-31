@@ -290,13 +290,14 @@ def product_add(request):
     return CoastalJsonResponse(data)
 
 
-def calc_total_price(request, pid):
+def calc_total_price(request):
     form = RentalDateForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=400)
     start_datetime = form.cleaned_data['start_datetime']
     end_datetime = form.cleaned_data['end_datetime']
-    product = Product.objects.filter(id=pid)
+    product_id = request.GET.get('product_id')
+    product = Product.objects.filter(id=product_id)
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
     rental_amount = calc_price(product[0], start_datetime, end_datetime)
@@ -503,9 +504,10 @@ def delete_image(request):
     return CoastalJsonResponse(message='OK')
 
 
-def black_dates_for_rental(request,pid):
+def black_dates_for_rental(request):
+    product_id = request.GET.get('product_id')
     try:
-        product = Product.objects.get(id=pid)
+        product = Product.objects.get(id=product_id)
     except:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
     black_date_for_rental = product.blackoutdate_set.all()
