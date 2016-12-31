@@ -17,9 +17,10 @@ from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate, RentalOrder
+from coastal.apps.product import defines as defs
 
 
-def product_list(request, page):
+def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -37,15 +38,12 @@ def product_list(request, page):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
-    products = Product.objects.all()
-    if lon and lat:
-        target = Point(lon, lat)
-    else:
-        target = Point(settings.LON, settings.LAT)
-    if distance:
-        products = products.filter(point__distance_lte=(target, D(mi=distance)))
-    else:
-        products = products.filter(point__distance_lte=(target, D(mi=settings.DISTANCE)))
+    if not (lon and lat and distance):
+        return recommend_product_list(request)
+    target = Point(lon, lat)
+    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
+    if not products:
+        return recommend_product_list(request)
     if guests:
         products = products.filter(max_guests__gte=guests)
     if for_sale and for_rental:
@@ -66,8 +64,8 @@ def product_list(request, page):
         products = products.filter(rentaldaterange__end_date__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
-
     bind_product_image(products)
+    page = request.GET.get('page', 1)
     item = settings.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
@@ -85,9 +83,16 @@ def product_list(request, page):
     data = []
 
     for product in products:
-        product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'beds',
-                                             'max_guests', 'sale_price'])
+        if product.category_id == defs.CATEGORY_BOAT_SLIP:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'for_rental', 'for_sale', 'length',
+                                                 'max_guests', 'sale_price'])
+            if not product.length:
+                product_data['length'] = 0
+        else:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'for_rental', 'for_sale', 'beds',
+                                                 'max_guests', 'sale_price'])
         rental_price = product.rental_price
         if product.rental_unit == "half-day":
             rental_price *= 4
@@ -127,10 +132,18 @@ def product_detail(request, pid):
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     data['max_guests'] = product.max_guests or 0
 
+    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+        data['room'] = product.rooms or 0
+        data['bathrooms'] = product.bathrooms or 0
+    if product.category_id in (defs.CATEGORY_ROOM, defs.CATEGORY_YACHT):
+        data['beds'] = product.beds or 0
+        data['bathrooms'] = product.bathrooms or 0
+
     if product.point:
         data['lon'] = product.point[0]
         data['lat'] = product.point[1]
-    data['amenities'] = product.get_amenities_display()
+    if product.get_amenities_display():
+        data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
     if product.get_rental_unit_display():
         data['rental_unit'] = product.get_rental_unit_display()
@@ -414,8 +427,9 @@ def black_out_date(pid, form):
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
 
-def recommend_product_list(request, page):
+def recommend_product_list(request):
     recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
+    page = request.GET.get('page', 1)
     bind_product_image(recommend_products)
     data = []
     item = settings.PER_PAGE_ITEM
