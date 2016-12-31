@@ -1,4 +1,5 @@
 import math
+import datetime
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
@@ -303,31 +304,40 @@ def calc_total_price(request, pid):
     symbol = Currency.objects.get(code=currency).symbol
 
     data = [{
-        'amount': rental_amount,
+        'amount': rental_amount[1],
         'currency': currency,
         'symbol': symbol,
     }]
     return CoastalJsonResponse(data)
 
 
-def calc_price(product, start_date , end_date):
+def calc_price(product, start_date, end_date):
     rental_unit = product.rental_unit
     rental_price = product.rental_price
-    if rental_unit == 'hour':
-        rental_price *= 24
-    if rental_unit == 'half-day':
-        rental_price *= 4
-    rental_date = (end_date - start_date).seconds / 3600 / 24 + (end_date - start_date).days
-    discount_weekly = product.discount_weekly or 0
-    discount_monthly = product.discount_monthly or 0
-    if rental_date >= 30:
-        rental_amount = math.ceil(rental_date * rental_price * (1 - discount_monthly/100))
-    elif rental_date >= 7:
-        rental_amount = math.ceil(rental_date * rental_price * (1 - discount_weekly/100))
+    start_date = datetime.datetime.timestamp(start_date)
+    end_date = datetime.datetime.timestamp(end_date)
+    # start_date = time.mktime(time.strptime(start_date, "%Y-%m-%d %H:%M:%S"))
+    # end_date = time.mktime(time.strptime(end_date, "%Y-%m-%d %H:%M:%S"))
+    total_time = end_date - start_date
+    if rental_unit == 'day':
+        rental_date = math.ceil(total_time / (24.0 * 3600.0))
+        rental_day = rental_date
+    elif rental_unit == 'half-day':
+        rental_date = math.ceil(total_time / (6.0 * 3600.0))
+        rental_day = rental_date / 4.0
     else:
-        rental_amount = math.ceil(rental_date * rental_price)
-    return rental_amount
+        rental_date = math.ceil(total_time / 3600.0)
+        rental_day = rental_date / 24.0
 
+    sub_rental_amount = math.ceil(rental_date * rental_price)
+
+    if product.discount_monthly and rental_day >= 30:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
+    elif product.discount_weekly and rental_day >= 7:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
+    else:
+        rental_amount = sub_rental_amount
+    return [sub_rental_amount, rental_amount]
 
 
 @login_required
