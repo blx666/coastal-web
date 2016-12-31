@@ -114,15 +114,19 @@ def product_detail(request, pid):
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
 
-    if request.POST.get('preview') == '1':
-        user = request.user
-        if user.is_authenticated():
-            RecentlyViewed.objects.create(user=user, product=product)
-            count_product_view(product)
+    liked_product_id_list = []
+    if request.POST.get('preview') != '1':
+        count_product_view(product)
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale',
-                                          'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score', 'currency'])
+        if request.user.is_authenticated():
+            user = request.user
+            liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+                'product_id', flat=True)
+            RecentlyViewed.objects.create(user=user, product=product)
+
+    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+    data['max_guests'] = product.max_guests or 0
+
     if product.point:
         data['lon'] = product.point[0]
         data['lat'] = product.point[1]
@@ -141,11 +145,6 @@ def product_detail(request, pid):
     else:
         data['rental_price'] = 0
 
-    liked_product_id_list = []
-    if request.user.is_authenticated:
-        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
-            'product_id', flat=True)
-
     data['liked'] = product.id in liked_product_id_list
     images = []
     views = []
@@ -156,6 +155,7 @@ def product_detail(request, pid):
             views.append(pi.image.url)
 
     data['360-images'] = views
+    data['360_images'] = views
     data['images'] = images
     if product.name:
         data['name'] = product.name
@@ -167,7 +167,7 @@ def product_detail(request, pid):
         photo = ""
     data['owner'] = {
         'user_id': product.owner_id,
-        'name': product.owner.get_full_name(),
+        'name': product.owner.get_full_name() or product.owner.email,
         'photo': photo,
     }
     data['reviews'] = {
@@ -185,17 +185,21 @@ def product_detail(request, pid):
     data['extra_info'] = {
         'rules': {
             'name': '%s Rules' % product.category.name,
-            'content': 'No jumping off side Must refilled with fuel',
+            'content': product.rental_rule or 'Nothing is set',
         },
         'cancel_policy': {
             'name': 'Cancellation Policy',
-            'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs'
+            'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs.'
         },
         'discount': {
             'name': 'Additional Price',
+            'weekly_discount': product.discount_weekly or 0,
             'Weekly Discount': product.discount_weekly,
+            'updated_weekly_price': price[0],
             'Updated weekly price': price[0],
-            'Monthly Discount': product.discount_monthly,
+            'monthly_discount': product.discount_monthly or 0,
+            'Monthly Discount': product.discount_monthly or 0,
+            'update_weekly_price': price[1],
             'Update weekly price': price[1],
         },
     }
