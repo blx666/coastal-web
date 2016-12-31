@@ -314,29 +314,24 @@ def calc_total_price(request, pid):
 def calc_price(product, start_date, end_date):
     rental_unit = product.rental_unit
     rental_price = product.rental_price
-    start_date = datetime.datetime.timestamp(start_date)
-    end_date = datetime.datetime.timestamp(end_date)
-    # start_date = time.mktime(time.strptime(start_date, "%Y-%m-%d %H:%M:%S"))
-    # end_date = time.mktime(time.strptime(end_date, "%Y-%m-%d %H:%M:%S"))
-    total_time = end_date - start_date
+    total_time = end_date.timestamp() - start_date.timestamp()
     if rental_unit == 'day':
         rental_date = math.ceil(total_time / (24.0 * 3600.0))
-        rental_day = rental_date
     elif rental_unit == 'half-day':
         rental_date = math.ceil(total_time / (6.0 * 3600.0))
-        rental_day = rental_date / 4.0
     else:
         rental_date = math.ceil(total_time / 3600.0)
-        rental_day = rental_date / 24.0
 
     sub_rental_amount = math.ceil(rental_date * rental_price)
 
-    if product.discount_monthly and rental_day >= 30:
+    if product.discount_monthly and total_time >= 30 * 24 * 3600:
         rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
-    elif product.discount_weekly and rental_day >= 7:
+    elif product.discount_weekly and total_time >= 7 * 24 * 3600:
         rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
     else:
         rental_amount = sub_rental_amount
+    if rental_amount <= 0:
+        rental_amount = 0
     return [sub_rental_amount, rental_amount]
 
 

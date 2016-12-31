@@ -1,4 +1,3 @@
-import time
 from coastal.apps.rental.models import RentalOrder
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
