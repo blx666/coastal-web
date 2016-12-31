@@ -6,8 +6,6 @@ from django.db import migrations
 
 def update_currency(apps, schema_editor):
     Currency = apps.get_model('currency', 'Currency')
-
-
     currency = (
         ('USD', 'US$'),
         ('NZD', 'NZ$'),
@@ -23,18 +21,15 @@ def update_currency(apps, schema_editor):
     )
 
     for code, display in currency:
-
         Currency.objects.filter(code=code).update(display=display)
 
 
 def reverse_update_currency(apps, schema_editor):
     Currency = apps.get_model("currency", "Currency")
-
-    Currency.objects.all().delete()
+    Currency.objects.all().update(display='')
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('currency', '0004_currency_display'),
     ]
