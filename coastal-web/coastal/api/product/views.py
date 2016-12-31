@@ -65,7 +65,7 @@ def product_list(request):
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
-    page = request.GET.get('page')
+    page = request.GET.get('page', 1)
     item = settings.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
