@@ -45,12 +45,13 @@ def book_rental(request):
 
 
 @login_required
-def rental_approve(request, rental_order_id):
+def rental_approve(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     form = RentalApproveForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+    rental_order_id = request.POST.get('rental_order_id')
     try:
         rental_order = RentalOrder.objects.get(id=rental_order_id)
     except RentalOrder.DoesNotExist:
