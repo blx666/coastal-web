@@ -4,8 +4,10 @@ from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product
 from coastal.api.product.views import calc_price
+from coastal.api.core.decorators import login_required
 
 
+@login_required
 def book_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
@@ -42,6 +44,7 @@ def book_rental(request):
     return CoastalJsonResponse(result)
 
 
+@login_required
 def rental_approve(request, rental_order_id):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)

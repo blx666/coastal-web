@@ -474,6 +474,7 @@ def recommend_product_list(request):
     return CoastalJsonResponse(result)
 
 
+@login_required
 def discount_calculator(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
