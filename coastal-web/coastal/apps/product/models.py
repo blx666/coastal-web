@@ -218,10 +218,7 @@ class Product(models.Model):
 
     @property
     def is_no_one(self):
-        if self.rental_type == 'no-one':
-            return True
-        else:
-            return False
+        return self.rental_type == 'no-one'
 
 
 class Amenity(models.Model):
