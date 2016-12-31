@@ -17,4 +17,5 @@ urlpatterns = [
     url(r'^discount-calculator/$', views.discount_calculator, name='discount-calculator'),
     url(r'^delete-image/$', views.delete_image, name='delete-image'),
     url(r'^black-dates-for-rental/$', views.black_dates_for_rental, name='black-dates-for-rental'),
+    url(r'^search/$', views.search, name='search'),
 ]
