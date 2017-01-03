@@ -157,8 +157,8 @@ class ProductListFilterForm(forms.Form):
 
 
 class RentalDateForm(forms.Form):
-    arrival_date = forms.DateTimeField()
-    checkout_date = forms.DateTimeField()
+    start_datetime = forms.DateTimeField()
+    end_datetime = forms.DateTimeField()
 
 
 class DiscountCalculatorFrom(forms.Form):

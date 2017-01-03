@@ -7,41 +7,41 @@ import math
 
 
 def get_similar_products(product):
-    point = product.point
+    if product.point:
+        similar_distance_product = Product.objects.filter(
+            status='published', point__distance_lte=(product.point, D(mi=35))).exclude(id=product.id).order_by(
+            Distance('point', product.point))[0:12]
+    elif product.country and product.city:
+        similar_distance_product = Product.objects.filter(
+            status='published', country=product.country, city=product.city).exclude(id=product.id).order_by(
+            '-score')[0:12]
 
-    if point:
-        similar_distance_product = Product.objects.filter(point__distance_lte=(point, D(mi=35)),
-                                                          status='published').exclude(
-            id=product.id).order_by(Distance('point', point))[0:12]
-    else:
-        similar_distance_product = Product.objects.all().order_by('-score')[0:12]
-
-    if product.rental_price:
-        price = product.rental_price
-        price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
-        product_index = list(price_order).index(product)
-        if product_index >= 20:
-            price_order_product = price_order[product_index - 20: product_index + 20]
+    if product.status == 'published' and (product.rental_price or product.sale_price):
+        if product.rental_price:
+            price = product.rental_price
+            price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
         else:
-            price_order_product = price_order[0:product_index + 20]
+            price = product.sale_price
+            price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+
+        product_index = list(price_order).index(product)
+        if product_index >= 8:
+            price_order_product = price_order[product_index - 8: product_index + 8]
+        else:
+            price_order_product = price_order[0:product_index + 8]
         similar_price_product = sorted(price_order_product,
                                        key=lambda price_order_product: abs(price_order_product.rental_price - price))
         similar_price_product = list(similar_price_product)
-        similar_distance_product = list(similar_distance_product)
+
         similar_price_product.reverse()
         similar_price_product.remove(product)
-        if len(similar_distance_product) < 20:
-            similar_price_product += Product.objects.filter(status='published', sale_price__gt=0, for_rental=False).order_by('rental_price')[
-                0:20 - len(similar_distance_product)]
-    elif product.sale_price:
-        similar_price_product = []
     else:
         similar_price_product = []
 
     for similar_price in similar_price_product:
         if similar_price in similar_distance_product:
             similar_price_product.remove(similar_price)
-    similar_product = similar_distance_product + similar_price_product
+    similar_product = similar_distance_product
     similar_product = similar_product[0:20]
     pis = ProductImage.objects.filter(product__in=similar_product)
     for product in similar_product:
@@ -85,9 +85,9 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
     if rental_unit == 'hour':
         rental_price *= 24
     if discount_weekly:
-        updated_weekly_price = math.ceil(rental_price * 7 * discount_weekly / 100)
+        updated_weekly_price = math.ceil(rental_price * 7 * (1 - discount_weekly/100.0))
     if discount_monthly:
-        updated_monthly_price = math.ceil(rental_price * 30 * discount_monthly / 100)
+        updated_monthly_price = math.ceil(rental_price * 30 * (1 - discount_monthly/100.0))
 
     data = [updated_weekly_price, updated_monthly_price]
     return data

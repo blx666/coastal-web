@@ -1,3 +1,5 @@
+import math
+import datetime
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
@@ -15,10 +17,11 @@ from coastal.api.core.decorators import login_required
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
-from coastal.apps.rental.models import BlackOutDate
+from coastal.apps.rental.models import BlackOutDate, RentalOrder
+from coastal.apps.product import defines as defs
 
 
-def product_list(request, page):
+def product_list(request):
     form = ProductListFilterForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -36,15 +39,12 @@ def product_list(request, page):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
-    products = Product.objects.all()
-    if lon and lat:
-        target = Point(lon, lat)
-    else:
-        target = Point(settings.LON, settings.LAT)
-    if distance:
-        products = products.filter(point__distance_lte=(target, D(mi=distance)))
-    else:
-        products = products.filter(point__distance_lte=(target, D(mi=settings.DISTANCE)))
+    if not (lon and lat and distance):
+        return recommend_product_list(request)
+    target = Point(lon, lat)
+    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
+    if not products:
+        return recommend_product_list(request)
     if guests:
         products = products.filter(max_guests__gte=guests)
     if for_sale and for_rental:
@@ -65,8 +65,8 @@ def product_list(request, page):
         products = products.filter(rentaldaterange__end_date__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
-
     bind_product_image(products)
+    page = request.GET.get('page', 1)
     item = settings.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
@@ -84,9 +84,16 @@ def product_list(request, page):
     data = []
 
     for product in products:
-        product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'beds',
-                                             'max_guests', 'sale_price'])
+        if product.category_id == defs.CATEGORY_BOAT_SLIP:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'for_rental', 'for_sale', 'length',
+                                                 'max_guests', 'sale_price'])
+            if not product.length:
+                product_data['length'] = 0
+        else:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'for_rental', 'for_sale', 'beds',
+                                                 'max_guests', 'sale_price'])
         rental_price = product.rental_price
         if product.rental_unit == "half-day":
             rental_price *= 4
@@ -114,19 +121,30 @@ def product_detail(request, pid):
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
 
+    liked_product_id_list = []
     if request.POST.get('preview') != '1':
-        user = request.user
-        if user.is_authenticated():
+        count_product_view(product)
+        if request.user.is_authenticated():
+            user = request.user
+            liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+                'product_id', flat=True)
             RecentlyViewed.objects.create(user=user, product=product)
-            count_product_view(product)
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale',
-                                          'sale_price', 'city', 'max_guests', 'max_guests', 'reviews_count',
-                                          'reviews_avg_score', 'currency'])
+    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+    data['max_guests'] = product.max_guests or 0
+
+    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+        data['room'] = product.rooms or 0
+        data['bathrooms'] = product.bathrooms or 0
+    if product.category_id in (defs.CATEGORY_ROOM, defs.CATEGORY_YACHT):
+        data['beds'] = product.beds or 0
+        data['bathrooms'] = product.bathrooms or 0
+
     if product.point:
         data['lon'] = product.point[0]
         data['lat'] = product.point[1]
-    data['amenities'] = product.get_amenities_display()
+    if product.get_amenities_display():
+        data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
     if product.get_rental_unit_display():
         data['rental_unit'] = product.get_rental_unit_display()
@@ -135,16 +153,11 @@ def product_detail(request, pid):
     if product.description:
         data['description'] = product.description
     else:
-        data['description'] = 'description'
+        data['description'] = 'Description'
     if product.rental_price:
         data['rental_price'] = product.rental_price
     else:
         data['rental_price'] = 0
-
-    liked_product_id_list = []
-    if request.user.is_authenticated:
-        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
-            'product_id', flat=True)
 
     data['liked'] = product.id in liked_product_id_list
     images = []
@@ -156,6 +169,7 @@ def product_detail(request, pid):
             views.append(pi.image.url)
 
     data['360-images'] = views
+    data['360_images'] = views
     data['images'] = images
     if product.name:
         data['name'] = product.name
@@ -167,35 +181,39 @@ def product_detail(request, pid):
         photo = ""
     data['owner'] = {
         'user_id': product.owner_id,
-        'name': product.owner.get_full_name(),
+        'name': product.owner.get_full_name() or product.owner.email,
         'photo': photo,
     }
     data['reviews'] = {
-        "count": 8,
-        "avg_score": 4.3,
-        "latest_review": {
-            "reviewer_name": "Sandra Ravikal",
-            "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
-            "stayed_range": "02/27 - 02/28",
-            "score": 5,
-            "content": "This is a sample rating of this listing."
-        }
+        "count": 0,
+        "avg_score": 0,
+        # "latest_review": {
+        #     "reviewer_name": "Sandra Ravikal",
+        #     "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
+        #     "stayed_range": "02/27 - 02/28",
+        #     "score": 5,
+        #     "content": "This is a sample rating of this listing."
+        # }
     }
     price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
             'name': '%s Rules' % product.category.name,
-            'content': 'No jumping off side Must refilled with fuel',
+            'content': product.rental_rule or 'Nothing is set',
         },
         'cancel_policy': {
             'name': 'Cancellation Policy',
-            'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs'
+            'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs.'
         },
         'discount': {
             'name': 'Additional Price',
+            'weekly_discount': product.discount_weekly or 0,
             'Weekly Discount': product.discount_weekly,
+            'updated_weekly_price': price[0],
             'Updated weekly price': price[0],
-            'Monthly Discount': product.discount_monthly,
+            'monthly_discount': product.discount_monthly or 0,
+            'Monthly Discount': product.discount_monthly or 0,
+            'update_weekly_price': price[1],
             'Update weekly price': price[1],
         },
     }
@@ -272,26 +290,50 @@ def product_add(request):
     return CoastalJsonResponse(data)
 
 
-def get_rental_amount(request, pid):
-    form = RentalDateForm(request.POST)
+def calc_total_price(request):
+    form = RentalDateForm(request.GET)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=400)
-    arrival_date = form.cleaned_data['arrival_date']
-    checkout_date = form.cleaned_data['checkout_date']
-    product = Product.objects.filter(id=pid)
+    start_datetime = form.cleaned_data['start_datetime']
+    end_datetime = form.cleaned_data['end_datetime']
+    product_id = request.GET.get('product_id')
+    product = Product.objects.filter(id=product_id)
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
-    rental_price = product[0].rental_price
-    rental_date = (checkout_date - arrival_date).seconds / 3600 / 24 + (checkout_date - arrival_date).days
-    rental_amount = rental_date * rental_price
+    rental_amount = calc_price(product[0], start_datetime, end_datetime)
+    currency = product[0].currency
+    symbol = Currency.objects.get(code=currency).symbol
+
     data = [{
-        'total_amount': rental_amount,
-        # 'rental_price': rental_price,
-        # 'rental_date': rental_date,
-        # 'a': arrival_date,
-        # 'b': checkout_date,
+        'amount': rental_amount[1],
+        'currency': currency,
+        'symbol': symbol,
     }]
     return CoastalJsonResponse(data)
+
+
+def calc_price(product, start_date, end_date):
+    rental_unit = product.rental_unit
+    rental_price = product.rental_price
+    total_time = end_date.timestamp() - start_date.timestamp()
+    if rental_unit == 'day':
+        rental_date = math.ceil(total_time / (24.0 * 3600.0))
+    elif rental_unit == 'half-day':
+        rental_date = math.ceil(total_time / (6.0 * 3600.0))
+    else:
+        rental_date = math.ceil(total_time / 3600.0)
+
+    sub_rental_amount = math.ceil(rental_date * rental_price)
+
+    if product.discount_monthly and total_time >= 30 * 24 * 3600:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
+    elif product.discount_weekly and total_time >= 7 * 24 * 3600:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
+    else:
+        rental_amount = sub_rental_amount
+    if rental_amount <= 0:
+        rental_amount = 0
+    return [sub_rental_amount, rental_amount]
 
 
 @login_required
@@ -391,8 +433,9 @@ def black_out_date(pid, form):
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
 
-def recommend_product_list(request, page):
+def recommend_product_list(request):
     recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
+    page = request.GET.get('page', 1)
     bind_product_image(recommend_products)
     data = []
     item = settings.PER_PAGE_ITEM
@@ -432,6 +475,7 @@ def recommend_product_list(request, page):
     return CoastalJsonResponse(result)
 
 
+@login_required
 def discount_calculator(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
@@ -458,3 +502,77 @@ def delete_image(request):
         image = ProductImage.objects.filter(id=image)
         image.delete()
     return CoastalJsonResponse(message='OK')
+
+
+def black_dates_for_rental(request):
+    product_id = request.GET.get('product_id')
+    try:
+        product = Product.objects.get(id=product_id)
+    except:
+        return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
+    black_date_for_rental = product.blackoutdate_set.all()
+    data = []
+    for date in black_date_for_rental:
+        date_data = [date.start_date, date.end_date]
+        data.append(date_data)
+    rental_order = RentalOrder.objects.filter(product=product)
+    for date in rental_order:
+        date_data = [date.start_datetime.date(), date.end_datetime.date()]
+        data.append(date_data)
+    return CoastalJsonResponse(data)
+
+
+def search(request):
+    products = Product.objects.filter(address__contains=request.GET.get('q')).order_by('-score', '-rental_usd_price', '-sale_price')
+    bind_product_image(products)
+    page = request.GET.get('page', 1)
+    item = settings.PER_PAGE_ITEM
+    paginator = Paginator(products, item)
+    try:
+        products = paginator.page(page)
+    except PageNotAnInteger:
+        products = paginator.page(1)
+    except EmptyPage:
+        products = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
+    liked_product_id_list = []
+    if request.user.is_authenticated:
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list('product_id',
+                                                                                                     flat=True)
+    products_list = []
+    for product in products:
+        data = {
+            'type': product.category.name or '',
+            'address': product.address or '',
+            'reviews':  0,
+            'rental_price': product.rental_price or 0,
+            'sale_price': product.sale_price or 0,
+            'beds': product.beds or 0,
+            'length': product.length or 0,
+            'city': product.city or '',
+            'id': product.id,
+            'category': product.category_id,
+            'liked': product.id in liked_product_id_list,
+            'for_rental': product.for_rental or '',
+            'for_sale': product.for_sale or '',
+            'max_guests': product.max_guests or 0,
+            'rental_unit': product.get_rental_unit_display(),
+        }
+        if product.point:
+            data['lon'] = product.point[0]
+            data['lat'] = product.point[1]
+        if product.images:
+            data['image'] = product.images[0].image.url
+        else:
+            data['image'] = ''
+        products_list.append(data)
+    result = {
+        'count': len(products),
+        'products': products_list,
+        'next_page': next_page
+    }
+    return CoastalJsonResponse(result)

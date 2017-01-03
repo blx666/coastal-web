@@ -168,17 +168,13 @@ class Product(models.Model):
     @cached_property
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-            short_desc = 'Entire House/Apartment with %s Rooms hosted by %s' % (self.rooms, self.owner.get_full_name())
+            short_desc = 'Entire %s with %s rooms' % (self.category.name, self.rooms)
         elif self.category_id == defs.CATEGORY_ROOM:
-            short_desc = 'Private Room hosted by %s' % self.owner.get_full_name()
-        elif self.category_id == defs.CATEGORY_BOAT_SLIP:
-            short_desc = '%s ft. Boatslip hosted by %s' % (self.length, self.owner.get_full_name())
-        elif self.category_id == defs.CATEGORY_YACHT:
-            short_desc = '%s ft. Yacht hosted by %s' % (self.length, self.owner.get_full_name())
-        elif self.category_id == defs.CATEGORY_JET:
-            short_desc = '%s ft. Aircraft hosted by %s' % (self.length, self.owner.get_full_name())
+            short_desc = 'Private Room'
+        elif self.category_id in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET):
+            short_desc = '%s ft. %s' % (self.length, self.category.name)
         else:
-            short_desc = '%s ft. %s' % (self.length, self.category.name.lower())
+            short_desc = self.category.name
         return short_desc
 
     def get_amenities_display(self):
@@ -192,7 +188,7 @@ class Product(models.Model):
             return False
 
         if self.for_rental:
-            if not (self.rental_price and self.rental_unit and self.rental_type and self.rental_rule and self.currency):
+            if not (self.rental_price and self.rental_unit and self.rental_type and self.currency):
                 return False
 
         if self.for_sale:
@@ -219,6 +215,10 @@ class Product(models.Model):
 
     def cancel(self):
         self.status = 'cancelled'
+
+    @property
+    def is_no_one(self):
+        return self.rental_type == 'no-one'
 
 
 class Amenity(models.Model):
