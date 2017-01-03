@@ -168,7 +168,7 @@ def product_detail(request, pid):
         else:
             views.append(pi.image.url)
 
-    data['360_images'] = views
+    data['images_360'] = views
     data['images'] = images
     if product.name:
         data['name'] = product.name
