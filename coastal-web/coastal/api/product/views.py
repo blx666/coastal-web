@@ -209,7 +209,7 @@ def product_detail(request, pid):
             'weekly_discount': product.discount_weekly or 0,
             'updated_weekly_price': price[0],
             'monthly_discount': product.discount_monthly or 0,
-            'update_weekly_price': price[1],
+            'updated_monthly_price': price[1],
         },
     }
 
