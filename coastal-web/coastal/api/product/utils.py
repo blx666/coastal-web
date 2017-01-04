@@ -1,9 +1,14 @@
 # coding:utf-8
+import math
+import datetime
 from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
-import math
+from coastal.api.core import response
+from coastal.api.core.response import CoastalJsonResponse
+from coastal.apps.product import defines as defs
+from coastal.apps.currency.models import Currency
 
 
 def get_similar_products(product):
@@ -93,3 +98,38 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
 
     data = [updated_weekly_price, updated_monthly_price]
     return data
+
+
+def calc_price(product, rental_unit, start_date, end_date):
+    rental_price = product.get_price(rental_unit)
+    total_time = end_date.timestamp() - start_date.timestamp()
+    if product.category in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP):
+        end_date += datetime.timedelta(days=1)
+    if rental_unit == 'day':
+        rental_date = math.ceil(total_time / (24.0 * 3600.0))
+    elif rental_unit == 'half-day':
+        rental_date = math.ceil(total_time / (6.0 * 3600.0))
+    else:
+        rental_date = math.ceil(total_time / 3600.0)
+
+    sub_rental_amount = math.ceil(rental_date * rental_price)
+
+    if product.discount_monthly and total_time >= 30 * 24 * 3600:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
+        discount_type = 'm'
+        discount_rate = product.discount_monthly
+    elif product.discount_weekly and total_time >= 7 * 24 * 3600:
+        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
+        discount_type = 'w'
+        discount_rate = product.discount_weekly
+    else:
+        rental_amount = sub_rental_amount
+        discount_rate = False
+        discount_type = False
+    if rental_amount <= 0:
+        rental_amount = 0
+    return [sub_rental_amount, rental_amount, discount_type, discount_rate]
+
+
+def get_price_display(product, price):
+    return Currency.objects.get(code=product.currency).display + str(int(price))
