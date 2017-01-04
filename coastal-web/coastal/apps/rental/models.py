@@ -43,7 +43,9 @@ class RentalOrder(models.Model):
     guest_count = models.PositiveSmallIntegerField()
     sub_total_price = models.FloatField()
     total_price = models.FloatField()
+    total_price_usd = models.FloatField()
     currency = models.CharField(max_length=3)
+    currency_rate = models.FloatField()
 
     status = models.CharField(max_length=32)
 

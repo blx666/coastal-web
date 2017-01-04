@@ -3,6 +3,7 @@ from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product
+from coastal.apps.payment.stripe import get_strip_payment_info
 from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 
@@ -47,6 +48,19 @@ def book_rental(request):
         'rental_order_id': rental_order.id,
         'status': rental_order.status,
     }
+
+    if rental_order.status == 'charge':
+        if rental_order.total_price_usd < request.user.coastalbucket.balance:
+            result['payment_list'] = ['coastal', 'stripe']
+            result['coastal'] = {
+                'coastal_dollar': request.user.coastalbucket.balance,
+                'amount': rental_order.total_price_usd,
+            }
+        else:
+            result['payment_list'] = ['stripe']
+
+        result['stripe'] = get_strip_payment_info(rental_order.total_price, rental_order.currency)
+
     return CoastalJsonResponse(result)
 
 
@@ -54,28 +68,44 @@ def book_rental(request):
 def rental_approve(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    if rental_order.status != 'request':
+        return CoastalJsonResponse({'status': rental_order.status})
+
     form = RentalApproveForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    rental_order_id = request.POST.get('rental_order_id')
-    try:
-        rental_order = RentalOrder.objects.get(id=rental_order_id)
-    except RentalOrder.DoesNotExist:
-        return CoastalJsonResponse(status=response.STATUS_404)
+
     approve = form.cleaned_data.get('approve')
     note = form.cleaned_data.get('note')
-    if rental_order.status != 'request':
-        return CoastalJsonResponse({'status': rental_order.status})
+
+    ApproveEvent.objects.create(order=rental_order, notes=note, approve=approve)
+
     if approve:
-        rental_order.status = 'approved'
+        rental_order.status = 'charge'
     else:
         rental_order.status = 'declined'
     rental_order.save()
-    if approve == 0:
-        ApproveEvent.objects.create(order=rental_order, notes=note, approve=False)
-    if approve == 1:
-        ApproveEvent.objects.create(order=rental_order, notes=note, approve=True)
+
     result = {
         'status': rental_order.status
     }
+
+    if rental_order.status == 'charge':
+        if rental_order.total_price_usd < request.user.coastalbucket.balance:
+            result['payment_list'] = ['coastal', 'stripe']
+            result['coastal'] = {
+                'coastal_dollar': request.user.coastalbucket.balance,
+                'amount': rental_order.total_price_usd,
+            }
+        else:
+            result['payment_list'] = ['stripe']
+
+        result['stripe'] = get_strip_payment_info(rental_order.total_price, rental_order.currency)
+
     return CoastalJsonResponse(result)
