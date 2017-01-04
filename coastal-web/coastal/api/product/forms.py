@@ -110,7 +110,7 @@ class ProductAddForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status']
+        exclude = ['owner', 'score', 'status', 'timezone']
 
 
 class ProductUpdateForm(ProductAddForm):
@@ -133,7 +133,7 @@ class ProductUpdateForm(ProductAddForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status', 'category']
+        exclude = ['owner', 'score', 'status', 'category', 'timezone']
 
 
 class ProductListFilterForm(forms.Form):

@@ -274,6 +274,7 @@ def product_add(request):
     for a in amenities:
         product.amenities.add(a)
 
+    # TODO: remove the 'images' and remove images from ProductAddForm
     images = form.cleaned_data.get('images')
     for i in images:
         i.product = product
