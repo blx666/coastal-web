@@ -3,13 +3,13 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
 from django.http.response import HttpResponse
+from django.utils import timezone
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail
-from datetime import datetime, timedelta
 
 
 def register(request):
@@ -29,10 +29,10 @@ def register(request):
         "has_agency_info": user.userprofile.has_agency_info,
         'user_id': user.id,
         'currency': 'USD',
-        'first_name': user.first_name,
-        'last_name': user.last_name,
+        'name': user.get_full_name(),
         'email': user.email,
         'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'email_confirmed': user.userprofile.email_confirmed,
     }
     return CoastalJsonResponse(data)
 
@@ -49,10 +49,10 @@ def login(request):
             'has_agency_info': user.userprofile.has_agency_info,
             'user_id': user.id,
             'currency': 'USD',
-            'first_name': user.first_name,
-            'last_name': user.last_name,
+            'name': user.get_full_name(),
             'email': user.email,
             'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'email_confirmed': user.userprofile.email_confirmed,
         }
     else:
         data = {
@@ -85,17 +85,19 @@ def update_profile(request):
         if request.FILES:
             setattr(user.userprofile, 'photo', form.cleaned_data['photo'])
         for key in form.data:
-            if key in ('first_name', 'last_name'):
-                setattr(user, key, form.cleaned_data[key])
+            if key == 'name':
+                name_list = form.cleaned_data['name'].split()
+                setattr(user, 'first_name', name_list.pop())
+                setattr(user, 'last_name', ' '.join(name_list))
             else:
                 setattr(user.userprofile, key, form.cleaned_data[key])
         user.save()
         user.userprofile.save()
         data = {
-            'first_name': user.first_name,
-            'last_name': user.last_name,
+            'name': user.get_full_name(),
             'email': user.email,
             'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'email_confirmed': user.userprofile.email_confirmed,
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -105,14 +107,14 @@ def update_profile(request):
 def my_profile(request):
     user = request.user
     data = {
-        'first_name': user.first_name,
-        'last_name': user.last_name,
+        'name': user.get_full_name(),
         'email': user.email,
         'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         'is_agent': user.userprofile.is_agent,
         'agency_email': user.userprofile.agency_email,
         'agency_name': user.userprofile.agency_name,
         'agency_address': user.userprofile.agency_address,
+        'email_confirmed': user.userprofile.email_confirmed,
     }
     return CoastalJsonResponse(data)
 
@@ -128,30 +130,45 @@ def validate_email(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     user = request.user
+    validate_list = user.validateemail_set.values('id')
+
+    if len(validate_list) != 0:
+        validate_id = max([id_dict['id'] for id_dict in validate_list])
+        exit_validate = ValidateEmail.objects.get(id=validate_id)
+        timespan = timezone.now() - exit_validate.created_date
+        if timespan.total_seconds() < 300:
+            data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
+            return CoastalJsonResponse(data)
+    else:
+        user.userprofile.email_confirmed = 'sending'
+        user.userprofile.save()
     validate_instance = ValidateEmail()
     validate_instance.save(user=user)
     subject = 'user validate email'
-    message = 'This is a validate email, please complete certification within 24 hours http://'+settings.SITE_DOMAIN+'/api' \
-              '/account/validate-email/confirm/?token=' + validate_instance.token
+    message = '''Hi ''' + user.eamil + ''',
+                To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
+                http://''' + settings.SITE_DOMAIN + '''' /api/account/validate-email/confirm/?token=''' + validate_instance.token + '''`
+                The link will be valid 24 hours later. Please resend if this happens.
+                Thanks,
+                The Coastal Team'''
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
-    return CoastalJsonResponse()
+    data = {'email_confirmed': user.userprofile.email_confirmed}
+    return CoastalJsonResponse(data)
 
 
 def validate_email_confirm(request):
-    validate_email_list = ValidateEmail.objects.filter(token=request.GET.get("token"))
-    if not validate_email_list:
-        # token is null
-        return HttpResponse('token is not exist')
-    for validate in validate_email_list:
-        time_span = validate.expiration_date.replace(tzinfo=None) - datetime.now()
-        user = validate.user.userprofile
-        if user.email_confirmed:
+    try:
+        validate_email = ValidateEmail.objects.get(token=request.GET.get("token"))
+
+        userprofile = validate_email.user.userprofile
+        if userprofile.email_confirmed == 'confirmed':
             return HttpResponse('user already  validate')
-        if time_span.days >= 0:
+
+        if validate_email.expiration_date >= timezone.now():
             # not expiration date
-            user.email_confirmed = True
-            user.save()
+            userprofile.email_confirmed = 'confirmed'
+            userprofile.save()
             return CoastalJsonResponse()
-    return HttpResponse('token already  expire')
-
-
+        return HttpResponse('token already  expire')
+    except validate_email.DoesNotExist:
+        return HttpResponse('token is not exist')
