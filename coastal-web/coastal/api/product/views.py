@@ -7,6 +7,7 @@ from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
 from django.conf import settings
+from timezonefinder import TimezoneFinder
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom, RentalDateForm
@@ -272,6 +273,9 @@ def product_add(request):
     product = form.save(commit=False)
     product.owner = request.user
 
+    if 'lon' and 'lat' in form.data:
+        tf = TimezoneFinder()
+        product.timezone = tf.timezone_at(lng=form.cleaned_data['lon'], lat=form.cleaned_data['lat'])
     product.save()
     pid = product.id
     black_out_date(pid, form)
