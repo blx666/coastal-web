@@ -118,6 +118,7 @@ class Product(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
+    timezone = models.CharField(max_length=100, null=True)
 
     # basic info
     max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -219,6 +220,14 @@ class Product(models.Model):
     @property
     def is_no_one(self):
         return self.rental_type == 'no-one'
+
+    def get_price(self, unit):
+        unit_mapping = {
+            'day': 24,
+            'half-day': 6,
+            'hour': 1
+        }
+        return unit_mapping[unit] / unit_mapping[self.rental_unit] * self.rental_price
 
 
 class Amenity(models.Model):

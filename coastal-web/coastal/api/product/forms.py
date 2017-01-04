@@ -146,8 +146,10 @@ class ProductListFilterForm(forms.Form):
     min_price = forms.DecimalField(required=False)
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
-    category = forms.IntegerField(required=False)
+    category = forms.CharField(required=False)
     purchase_or_rent = forms.CharField(required=False)
+    min_coastline_distance = forms.IntegerField(required=False)
+    max_coastline_distance = forms.IntegerField(required=False)
 
     def clean(self):
         cleaned_data = super(ProductListFilterForm, self).clean()
@@ -155,10 +157,10 @@ class ProductListFilterForm(forms.Form):
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
 
-
-class RentalDateForm(forms.Form):
-    start_datetime = forms.DateTimeField()
-    end_datetime = forms.DateTimeField()
+    def clean_category(self):
+        category = self.cleaned_data.get('category')
+        if category:
+            return category.split(',')
 
 
 class DiscountCalculatorFrom(forms.Form):

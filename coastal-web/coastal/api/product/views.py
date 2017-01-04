@@ -1,5 +1,3 @@
-import math
-import datetime
 from django.contrib.gis.geos import Point
 from django.contrib.gis.measure import D
 from django.forms.models import model_to_dict
@@ -7,10 +5,11 @@ from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
 from django.conf import settings
+from timezonefinder import TimezoneFinder
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
-    DiscountCalculatorFrom, RentalDateForm
-from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view, get_product_discount
+    DiscountCalculatorFrom
+from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view, get_product_discount, calc_price, get_price_display
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
@@ -19,6 +18,7 @@ from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.product import defines as defs
+from coastal.api.rental.forms import RentalBookForm
 
 
 def product_list(request):
@@ -28,7 +28,7 @@ def product_list(request):
 
     lon = form.cleaned_data['lon']
     lat = form.cleaned_data['lat']
-    distance = form.cleaned_data['distance']
+    distance = form.cleaned_data['distance'] or 35
 
     guests = form.cleaned_data['guests']
     arrival_date = form.cleaned_data['arrival_date']
@@ -43,8 +43,7 @@ def product_list(request):
         return recommend_product_list(request)
     target = Point(lon, lat)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
-    if not products:
-        return recommend_product_list(request)
+
     if guests:
         products = products.filter(max_guests__gte=guests)
     if for_sale and for_rental:
@@ -54,7 +53,7 @@ def product_list(request):
     elif for_sale:
         products = products.filter(for_sale=True)
     if category:
-        products = products.filter(category=category)
+        products = products.filter(category_id__in=category)
     if min_price:
         products = products.filter(rental_price__gte=min_price)
     if max_price:
@@ -106,6 +105,8 @@ def product_list(request):
             "lon": product.point[0],
             "lat": product.point[1],
             'rental_unit': 'Day',
+            'rental_price_display': get_price_display(product, rental_price),
+            'sale_price_display': get_price_display(product, product.sale_price),
         })
         data.append(product_data)
     result = {
@@ -158,8 +159,9 @@ def product_detail(request, pid):
         data['rental_price'] = product.rental_price
     else:
         data['rental_price'] = 0
-
     data['liked'] = product.id in liked_product_id_list
+    data['rental_price_display'] = get_price_display(product, product.rental_price)
+    data['sale_price_display'] = get_price_display(product, product.sale_price)
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
@@ -226,6 +228,8 @@ def product_detail(request, pid):
         content['reviews_avg_score'] = 0
         content['liked'] = p.id in liked_product_id_list
         content['image'] = ""
+        content['rental_price_display'] = get_price_display(p, p.rental_price)
+        content['sale_price_display'] = get_price_display(p, p.sale_price)
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
                 content['image'] = img.image.url
@@ -267,6 +271,9 @@ def product_add(request):
     product = form.save(commit=False)
     product.owner = request.user
 
+    if 'lon' and 'lat' in form.data:
+        tf = TimezoneFinder()
+        product.timezone = tf.timezone_at(lng=form.cleaned_data['lon'], lat=form.cleaned_data['lat'])
     product.save()
     pid = product.id
     black_out_date(pid, form)
@@ -287,49 +294,29 @@ def product_add(request):
 
 
 def calc_total_price(request):
-    form = RentalDateForm(request.GET)
+    data = request.GET.copy()
+    if 'product_id' in data:
+        data['product'] = data.get('product_id')
+    form = RentalBookForm(data)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=400)
     start_datetime = form.cleaned_data['start_datetime']
     end_datetime = form.cleaned_data['end_datetime']
+    rental_unit = form.cleaned_data['rental_unit']
     product_id = request.GET.get('product_id')
     product = Product.objects.filter(id=product_id)
     if not product:
         return CoastalJsonResponse(form.errors, status=404)
-    rental_amount = calc_price(product[0], start_datetime, end_datetime)
+    rental_amount = calc_price(product[0], rental_unit, start_datetime, end_datetime)
     currency = product[0].currency
     symbol = Currency.objects.get(code=currency).symbol
-
     data = [{
         'amount': rental_amount[1],
         'currency': currency,
         'symbol': symbol,
+        'amount_display': get_price_display(product[0], rental_amount[1]),
     }]
     return CoastalJsonResponse(data)
-
-
-def calc_price(product, start_date, end_date):
-    rental_unit = product.rental_unit
-    rental_price = product.rental_price
-    total_time = end_date.timestamp() - start_date.timestamp()
-    if rental_unit == 'day':
-        rental_date = math.ceil(total_time / (24.0 * 3600.0))
-    elif rental_unit == 'half-day':
-        rental_date = math.ceil(total_time / (6.0 * 3600.0))
-    else:
-        rental_date = math.ceil(total_time / 3600.0)
-
-    sub_rental_amount = math.ceil(rental_date * rental_price)
-
-    if product.discount_monthly and total_time >= 30 * 24 * 3600:
-        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
-    elif product.discount_weekly and total_time >= 7 * 24 * 3600:
-        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
-    else:
-        rental_amount = sub_rental_amount
-    if rental_amount <= 0:
-        rental_amount = 0
-    return [sub_rental_amount, rental_amount]
 
 
 @login_required
@@ -453,6 +440,8 @@ def recommend_product_list(request):
         product_data.update({
             'category': product.category_id,
             'rental_unit': product.get_rental_unit_display(),
+            'rental_price_display': get_price_display(product, product.rental_price),
+            'sale_price_display': get_price_display(product, product.sale_price),
         })
         if product.images:
             product_data['images'] = [i.image.url for i in product.images]
@@ -557,6 +546,8 @@ def search(request):
             'for_sale': product.for_sale or '',
             'max_guests': product.max_guests or 0,
             'rental_unit': product.get_rental_unit_display(),
+            'rental_price_display': get_price_display(product, product.rental_price),
+            'sale_price_display': get_price_display(product, product.sale_price),
         }
         if product.point:
             data['lon'] = product.point[0]
