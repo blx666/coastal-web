@@ -6,6 +6,7 @@ from django.http.response import HttpResponse
 from django.utils import timezone
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
+from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
@@ -20,19 +21,16 @@ def register(request):
     if not register_form.is_valid():
         return CoastalJsonResponse(register_form.errors, status=response.STATUS_400)
 
-    user = User.objects.create_user(username=register_form.cleaned_data['email'],
-                                    email=register_form.cleaned_data['email'],
-                                    password=register_form.cleaned_data['password'])
-    UserProfile.objects.create(user=user)
+    user = create_user(register_form.cleaned_data['email'], register_form.cleaned_data['password'])
     auth_login(request, user)
     data = {
-        "has_agency_info": user.userprofile.has_agency_info,
         'user_id': user.id,
-        'currency': 'USD',
-        'name': user.get_full_name(),
+        'logged': request.user.is_authenticated(),
+        "has_agency_info": user.userprofile.has_agency_info,
         'email': user.email,
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         'email_confirmed': user.userprofile.email_confirmed,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
     }
     return CoastalJsonResponse(data)
 
@@ -45,14 +43,13 @@ def login(request):
     if user:
         auth_login(request, user)
         data = {
+            'user_id': user.id,
             'logged': request.user.is_authenticated(),
             'has_agency_info': user.userprofile.has_agency_info,
-            'user_id': user.id,
-            'currency': 'USD',
-            'name': user.get_full_name(),
             'email': user.email,
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
             'email_confirmed': user.userprofile.email_confirmed,
+            'name': user.get_full_name(),
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         }
     else:
         data = {
@@ -94,10 +91,13 @@ def update_profile(request):
         user.save()
         user.userprofile.save()
         data = {
-            'name': user.get_full_name(),
+            'user_id': user.id,
+            'logged': request.user.is_authenticated(),
+            'has_agency_info': user.userprofile.has_agency_info,
             'email': user.email,
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
             'email_confirmed': user.userprofile.email_confirmed,
+            'name': user.get_full_name(),
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -107,14 +107,13 @@ def update_profile(request):
 def my_profile(request):
     user = request.user
     data = {
-        'name': user.get_full_name(),
+        'user_id': user.id,
+        'logged': request.user.is_authenticated(),
+        'has_agency_info': user.userprofile.has_agency_info,
         'email': user.email,
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
-        'is_agent': user.userprofile.is_agent,
-        'agency_email': user.userprofile.agency_email,
-        'agency_name': user.userprofile.agency_name,
-        'agency_address': user.userprofile.agency_address,
         'email_confirmed': user.userprofile.email_confirmed,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
     }
     return CoastalJsonResponse(data)
 
@@ -145,12 +144,12 @@ def validate_email(request):
     validate_instance = ValidateEmail()
     validate_instance.save(user=user)
     subject = 'user validate email'
-    message = '''Hi ''' + user.eamil + ''',
+    message = '''Hi %s,
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
-                http://''' + settings.SITE_DOMAIN + '''' /api/account/validate-email/confirm/?token=''' + validate_instance.token + '''`
+                http://%s/api/account/validate-email/confirm/?token=%s
                 The link will be valid 24 hours later. Please resend if this happens.
                 Thanks,
-                The Coastal Team'''
+                The Coastal Team''' % (user.eamil, settings.SITE_DOMAIN, validate_instance.token)
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
