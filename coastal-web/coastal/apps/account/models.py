@@ -68,9 +68,14 @@ class ValidateEmail(models.Model):
         super(ValidateEmail, self).save(*args, **kwargs)
 
 
+class CoastalBucket(models.Model):
+    user = models.OneToOneField(User)
+    balance = models.FloatField(default=0)
+    date_updated = models.DateTimeField(auto_now=True)
 
 
-
-
-
-
+class Transaction(models.Model):
+    bucket = models.ForeignKey(CoastalBucket)
+    type = models.CharField(max_length=32)
+    order_number = models.CharField(max_length=64)
+    date_created = models.DateTimeField(auto_now_add=True)

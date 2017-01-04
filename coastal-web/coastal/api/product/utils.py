@@ -15,6 +15,8 @@ def get_similar_products(product):
         similar_distance_product = Product.objects.filter(
             status='published', country=product.country, city=product.city).exclude(id=product.id).order_by(
             '-score')[0:12]
+    else:
+        similar_distance_product = []
 
     if product.status == 'published' and (product.rental_price or product.sale_price):
         if product.rental_price:
