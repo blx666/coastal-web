@@ -134,4 +134,4 @@ def calc_price(product, rental_unit, start_date, end_date):
 def get_price_display(product, price):
     if not price:
         return ""
-    return Currency.objects.get(code=product.currency).display + str(int(price))
+    return Currency.objects.get(code=product.currency.upper()).display + str(int(price))
