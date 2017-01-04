@@ -221,6 +221,14 @@ class Product(models.Model):
     def is_no_one(self):
         return self.rental_type == 'no-one'
 
+    def get_price(self, unit):
+        unit_mapping = {
+            'day': 24,
+            'half-day': 6,
+            'hour': 1
+        }
+        return unit_mapping[unit] / unit_mapping[self.rental_unit] * self.rental_price
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (

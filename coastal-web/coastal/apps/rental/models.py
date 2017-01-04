@@ -27,12 +27,18 @@ class RentalOrder(models.Model):
         ('check-out', 'Check-out'),
         ('finished', 'Finished'),
     )
+    CHARGE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
+    )
     number = models.CharField(max_length=32)
     product = models.ForeignKey(Product)
     owner = models.ForeignKey(User, related_name="owner_orders")
     guest = models.ForeignKey(User, related_name="guest_orders")
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
+    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, default='day')
     timezone = models.CharField(max_length=3)
     guest_count = models.PositiveSmallIntegerField()
     sub_total_price = models.FloatField()

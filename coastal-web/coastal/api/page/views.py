@@ -7,7 +7,7 @@ from django.conf import settings
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
-from coastal.api.product.utils import bind_product_image
+from coastal.api.product.utils import bind_product_image, get_price_display
 from coastal.apps.account.models import FavoriteItem
 
 
@@ -47,6 +47,8 @@ def home(request):
         product_data.update({
             "category": product.category_id,
             'rental_unit': product.get_rental_unit_display(),
+            'rental_price_display': get_price_display(product, product.rental_price),
+            'sale_price_display': get_price_display(product, product.sale_price),
         })
         liked_product_id_list = []
         if request.user.is_authenticated:
@@ -87,6 +89,8 @@ def images_360(request):
             'rental_unit': image_360.product.rental_unit,
             'image': image_360.image.url,
             'name': image_360.product.name,
+            'rental_price_display': get_price_display(image_360.product, image_360.product.rental_price),
+            'sale_price_display': get_price_display(image_360.product, image_360.product.sale_price),
         }
         data.append(content)
     return CoastalJsonResponse(data)
