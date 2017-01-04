@@ -168,8 +168,7 @@ def product_detail(request, pid):
         else:
             views.append(pi.image.url)
 
-    data['360-images'] = views
-    data['360_images'] = views
+    data['images_360'] = views
     data['images'] = images
     if product.name:
         data['name'] = product.name
@@ -208,13 +207,9 @@ def product_detail(request, pid):
         'discount': {
             'name': 'Additional Price',
             'weekly_discount': product.discount_weekly or 0,
-            'Weekly Discount': product.discount_weekly,
             'updated_weekly_price': price[0],
-            'Updated weekly price': price[0],
             'monthly_discount': product.discount_monthly or 0,
-            'Monthly Discount': product.discount_monthly or 0,
-            'update_weekly_price': price[1],
-            'Update weekly price': price[1],
+            'updated_monthly_price': price[1],
         },
     }
 

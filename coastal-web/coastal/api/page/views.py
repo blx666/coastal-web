@@ -73,7 +73,7 @@ def home(request):
     return CoastalJsonResponse(result)
 
 
-def images(request):
+def images_360(request):
     images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30]
     data = []
     for image_360 in images_view:
@@ -86,6 +86,7 @@ def images(request):
             'currency': image_360.product.currency,
             'rental_unit': image_360.product.rental_unit,
             'image': image_360.image.url,
+            'name': image_360.product.name,
         }
         data.append(content)
     return CoastalJsonResponse(data)
