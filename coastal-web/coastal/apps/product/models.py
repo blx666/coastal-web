@@ -153,7 +153,7 @@ class Product(models.Model):
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity')
+    amenities = models.ManyToManyField('Amenity', blank=True)
     desc_about_it = models.TextField(null=True, blank=True)
     desc_guest_access = models.TextField(null=True, blank=True)
     desc_interaction = models.TextField(null=True, blank=True)
