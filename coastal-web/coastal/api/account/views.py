@@ -152,11 +152,14 @@ def validate_email(request):
     validate_instance.save(user=user)
     subject = 'user validate email'
     message = '''Hi %s,
+
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
                 http://%s/api/account/validate-email/confirm/?token=%s
                 The link will be valid 24 hours later. Please resend if this happens.
+
                 Thanks,
-                The Coastal Team''' % (user.eamil, settings.SITE_DOMAIN, validate_instance.token)
+                The Coastal Team
+                ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
