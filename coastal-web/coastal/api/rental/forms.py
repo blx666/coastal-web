@@ -17,7 +17,7 @@ class RentalBookForm(forms.ModelForm):
         }
         unit = self.cleaned_data.get('rental_unit')
         product = self.cleaned_data.get('product')
-        if product:
+        if unit and product:
             if unit_mapping[unit] > unit_mapping[product.rental_unit]:
                 raise forms.ValidationError('the rental_unit is invalid.')
 
