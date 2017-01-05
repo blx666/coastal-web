@@ -137,11 +137,9 @@ def validate_email(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     user = request.user
-    validate_list = user.validateemail_set.values('id')
-
-    if len(validate_list) != 0:
-        validate_id = max([id_dict['id'] for id_dict in validate_list])
-        exit_validate = ValidateEmail.objects.get(id=validate_id)
+    validate = user.validateemail_set.order_by('created_date').first()
+    if validate:
+        exit_validate = ValidateEmail.objects.get(id=validate.id)
         timespan = timezone.now() - exit_validate.created_date
         if timespan.total_seconds() < 300:
             data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
