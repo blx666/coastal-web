@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^my-profile/$', views.my_profile, name='my-profile'),
     url(r'^validate-email/$', views.validate_email, name='validate-email'),
     url(r'^validate-email/confirm/$', views.validate_email_confirm, name=' validate-email-confirm'),
+    url(r'^my-activity/$', views.my_activity, name='my-activity'),
 ]

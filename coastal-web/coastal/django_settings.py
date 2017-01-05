@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'coastal.apps.promotion',
     'coastal.apps.currency',
     'coastal.apps.message',
+    'coastal.apps.review',
 ]
 
 MIDDLEWARE = [
@@ -153,9 +154,3 @@ SUBSCRIBE_EMAIL = '2421133939@qq.com'
 
 # site DOMAIN
 SITE_DOMAIN='192.168.2.52:8000'
-
-PER_PAGE_ITEM = 20
-
-LON = -115.6360776
-LAT = 35.4340958
-DISTANCE = 35

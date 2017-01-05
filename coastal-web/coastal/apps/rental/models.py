@@ -20,6 +20,7 @@ class RentalOrder(models.Model):
         ('request', 'Request'),
         ('approved', 'Approved'),
         ('declined', 'Declined'),
+        ('invalid', 'Invalid'),
         ('charge', 'Charge'),
         ('booked', 'Booked'),
         ('check-in', 'Check-In'),
@@ -27,17 +28,25 @@ class RentalOrder(models.Model):
         ('check-out', 'Check-out'),
         ('finished', 'Finished'),
     )
+    CHARGE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
+    )
     number = models.CharField(max_length=32)
     product = models.ForeignKey(Product)
     owner = models.ForeignKey(User, related_name="owner_orders")
     guest = models.ForeignKey(User, related_name="guest_orders")
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
+    rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, default='day')
     timezone = models.CharField(max_length=3)
     guest_count = models.PositiveSmallIntegerField()
     sub_total_price = models.FloatField()
     total_price = models.FloatField()
+    total_price_usd = models.FloatField()
     currency = models.CharField(max_length=3)
+    currency_rate = models.FloatField()
 
     status = models.CharField(max_length=32)
 
