@@ -199,7 +199,7 @@ def product_detail(request, pid):
             'Updated weekly price': price[0],
             'monthly_discount': product.discount_monthly or 0,
             'Monthly Discount': product.discount_monthly or 0,
-            'update_weekly_price': price[1],
+            'updated_monthly_price': price[1],
             'Update weekly price': price[1],
         },
     }
@@ -216,6 +216,8 @@ def product_detail(request, pid):
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
         content['liked'] = p.id in liked_product_id_list
+        content['max_guests'] = p.max_guests or 0
+        content['length'] = p.length or 0
         content['image'] = ""
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
