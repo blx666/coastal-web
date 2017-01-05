@@ -23,6 +23,7 @@ urlpatterns = [
     url(r'^api/account/', include('coastal.api.account.urls', namespace='account')),
     url(r'^api/page/', include('coastal.api.page.urls', namespace='page')),
     url(r'^admin/', admin.site.urls),
+    url(r'^api/message/', include('coastal.api.message.urls', namespace='message')),
     url(r'^api/rental/', include('coastal.api.rental.urls', namespace='rental')),
 ]
 
