@@ -146,15 +146,5 @@ CRONJOBS = [
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
-EMAIL_HOST_USER = '2421133939@qq.com'
-EMAIL_HOST_PASSWORD = '********'
-
-EMAIL_USE_TLS = False
-
-SUBSCRIBE_EMAIL = '2421133939@qq.com'
-# DEFAULT_FROM_EMAIL = "aragoncs@brilliantearth.com"
-
-# site DOMAIN
-SITE_DOMAIN='192.168.2.52:8000'
 
 DEFAULT_FROM_EMAIL = "dontreply@coastal.com"
