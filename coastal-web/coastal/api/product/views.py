@@ -28,7 +28,7 @@ def product_list(request):
 
     lon = form.cleaned_data['lon']
     lat = form.cleaned_data['lat']
-    distance = form.cleaned_data['distance'] or 35
+    distance = form.cleaned_data['distance'] or defs.DISTANCE
 
     guests = form.cleaned_data['guests']
     arrival_date = form.cleaned_data['arrival_date']
