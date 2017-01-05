@@ -2,13 +2,13 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
-from django.conf import settings
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_image, get_price_display
 from coastal.apps.account.models import FavoriteItem
+from coastal.api import defines as defs
 
 
 def home(request):
@@ -27,7 +27,7 @@ def home(request):
     # get recommended products
     products = Product.objects.order_by('-score')
     bind_product_image(products)
-    item = settings.PER_PAGE_ITEM
+    item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
         products = paginator.page(page)

@@ -20,6 +20,7 @@ class RentalOrder(models.Model):
         ('request', 'Request'),
         ('approved', 'Approved'),
         ('declined', 'Declined'),
+        ('invalid', 'Invalid'),
         ('charge', 'Charge'),
         ('booked', 'Booked'),
         ('check-in', 'Check-In'),
