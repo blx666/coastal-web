@@ -102,9 +102,11 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
 
 def calc_price(product, rental_unit, start_date, end_date):
     rental_price = product.get_price(rental_unit)
-    total_time = end_date.timestamp() - start_date.timestamp()
-    if product.category in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP):
+    if product.category_id in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP):
         end_date += datetime.timedelta(days=1)
+
+    total_time = end_date.timestamp() - start_date.timestamp()
+
     if rental_unit == 'day':
         rental_date = math.ceil(total_time / (24.0 * 3600.0))
     elif rental_unit == 'half-day':
