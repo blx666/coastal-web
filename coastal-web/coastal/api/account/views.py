@@ -244,7 +244,7 @@ def my_activity(request):
                 'end_date': end_datetime,
                 'total_price_display': get_price_display(order.product, order.total_price),
                 'more_info': more_info,
-                'status': order.status,
+                'status': order.get_status_display(),
             }
             order_list.append(data)
     else:

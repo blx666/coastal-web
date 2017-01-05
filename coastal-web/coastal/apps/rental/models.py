@@ -48,7 +48,7 @@ class RentalOrder(models.Model):
     currency = models.CharField(max_length=3)
     currency_rate = models.FloatField()
 
-    status = models.CharField(max_length=32)
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
