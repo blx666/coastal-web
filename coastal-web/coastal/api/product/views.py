@@ -4,7 +4,6 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
-from django.conf import settings
 from timezonefinder import TimezoneFinder
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -17,8 +16,9 @@ from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
 from coastal.apps.currency.models import Currency
 from coastal.apps.rental.models import BlackOutDate, RentalOrder
-from coastal.apps.product import defines as defs
+from coastal.apps.product import defines as product_defs
 from coastal.api.rental.forms import RentalBookForm
+from coastal.api import defines as defs
 
 
 def product_list(request):
@@ -66,7 +66,7 @@ def product_list(request):
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
     page = request.GET.get('page', 1)
-    item = settings.PER_PAGE_ITEM
+    item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
         products = paginator.page(page)
@@ -83,7 +83,7 @@ def product_list(request):
     data = []
 
     for product in products:
-        if product.category_id == defs.CATEGORY_BOAT_SLIP:
+        if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
                                                  'max_guests', 'sale_price'])
@@ -134,10 +134,10 @@ def product_detail(request, pid):
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     data['max_guests'] = product.max_guests or 0
 
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
+    if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT):
         data['room'] = product.rooms or 0
         data['bathrooms'] = product.bathrooms or 0
-    if product.category_id in (defs.CATEGORY_ROOM, defs.CATEGORY_YACHT):
+    if product.category_id in (product_defs.CATEGORY_ROOM, product_defs.CATEGORY_YACHT):
         data['beds'] = product.beds or 0
         data['bathrooms'] = product.bathrooms or 0
 
@@ -421,7 +421,7 @@ def recommend_product_list(request):
     page = request.GET.get('page', 1)
     bind_product_image(recommend_products)
     data = []
-    item = settings.PER_PAGE_ITEM
+    item = defs.PER_PAGE_ITEM
     paginator = Paginator(recommend_products, item)
     try:
         recommend_products = paginator.page(page)
@@ -511,7 +511,7 @@ def search(request):
     products = Product.objects.filter(address__contains=request.GET.get('q')).order_by('-score', '-rental_usd_price', '-sale_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
-    item = settings.PER_PAGE_ITEM
+    item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
         products = paginator.page(page)
