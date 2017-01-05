@@ -139,10 +139,9 @@ def validate_email(request):
     user = request.user
     validate = user.validateemail_set.order_by('created_date').first()
     if validate:
-        exit_validate = ValidateEmail.objects.get(id=validate.id)
-        timespan = timezone.now() - exit_validate.created_date
+        timespan = timezone.now() - validate.created_date
         if timespan.total_seconds() < 300:
-            data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
+            data = {'email_confirmed': validate.user.userprofile.email_confirmed}
             return CoastalJsonResponse(data)
     else:
         user.userprofile.email_confirmed = 'sending'
@@ -159,7 +158,7 @@ def validate_email(request):
                 Thanks,
                 The Coastal Team
                 ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
-    send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
 
