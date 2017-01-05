@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils import timezone
+from django.db.models import Q
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.apps.account.utils import create_user
@@ -11,6 +12,12 @@ from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail
+from coastal.apps.rental.models import RentalOrder
+from coastal.api.product.utils import get_price_display
+from datetime import datetime, timedelta, time
+from coastal.apps.product import defines as defs
+import time
+import math
 
 
 def register(request):
@@ -145,11 +152,14 @@ def validate_email(request):
     validate_instance.save(user=user)
     subject = 'user validate email'
     message = '''Hi %s,
+
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
                 http://%s/api/account/validate-email/confirm/?token=%s
                 The link will be valid 24 hours later. Please resend if this happens.
+
                 Thanks,
-                The Coastal Team''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
+                The Coastal Team
+                ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
     send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
@@ -217,12 +227,12 @@ def my_activity(request):
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
-                    'phone': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
+                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
                     'name': order.owner.get_full_name(),
                 },
                 'guest': {
                     'id': order.guest_id,
-                    'phone': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
+                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
                     'name': order.guest.get_full_name(),
                 },
                 'product': {

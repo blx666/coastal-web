@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'coastal.apps.rental',
     'coastal.apps.promotion',
     'coastal.apps.currency',
+    'coastal.apps.message',
     'coastal.apps.review',
 ]
 
