@@ -19,6 +19,7 @@ class UserProfile(models.Model):
     agency_address = models.CharField(max_length=256, null=True, blank=True)
     photo = models.ImageField(upload_to='user/%Y/%m', null=True, blank=True)
     email_confirmed = models.CharField(max_length=32, choices=state, blank=True, default='unconfirmed')
+    stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
 
     @property
     def has_agency_info(self):
