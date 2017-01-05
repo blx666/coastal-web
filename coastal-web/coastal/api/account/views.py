@@ -234,7 +234,6 @@ def my_activity(request):
                 },
                 'product': {
                     'id': order.product_id,
-                    'images': order.product.images.image.url,
                     'image': order.product.productimage_set.first() and order.product.productimage_set.first().image.url or '',
                     'name': order.product.name,
                 },
