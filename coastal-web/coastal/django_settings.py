@@ -27,6 +27,8 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SITE_DOMAIN = '127.0.0.1:8000'
+
 
 # Application definition
 
@@ -137,19 +139,11 @@ CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
 ]
 
-# email conf
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email
+# https://docs.djangoproject.com/en/1.10/topics/email/
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
-EMAIL_HOST_USER = '2421133939@qq.com'
-EMAIL_HOST_PASSWORD = '********'
-
-EMAIL_USE_TLS = False
-
-SUBSCRIBE_EMAIL = '2421133939@qq.com'
-# DEFAULT_FROM_EMAIL = "aragoncs@brilliantearth.com"
-
-# site DOMAIN
-SITE_DOMAIN='192.168.2.52:8000'
+DEFAULT_FROM_EMAIL = "dontreply@coastal.com"
