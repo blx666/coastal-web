@@ -176,10 +176,10 @@ def validate_email_confirm(request):
         return HttpResponse('token is not exist')
 
 
-# @login_required
+@login_required
 def my_account(request):
     user = request.user
-    user = User.objects.get(id=1)
+
     data = {}
     data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
 
