@@ -16,6 +16,7 @@ from coastal.apps.rental.models import RentalOrder
 from coastal.api.product.utils import get_price_display
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
+from coastal.api.product.utils import bind_product_image
 import time
 import math
 
@@ -181,7 +182,6 @@ def validate_email_confirm(request):
         return HttpResponse('token already  expire')
     except validate_email.DoesNotExist:
         return HttpResponse('token is not exist')
-    return HttpResponse('token already  expire')
 
 
 @login_required
