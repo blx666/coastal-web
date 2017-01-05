@@ -224,12 +224,12 @@ def my_activity(request):
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
-                    'phone': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
+                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
                     'name': order.owner.get_full_name(),
                 },
                 'guest': {
                     'id': order.guest_id,
-                    'phone': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
+                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
                     'name': order.guest.get_full_name(),
                 },
                 'product': {
