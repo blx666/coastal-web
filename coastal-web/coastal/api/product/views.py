@@ -435,9 +435,11 @@ def recommend_product_list(request):
     else:
         next_page = int(page) + 1
     for product in recommend_products:
-        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
-                                                      'beds', 'max_guests'])
+        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price'])
         product_data.update({
+            'beds': product.beds or 0,
+            'max_guests': product.max_guests or 0,
+            'length': product.length or 0,
             'category': product.category_id,
             'rental_unit': product.get_rental_unit_display(),
             'rental_price_display': get_price_display(product, product.rental_price),
