@@ -10,7 +10,10 @@ from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import UserProfile, ValidateEmail
+from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
+from coastal.api.product.utils import bind_product_image
+from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.rental.models import RentalOrder
 
 
 def register(request):
@@ -171,3 +174,65 @@ def validate_email_confirm(request):
         return HttpResponse('token already  expire')
     except validate_email.DoesNotExist:
         return HttpResponse('token is not exist')
+
+
+# @login_required
+def my_account(request):
+    user = request.user
+    user = User.objects.get(id=1)
+    data = {}
+    data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
+
+    # userprofile
+    data['profile'] = {
+        'name': user.get_full_name(),
+        'email': user.email,
+        'email_confirmed': user.userprofile.email_confirmed,
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+    }
+
+    # my products
+    product_group = []
+    product_list = user.properties.all()
+    bind_product_image(product_list)
+    for product in product_list:
+        data_product = {}
+        data_product['id'] = product.id
+        data_product['name'] = product.name
+        data_product['image'] = product.images[0].image.url if len(product.images) else ''
+        data_product['address'] = product.country + ',' + product.city
+        data_product['status'] = product.status
+        product_group.append(data_product)
+    data['my_products'] = product_group
+
+    # my favorite
+    favorite_group = []
+    favorite_item = FavoriteItem.objects.filter(favorite__user=user)
+    product_favorite = Product.objects.filter(favoriteitem__in=favorite_item)
+    bind_product_image(product_favorite)
+    for product in product_favorite:
+        data_favorite = {}
+        data_favorite['id'] = product.id
+        data_favorite['name'] = product.name
+        data_favorite['image'] = product.images[0].image.url if len(product.images) else ''
+        data_favorite['address'] = product.country + ',' + product.city
+        favorite_group.append(data_favorite)
+    data['favorites'] = favorite_group
+
+    # my orders
+    order_group = []
+    order_list = user.owner_orders.all()
+    for order in order_list:
+        data_order = {}
+        data_order['id'] = order.id
+        data_order['type'] = order.rental_unit
+        image = order.product.productimage_set.all()
+        data_order['image'] = image[0].image.url if len(image) else ''
+        data_order['title'] = order.number
+        order_group.append(data_order)
+    data['orders'] = order_group
+
+    return CoastalJsonResponse(data)
+
+
+

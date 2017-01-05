@@ -39,7 +39,7 @@ class RentalOrder(models.Model):
     start_datetime = models.DateTimeField()
     end_datetime = models.DateTimeField()
     rental_unit = models.CharField(max_length=32, choices=CHARGE_UNIT_CHOICES, default='day')
-    timezone = models.CharField(max_length=3)
+    timezone = models.CharField(max_length=100)
     guest_count = models.PositiveSmallIntegerField()
     sub_total_price = models.FloatField()
     total_price = models.FloatField()
