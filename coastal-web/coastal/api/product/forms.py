@@ -110,14 +110,19 @@ class ProductAddForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status']
+        exclude = ['owner', 'score', 'status', 'timezone']
 
 
 class ProductUpdateForm(ProductAddForm):
+    ACTION_CHOICES = (
+        ('', '-----'),
+        ('publish', 'publish'),
+        ('cancel', 'cancel'),
+    )
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
-    action = forms.CharField(required=False)
+    action = forms.ChoiceField(required=False, choices=ACTION_CHOICES)
 
     def clean(self):
         for key in self.cleaned_data.copy():
@@ -128,7 +133,7 @@ class ProductUpdateForm(ProductAddForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status', 'category']
+        exclude = ['owner', 'score', 'status', 'category', 'timezone']
 
 
 class ProductListFilterForm(forms.Form):
@@ -141,8 +146,10 @@ class ProductListFilterForm(forms.Form):
     min_price = forms.DecimalField(required=False)
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
-    category = forms.IntegerField(required=False)
+    category = forms.CharField(required=False)
     purchase_or_rent = forms.CharField(required=False)
+    min_coastline_distance = forms.IntegerField(required=False)
+    max_coastline_distance = forms.IntegerField(required=False)
 
     def clean(self):
         cleaned_data = super(ProductListFilterForm, self).clean()
@@ -150,10 +157,10 @@ class ProductListFilterForm(forms.Form):
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
 
-
-class RentalDateForm(forms.Form):
-    arrival_date = forms.DateTimeField()
-    checkout_date = forms.DateTimeField()
+    def clean_category(self):
+        category = self.cleaned_data.get('category')
+        if category:
+            return category.split(',')
 
 
 class DiscountCalculatorFrom(forms.Form):

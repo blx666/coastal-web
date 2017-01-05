@@ -2,17 +2,17 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
-from django.conf import settings
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
-from coastal.api.product.utils import bind_product_image
+from coastal.api.product.utils import bind_product_image, get_price_display
 from coastal.apps.account.models import FavoriteItem
+from coastal.api import defines as defs
 
 
 def home(request):
-    page = request.GET.get('page', 1)
+    page = request.GET.get('page', '1')
     # get home_banner
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
@@ -27,7 +27,7 @@ def home(request):
     # get recommended products
     products = Product.objects.order_by('-score')
     bind_product_image(products)
-    item = settings.PER_PAGE_ITEM
+    item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
         products = paginator.page(page)
@@ -47,6 +47,8 @@ def home(request):
         product_data.update({
             "category": product.category_id,
             'rental_unit': product.get_rental_unit_display(),
+            'rental_price_display': get_price_display(product, product.rental_price),
+            'sale_price_display': get_price_display(product, product.sale_price),
         })
         liked_product_id_list = []
         if request.user.is_authenticated:
@@ -73,26 +75,22 @@ def home(request):
     return CoastalJsonResponse(result)
 
 
-def images(request):
-    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30].values(
-        'product__for_rental', 'product__for_sale', 'product__rental_price', 'product__rental_unit',
-        'product__sale_price', 'product__id', 'image')
+def images_360(request):
+    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30]
     data = []
     for image_360 in images_view:
-        image_360['product_id'] = image_360['product__id']
-        image_360['for_rental'] = image_360['product__for_rental']
-        image_360['for_sale'] = image_360['product__for_sale']
-        image_360['rental_price'] = image_360['product__rental_price']
-        image_360['rental_unit'] = image_360['product__rental_unit']
-        image_360['sale_price'] = image_360['product__sale_price']
-        image_360['image_url'] = image_360['image']
-        image_360['currency'] = 'USD'
-        image_360.pop('product__for_rental')
-        image_360.pop('product__for_sale')
-        image_360.pop('product__rental_price')
-        image_360.pop('product__rental_unit')
-        image_360.pop('product__sale_price')
-        image_360.pop('product__id')
-        image_360.pop('image')
-        data.append(image_360)
+        content = {
+            'product_id': image_360.product_id,
+            'for_rental': image_360.product.for_rental,
+            'for_sale': image_360.product.for_sale,
+            'rental_price': image_360.product.rental_price,
+            'sale_price': image_360.product.sale_price,
+            'currency': image_360.product.currency,
+            'rental_unit': image_360.product.rental_unit,
+            'image': image_360.image.url,
+            'name': image_360.product.name,
+            'rental_price_display': get_price_display(image_360.product, image_360.product.rental_price),
+            'sale_price_display': get_price_display(image_360.product, image_360.product.sale_price),
+        }
+        data.append(content)
     return CoastalJsonResponse(data)
