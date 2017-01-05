@@ -227,6 +227,8 @@ def product_detail(request, pid):
         content['reviews_count'] = 0
         content['reviews_avg_score'] = 0
         content['liked'] = p.id in liked_product_id_list
+        content['max_guests'] = p.max_guests or 0
+        content['length'] = p.length or 0
         content['image'] = ""
         content['rental_price_display'] = get_price_display(p, p.rental_price)
         content['sale_price_display'] = get_price_display(p, p.sale_price)
