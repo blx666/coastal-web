@@ -4,6 +4,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils import timezone
+from django.db.models import Q
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.apps.account.utils import create_user
@@ -11,6 +12,12 @@ from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail
+from coastal.apps.rental.models import RentalOrder
+from coastal.api.product.utils import get_price_display
+from datetime import datetime, timedelta, time
+from coastal.apps.product import defines as defs
+import time
+import math
 
 
 def register(request):
@@ -171,3 +178,92 @@ def validate_email_confirm(request):
         return HttpResponse('token already  expire')
     except validate_email.DoesNotExist:
         return HttpResponse('token is not exist')
+    return HttpResponse('token already  expire')
+
+
+@login_required
+def my_activity(request):
+    user = request.user
+    now = datetime.now()
+    start = now - timedelta(hours=23, minutes=59, seconds=59)
+    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined']))
+    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined']).filter(date_created__gte=start))
+    if orders_finished and orders_notfinished:
+        orders = orders_finished + orders_notfinished
+    elif orders_finished and not orders_notfinished:
+        orders = orders_finished
+    elif not orders_finished and orders_notfinished:
+        orders = orders_notfinished
+    else:
+        orders = []
+    if orders:
+        order_list = []
+        for order in orders:
+            start_time = order.start_datetime
+            end_time = order.end_datetime
+            if order.product.rental_unit == 'day':
+                start_datetime = datetime.strftime(start_time, '%A, %B %dst')
+                end_datetime = datetime.strftime(end_time, '%A, %B %dst')
+            else:
+                start_datetime = datetime.strftime(start_time, '%A, %B %dst %H')
+                end_datetime = datetime.strftime(end_time, '%A, %B %dst %H')
+            if order.product.rental_unit == 'day':
+                if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
+                    time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/(3600*24))+1
+                else:
+                    time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple()))/(3600*24))
+            if order.product.rental_unit == 'half-day':
+                time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/(3600*6))
+            if order.product.rental_unit == 'hour':
+                time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/3600)
+            if time_info > 1:
+                more_info = '%s people %s %ss' % (order.guest_count, time_info, order.product.rental_unit.title())
+            else:
+                more_info = '%s people %s %s' % (order.guest_count, time_info, order.product.rental_unit.title())
+            data = {
+                'id': order.id,
+                'owner': {
+                    'id': order.owner_id,
+                    'phone': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
+                    'name': order.owner.get_full_name(),
+                },
+                'guest': {
+                    'id': order.guest_id,
+                    'phone': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
+                    'name': order.guest.get_full_name(),
+                },
+                'product': {
+                    'id': order.product_id,
+                    'images': order.product.images.image.url,
+                    'image': order.product.productimage_set.first() and order.product.productimage_set.first().image.url or '',
+                    'name': order.product.name,
+                },
+                'start_date': start_datetime,
+                'end_date': end_datetime,
+                'total_price_display': get_price_display(order.product, order.total_price),
+                'more_info': more_info,
+                'status': order.status,
+            }
+            order_list.append(data)
+    else:
+        order_list = []
+
+    if user.recently_viewed.all():
+        recently_views = user.recently_viewed.all()[0:20]
+        recently_view_list = []
+        for recently_view in recently_views:
+            data = {
+                'id': recently_view.product.id,
+                'name': recently_view.product.name,
+                'image': recently_view.product.productimage_set.first() and recently_view.product.productimage_set.first().image.url or ''
+            }
+            recently_view_list.append(data)
+        result = {
+            'recently_views': recently_view_list,
+            'order': order_list,
+        }
+    else:
+        result = {
+            'order': order_list,
+        }
+    return CoastalJsonResponse(result)
