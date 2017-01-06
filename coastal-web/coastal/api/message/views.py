@@ -9,6 +9,7 @@ from coastal.api.core.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from coastal.api import defines as defs
 import datetime
+from django.db.models import Count
 
 
 @login_required
@@ -38,6 +39,9 @@ def create_dialogue(request):
 @login_required
 def dialogue_list(request):
     dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
+    unread_dialogues = dialogues.filter(message__read=False).annotate(num_messages=Count('message'))
+    unread_dialogue_count_dict = {dialogue.id: dialogue.num_messages for dialogue in unread_dialogues}
+
     today = datetime.date.today()
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
     today_list = []
@@ -60,15 +64,14 @@ def dialogue_list(request):
         next_page = int(page) + 1
 
     for dialogue in dialogues:
-        guest = request.user == dialogue.owner and dialogue.guest or dialogue.owner
+        contact = request.user == dialogue.owner and dialogue.guest or dialogue.owner
         product = dialogue.product
         order = dialogue.order
-        unread_message_number = Message.objects.filter(dialogue=dialogue, read=False).count()
-        guest_dict = {
-            'user_id': guest.id,
-            'first_name': guest.first_name,
-            'last_name': guest.last_name,
-            'photo': guest.userprofile.photo.url if guest.userprofile.photo else '',
+        unread_message_number = unread_dialogue_count_dict.get(dialogue.id, 0)
+        contact_dict = {
+            'user_id': contact.id,
+            'name': contact.get_full_name(),
+            'photo': contact.userprofile.photo.url if contact.userprofile.photo else '',
         }
         product_image = ProductImage.objects.filter(product=product).first()
         product_dict = {
@@ -86,7 +89,7 @@ def dialogue_list(request):
             }
         dialogue_dict = {
             'dialogue_id': dialogue.id,
-            'guest': guest_dict,
+            'contact': contact_dict,
             'product': product_dict,
             'order': order_dict,
             'unread': unread_message_number,
