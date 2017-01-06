@@ -6,15 +6,11 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.payment.stripe import get_strip_payment_info
 from coastal.api.product.utils import calc_price, get_price_display
 from coastal.api.core.decorators import login_required
-<<<<<<< HEAD
 from coastal.apps.payment.stripe import get_card_list
 from coastal.apps.product import defines as defs
 from datetime import datetime
 import time
-
-=======
 from coastal.apps.account.utils import is_confirmed_user
->>>>>>> 285edc940b35f0640a19527389a3c8088e94a234
 
 @login_required
 def book_rental(request):
@@ -149,7 +145,6 @@ def payment_stripe(request):
     return CoastalJsonResponse()
 
 
-<<<<<<< HEAD
 def order_detail(request):
     order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
     start_time = order.start_datetime
