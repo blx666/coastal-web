@@ -17,15 +17,15 @@ class RentalDateRange(models.Model):
 
 class RentalOrder(models.Model):
     STATUS_CHOICES = (
-        ('request', 'Request'),
-        ('approved', 'Approved'),
-        ('declined', 'Declined'),
-        ('invalid', 'Invalid'),
-        ('charge', 'Charge'),
-        ('booked', 'Booked'),
-        ('check-in', 'Check-In'),
-        ('paid', 'Paid Host'),
-        ('check-out', 'Check-out'),
+        ('request', 'Unconfirmed'),  # The order need to be confirmed by host
+        ('approved', 'Approved'),  # The order has been confirmed by host
+        ('declined', 'Declined'),  # The order has been declined by host
+        ('invalid', 'Invalid'),  # The order did not be handle within 24 hours
+        ('charge', 'Unpaid'),  # The order need to be paid for by guest
+        ('booked', 'In Transaction'),  # Booked successfully
+        ('check-in', 'In Transaction'),  # Guest has been checked in (auto set by system)
+        ('paid', 'In Transaction'),  # Pay host the rent (auto set by system)
+        ('check-out', 'In Transaction'),  # Guest has been checked out (auto set by system)
         ('finished', 'Finished'),
     )
     CHARGE_UNIT_CHOICES = (

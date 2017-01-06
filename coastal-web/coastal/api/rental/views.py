@@ -42,6 +42,7 @@ def book_rental(request):
     rental_order.total_price_usd = math.floor(rental_order.total_price / rental_order.currency_rate)
     # rental_order.timezone = product.timezone
     rental_order.save()
+    # TODO: move generate order number into save function
     rental_order.number = str(100000+rental_order.id)
     rental_order.save()
 
