@@ -1,4 +1,4 @@
-from coastal.apps.message.models import Dialogue
+from coastal.apps.message.models import Dialogue, Message
 from coastal.api.message.forms import DialogueForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -6,6 +6,8 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from coastal.api import defines as defs
 import datetime
 
 
@@ -35,16 +37,33 @@ def create_dialogue(request):
 
 @login_required
 def dialogue_list(request):
-    dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user))
+    dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
     today = datetime.date.today()
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
     today_list = []
     yesterday_list = []
     past_list = []
+
+    page = request.GET.get('page', 1)
+    item = defs.PER_PAGE_ITEM
+    paginator = Paginator(dialogues, item)
+    try:
+        dialogues = paginator.page(page)
+    except PageNotAnInteger:
+        dialogues = paginator.page(1)
+    except EmptyPage:
+        dialogues = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
+
     for dialogue in dialogues:
         guest = request.user == dialogue.owner and dialogue.guest or dialogue.owner
         product = dialogue.product
         order = dialogue.order
+        unread_message_number = Message.objects.filter(dialogue=dialogue, read=False).count()
         guest_dict = {
             'user_id': guest.id,
             'first_name': guest.first_name,
@@ -70,6 +89,7 @@ def dialogue_list(request):
             'guest': guest_dict,
             'product': product_dict,
             'order': order_dict,
+            'unread': unread_message_number,
         }
         date_updated = datetime.date(dialogue.date_updated.year, dialogue.date_updated.month, dialogue.date_updated.day)
         if date_updated == today:
@@ -80,8 +100,9 @@ def dialogue_list(request):
             past_list.append(dialogue_dict)
 
     result = {
-        'Today': today_list,
-        'Yesterday': yesterday_list,
-        'Past': past_list,
+        'today': today_list,
+        'yesterday': yesterday_list,
+        'past': past_list,
+        'next_page': next_page,
     }
     return CoastalJsonResponse(result)
