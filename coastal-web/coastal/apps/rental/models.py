@@ -1,6 +1,7 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 from coastal.apps.product.models import Product
+from coastal.apps.rental.managers import RentalOrderManager
 
 
 class BlackOutDate(models.Model):
@@ -53,6 +54,8 @@ class RentalOrder(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+
+    objects = RentalOrderManager()
 
 
 class RentalOrderDiscount(models.Model):

@@ -10,3 +10,4 @@ class Review(models.Model):
     order = models.ForeignKey(RentalOrder)
     score = models.PositiveSmallIntegerField()
     content = models.TextField()
+    date_created = models.DateTimeField(auto_now_add=True)

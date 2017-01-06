@@ -7,4 +7,5 @@ urlpatterns = [
     url(r'^book-rental/$', views.book_rental, name='book-rental'),
     url(r'^approve/$', views.rental_approve, name='rental-approve'),
     url(r'^payment/stripe/$', views.payment_stripe, name='payment-stripe'),
+    url(r'^delete-rental/$', views.delete_rental, name='delete-rental'),
 ]
