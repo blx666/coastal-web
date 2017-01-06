@@ -2,6 +2,7 @@ from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
+from coastal.apps.message.managers import DialogueManager
 
 
 class Dialogue(models.Model):
@@ -11,9 +12,9 @@ class Dialogue(models.Model):
     order = models.ForeignKey(RentalOrder, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.host.name + self.guest.name + self.product.name
+    objects = DialogueManager()
 
 
 class Message(models.Model):

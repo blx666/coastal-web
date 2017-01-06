@@ -1,4 +1,4 @@
-from coastal.apps.message.models import Dialogue, Message
+from coastal.apps.message.models import Dialogue
 from coastal.api.message.forms import DialogueForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -6,8 +6,6 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from coastal.api import defines as defs
 import datetime
 from django.db.models import Count
 
@@ -27,8 +25,8 @@ def create_dialogue(request):
 
     order = RentalOrder.objects.filter(owner=product.owner, guest=request.user,
                                        product=product).first()
-    dialogue, _ = Dialogue.objects.update_or_create(owner=product.owner, guest=request.user,
-                                                    product=product, order=order)
+    dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=product.owner, guest=request.user,
+                                                                       product=product, order=order, defaults={'is_deleted': False})
 
     result = {
         'dialogue_id': dialogue.id,
@@ -47,21 +45,6 @@ def dialogue_list(request):
     today_list = []
     yesterday_list = []
     past_list = []
-
-    page = request.GET.get('page', 1)
-    item = defs.PER_PAGE_ITEM
-    paginator = Paginator(dialogues, item)
-    try:
-        dialogues = paginator.page(page)
-    except PageNotAnInteger:
-        dialogues = paginator.page(1)
-    except EmptyPage:
-        dialogues = paginator.page(paginator.num_pages)
-
-    if int(page) >= paginator.num_pages:
-        next_page = 0
-    else:
-        next_page = int(page) + 1
 
     for dialogue in dialogues:
         contact = request.user == dialogue.owner and dialogue.guest or dialogue.owner
@@ -106,6 +89,19 @@ def dialogue_list(request):
         'today': today_list,
         'yesterday': yesterday_list,
         'past': past_list,
-        'next_page': next_page,
     }
     return CoastalJsonResponse(result)
+
+
+@login_required
+def delete_dialogue(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    dialogue = Dialogue.objects.filter(id=request.POST.get('dialogue_id')).first()
+    if not dialogue:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    dialogue.is_deleted = True
+    dialogue.save()
+    return CoastalJsonResponse()
