@@ -39,6 +39,9 @@ def get_card_list(user):
 
 
 def get_strip_payment_info(amount, currency):
+    fixed = 0.3
+    percent = 0.029
+    charge_amount = (amount + fixed)/(1-percent)
     # TODO: update the calculate with https://support.stripe.com/questions/can-i-charge-my-stripe-fees-to-my-customers
     return {
         'updated_amount': amount,

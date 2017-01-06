@@ -147,7 +147,7 @@ def delete_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     try:
-        rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
+        rental_order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
