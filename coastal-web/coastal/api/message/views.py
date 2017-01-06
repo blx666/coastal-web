@@ -1,4 +1,4 @@
-from coastal.apps.message.models import Dialogue
+from coastal.apps.message.models import Dialogue, Message
 from coastal.api.message.forms import DialogueForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -63,6 +63,7 @@ def dialogue_list(request):
         guest = request.user == dialogue.owner and dialogue.guest or dialogue.owner
         product = dialogue.product
         order = dialogue.order
+        unread_message_number = Message.objects.filter(dialogue=dialogue, read=False).count()
         guest_dict = {
             'user_id': guest.id,
             'first_name': guest.first_name,
@@ -88,6 +89,7 @@ def dialogue_list(request):
             'guest': guest_dict,
             'product': product_dict,
             'order': order_dict,
+            'unread': unread_message_number,
         }
         date_updated = datetime.date(dialogue.date_updated.year, dialogue.date_updated.month, dialogue.date_updated.day)
         if date_updated == today:
