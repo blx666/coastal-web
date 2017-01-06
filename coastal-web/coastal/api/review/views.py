@@ -2,8 +2,10 @@ from coastal.apps.review.models import Review
 from coastal.api.review.forms import ReviewForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
+from coastal.api.core.decorators import login_required
 
 
+@login_required
 def write_review(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
