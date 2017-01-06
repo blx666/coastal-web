@@ -185,6 +185,9 @@ class Product(models.Model):
         self.status = 'published'
 
     def validate_publish_data(self):
+        if not self.productimage_set:
+            return False
+
         if not (self.for_sale or self.for_rental):
             return False
 
