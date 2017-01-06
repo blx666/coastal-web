@@ -1,8 +1,8 @@
+import math
 from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, ApproveEvent
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.product.models import Product
 from coastal.apps.payment.stripe import get_strip_payment_info
 from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
@@ -14,7 +14,7 @@ def book_rental(request):
         return CoastalJsonResponse(status=response.STATUS_405)
     data = request.POST.copy()
     if 'product_id' in data:
-        data['product'] = data.pop('product_id')
+        data['product'] = data.get('product_id')
     form = RentalBookForm(data)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -39,6 +39,7 @@ def book_rental(request):
     rental_order.currency = product.currency
     # TODO: get currency_rate according to currency
     rental_order.currency_rate = 1
+    rental_order.total_price_usd = math.floor(rental_order.total_price / rental_order.currency_rate)
     # rental_order.timezone = product.timezone
     rental_order.save()
     rental_order.number = str(100000+rental_order.id)
