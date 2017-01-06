@@ -14,7 +14,7 @@ def book_rental(request):
         return CoastalJsonResponse(status=response.STATUS_405)
     data = request.POST.copy()
     if 'product_id' in data:
-        data['product'] = data.get('product_id')
+        data['product'] = data.pop('product_id')
     form = RentalBookForm(data)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -37,6 +37,8 @@ def book_rental(request):
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency
+    # TODO: get currency_rate according to currency
+    rental_order.currency_rate = 1
     # rental_order.timezone = product.timezone
     rental_order.save()
     rental_order.number = str(100000+rental_order.id)
@@ -72,6 +74,8 @@ def rental_approve(request):
     try:
         rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
     if rental_order.status != 'request':
@@ -109,3 +113,25 @@ def rental_approve(request):
         result['stripe'] = get_strip_payment_info(rental_order.total_price, rental_order.currency)
 
     return CoastalJsonResponse(result)
+
+
+@login_required
+def payment_stripe(request):
+    """
+    :param request: POST data {"rental_order_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
+    :return: json data {}
+    """
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        rental_order = RentalOrder.objects.get(guest=request.user, id=request.POST.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    # TODO: check order status
+
+    card = request.POST.get('card')
+    return CoastalJsonResponse()

@@ -25,6 +25,7 @@ urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^api/message/', include('coastal.api.message.urls', namespace='message')),
     url(r'^api/rental/', include('coastal.api.rental.urls', namespace='rental')),
+    url(r'^api/payment/', include('coastal.api.payment.urls', namespace='payment')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

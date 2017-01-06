@@ -1,6 +1,41 @@
 import stripe
+from django.conf import settings
 
-stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
+if settings.DEBUG:
+    stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
+else:
+    stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
+
+
+def add_card(user, token):
+    if user.userprofile.stripe_customer_id:
+        customer = stripe.Customer.retrieve(user.userprofile.stripe_customer_id)
+        customer.sources.create(card=token)
+    else:
+        customer = stripe.Customer.create(
+            source=token,
+            email=user.email,
+            description="from Coastal APP",
+        )
+        user.userprofile.stripe_customer_id = customer.stripe_id
+        user.save()
+
+
+def get_card_list(user):
+    card_list = []
+
+    if user.userprofile.stripe_customer_id:
+        customer = stripe.Customer.retrieve(user.userprofile.stripe_customer_id)
+        default_card = customer.default_source
+        for i in customer.sources:
+            card_list.append({
+                "id": i.stripe_id,
+                "last4": i.last4,
+                "brand": i.brand,
+                "is_default": i.stripe_id == default_card,
+            })
+
+    return card_list
 
 
 def get_strip_payment_info(amount, currency):

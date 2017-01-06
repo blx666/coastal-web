@@ -16,13 +16,10 @@ class RentalBookForm(forms.ModelForm):
             'hour': 1
         }
         unit = self.cleaned_data.get('rental_unit')
-        data = self.cleaned_data
-        product = self.cleaned_data['product']
-        rental_unit = product.rental_unit
-
-        if unit_mapping[unit] > unit_mapping[rental_unit]:
-            raise forms.ValidationError('the rental_unit is invalid.')
-        super(RentalBookForm, self).clean()
+        product = self.cleaned_data.get('product')
+        if unit and product:
+            if unit_mapping[unit] > unit_mapping[product.rental_unit]:
+                raise forms.ValidationError('the rental_unit is invalid.')
 
 
 class RentalApproveForm(forms.Form):
