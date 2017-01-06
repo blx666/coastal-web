@@ -8,6 +8,7 @@ from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.utils import is_confirmed_user
 
+
 @login_required
 def book_rental(request):
     if request.method != 'POST':
