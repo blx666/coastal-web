@@ -11,6 +11,10 @@ from django.forms import model_to_dict
 from coastal.apps.message.models import Message
 from coastal.api.message.forms import MessageForm
 from django.contrib.auth.models import User
+from coastal.api import defines as defs
+from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage
+from django.core.paginator import PageNotAnInteger
 
 
 @login_required
@@ -103,7 +107,7 @@ def send_message(request):
     receiver_id = message_form.cleaned_data['receiver']
     dialogue_id = message_form.cleaned_data['dialogue']
     content = message_form.cleaned_data['content']
-    _type = message_form.cleaned_data['type']
+    _type = message_form.cleaned_data['_type']
 
     sender_obj = request.user
     receiver_obj = User.objects.get(id=receiver_id)
@@ -119,13 +123,32 @@ def send_message(request):
 
 
 @login_required
-def dialogue_detail(request, dial_id):
-    dialogue = Dialogue.objects.filter(id=dial_id).first()
+def dialogue_detail(request):
+    dialogue_id = request.GET.get('dialogue_id')
+    if not dialogue_id:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    dialogue = Dialogue.objects.filter(id=dialogue_id).first()
     if not dialogue:
         return CoastalJsonResponse(status=response.STATUS_404)
 
     product_id = dialogue.product.id
     messages = Message.objects.filter(dialogue=dialogue)
+    messages.update(read=True)
+    page = request.GET.get('page', 1)
+    item = defs.PER_PAGE_ITEM
+    paginator = Paginator(messages, item)
+    try:
+        messages = paginator.page(page)
+    except PageNotAnInteger:
+        messages = paginator.page(1)
+    except EmptyPage:
+        messages = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
+
     message_list = []
     for message in messages:
         message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
@@ -133,27 +156,34 @@ def dialogue_detail(request, dial_id):
         message_list.append(message_dict)
 
     result = {
+        'next_page': next_page,
         'product_id': product_id,
         'messages': message_list,
     }
+
     return CoastalJsonResponse(result)
 
 
 @login_required
-def instant_message(request, mess_id, dial_id):
-    #dialogue = Dialogue.objects.filter(id=dial_id).first()
-    instant_messages = Message.objects.filter(dialogue=dial_id, id__gt=mess_id)
-    if not instant_messages:
+def get_new_message(request):
+    date_created = request.GET.get('date_created')
+    dialogue_id = request.GET.get('dialogue_id')
+    if not (date_created and dialogue_id):
+        return CoastalJsonResponse(status=response.STATUS_404)
+    date_created = datetime.datetime.strptime(date_created, '%Y%m%d%H%M%S')
+    new_messages = Message.objects.filter(dialogue=dialogue_id, date_created__gt=date_created)
+    new_messages.update(read=True)
+    if not new_messages:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    instant_message_list = []
-    for message in instant_messages:
+    new_message_list = []
+    for message in new_messages:
         message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
         message_dict['date_created'] = message.date_created.strftime('%m %d,%Y %H:%M %p')
-        instant_message_list.append(message_dict)
+        new_message_list.append(message_dict)
 
     result = {
-        'instant_messages': instant_message_list,
+        'new_messages': new_message_list,
     }
 
     return CoastalJsonResponse(result)
