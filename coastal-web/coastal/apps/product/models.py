@@ -118,7 +118,7 @@ class Product(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
-    timezone = models.CharField(max_length=100, null=True, default='')
+    timezone = models.CharField(max_length=100, blank=True, default='')
 
     # basic info
     max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
