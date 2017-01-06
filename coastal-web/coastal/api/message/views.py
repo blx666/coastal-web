@@ -7,6 +7,10 @@ from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
 import datetime
+from django.forms import model_to_dict
+from coastal.apps.message.models import Message
+from coastal.api.message.forms import MessageForm
+from django.contrib.auth.models import User
 
 
 @login_required
@@ -84,4 +88,72 @@ def dialogue_list(request):
         'Yesterday': yesterday_list,
         'Past': past_list,
     }
+    return CoastalJsonResponse(result)
+
+
+@login_required
+def send_message(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    message_form = MessageForm(request.POST)
+    if not message_form.is_valid():
+        return CoastalJsonResponse(message_form.errors, status=response.STATUS_400)
+
+    receiver_id = message_form.cleaned_data['receiver']
+    dialogue_id = message_form.cleaned_data['dialogue']
+    content = message_form.cleaned_data['content']
+    _type = message_form.cleaned_data['type']
+
+    sender_obj = request.user
+    receiver_obj = User.objects.get(id=receiver_id)
+    dialogue_obj = Dialogue.objects.get(id=dialogue_id)
+    message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content,
+                                     _type=_type)
+
+    result = {
+        'message_id': message.id,
+    }
+
+    return CoastalJsonResponse(result)
+
+
+@login_required
+def dialogue_detail(request, dial_id):
+    dialogue = Dialogue.objects.filter(id=dial_id).first()
+    if not dialogue:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    product_id = dialogue.product.id
+    messages = Message.objects.filter(dialogue=dialogue)
+    message_list = []
+    for message in messages:
+        message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
+        message_dict['date_created'] = message.date_created.strftime('%m %d,%Y %H:%M %p')
+        message_list.append(message_dict)
+
+    result = {
+        'product_id': product_id,
+        'messages': message_list,
+    }
+    return CoastalJsonResponse(result)
+
+
+@login_required
+def instant_message(request, mess_id, dial_id):
+    #dialogue = Dialogue.objects.filter(id=dial_id).first()
+    instant_messages = Message.objects.filter(dialogue=dial_id, id__gt=mess_id)
+    if not instant_messages:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    instant_message_list = []
+    for message in instant_messages:
+        message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
+        message_dict['date_created'] = message.date_created.strftime('%m %d,%Y %H:%M %p')
+        instant_message_list.append(message_dict)
+
+    result = {
+        'instant_messages': instant_message_list,
+    }
+
     return CoastalJsonResponse(result)
