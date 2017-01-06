@@ -6,6 +6,8 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from coastal.api import defines as defs
 import datetime
 
 
@@ -35,12 +37,28 @@ def create_dialogue(request):
 
 @login_required
 def dialogue_list(request):
-    dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user))
+    dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
     today = datetime.date.today()
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
     today_list = []
     yesterday_list = []
     past_list = []
+
+    page = request.GET.get('page', 1)
+    item = defs.PER_PAGE_ITEM
+    paginator = Paginator(dialogues, item)
+    try:
+        dialogues = paginator.page(page)
+    except PageNotAnInteger:
+        dialogues = paginator.page(1)
+    except EmptyPage:
+        dialogues = paginator.page(paginator.num_pages)
+
+    if int(page) >= paginator.num_pages:
+        next_page = 0
+    else:
+        next_page = int(page) + 1
+
     for dialogue in dialogues:
         guest = request.user == dialogue.owner and dialogue.guest or dialogue.owner
         product = dialogue.product
@@ -80,8 +98,9 @@ def dialogue_list(request):
             past_list.append(dialogue_dict)
 
     result = {
-        'Today': today_list,
-        'Yesterday': yesterday_list,
-        'Past': past_list,
+        'today': today_list,
+        'yesterday': yesterday_list,
+        'past': past_list,
+        'next_page': next_page,
     }
     return CoastalJsonResponse(result)
