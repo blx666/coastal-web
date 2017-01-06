@@ -6,12 +6,14 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.payment.stripe import get_strip_payment_info
 from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
-
+from coastal.apps.account.utils import is_confirmed_user
 
 @login_required
 def book_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
+    if not is_confirmed_user(request.user):
+        return CoastalJsonResponse(status=1101)
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -136,4 +138,19 @@ def payment_stripe(request):
     # TODO: check order status
 
     card = request.POST.get('card')
+    return CoastalJsonResponse()
+
+
+@login_required
+def delete_rental(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+    try:
+        rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    rental_order.is_deleted = True
+    rental_order.save()
     return CoastalJsonResponse()
