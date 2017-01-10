@@ -164,6 +164,7 @@ def dialogue_detail(request):
         for message in messages:
             message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
             message_dict['date_created'] = message.date_created.strftime("%Y%m%d%H%M%S")
+            message_dict['format_datetime'] = message.date_created.strftime('%b %m,%Y %H:%M%p')
             message_list.append(message_dict)
         message_list.reverse()
 
@@ -174,36 +175,38 @@ def dialogue_detail(request):
 
     if message_time and direction:
         message_time = datetime.datetime.strptime(message_time, '%Y%m%d%H%M%S')
+        message_time = message_time + datetime.timedelta(hours=8)
         if direction == 'up':
-            messages = Message.objects.filter(dialogue=dialogue, date_created__lt=message_time).order_by('-date_created')
-            messages.update(read=True)
-            messages = messages[:20]
-            message_list = []
-            for message in messages:
-                message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
-                message_dict['date_created'] = message.date_created.strftime("%Y%m%d%H%M%S")
-                message_list.append(message_dict)
-            message_list.reverse()
+            up_messages = Message.objects.filter(dialogue=dialogue, date_created__lt=message_time).order_by('-date_created')
+            up_messages.update(read=True)
+            up_messages = up_messages[:20]
+            up_message_list = []
+            for message in up_messages:
+                up_message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
+                up_message_dict['date_created'] = message.date_created.strftime("%Y%m%d%H%M%S")
+                up_message_dict['format_datetime'] = message.date_created.strftime('%b %m,%Y %H:%M%p')
+                up_message_list.append(up_message_dict)
+            up_message_list.reverse()
 
             result = {
                 'product_id': product_id,
-                'messages': message_list,
+                'messages': up_message_list,
             }
 
         if direction == 'down':
-            messages = Message.objects.filter(dialogue=dialogue, date_created__gt=message_time).order_by('-date_created')
-            messages.update(read=True)
-            message_list = []
-            for message in messages:
-                message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
-                message_dict['date_created'] = message.date_created
-                message_dict['message_time'] = message_time
-                message_list.append(message_dict)
-            message_list.reverse()
+            down_messages = Message.objects.filter(dialogue=dialogue, date_created__gt=message_time).order_by('-date_created')
+            down_messages.update(read=True)
+            down_message_list = []
+            for message in down_messages:
+                down_message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', '_type', 'content'])
+                down_message_dict['date_created'] = message.date_created.strftime("%Y%m%d%H%M%S")
+                down_message_dict['format_datetime'] = message.date_created.strftime('%b %m,%Y %H:%M%p')
+                down_message_list.append(down_message_dict)
+            down_message_list.reverse()
 
             result = {
                 'product_id': product_id,
-                'messages': message_list,
+                'messages': down_message_list,
             }
 
     return CoastalJsonResponse(result)
