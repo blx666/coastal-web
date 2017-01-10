@@ -582,6 +582,6 @@ def product_review():
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    for review in reviews:
+    # for review in reviews:
     #     pass
     pass
