@@ -178,6 +178,8 @@ def order_detail(request):
             'rooms': order.product.rooms or 0,
             'bathrooms': order.product.bathrooms or 0,
             'beds': order.product.beds or 0,
+            'cancel_policy': 'Coastal does not provide online cancellation service. Please contact us if you have any needs.',
+            'rental_rule': order.product.rental_rule or 'Nothing is set',
         },
         'owner': {
             'id': order.owner.id,
