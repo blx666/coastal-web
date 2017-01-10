@@ -26,7 +26,7 @@ def create_dialogue(request):
     order = RentalOrder.objects.filter(owner=product.owner, guest=request.user,
                                        product=product).first()
     dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=product.owner, guest=request.user,
-                                                                       product=product, order=order, defaults={'is_deleted': False})
+                                                                       product=product, defaults={'order': order, 'is_deleted': False})
 
     result = {
         'dialogue_id': dialogue.id,
@@ -67,8 +67,8 @@ def dialogue_list(request):
             order_dict = {
                 'order_id': order.id,
                 'status': order.status,
-                'start': order.start_datetime,
-                'end': order.end_datetime,
+                'start': datetime.datetime.strftime(order.start_datetime, '%m/%d'),
+                'end': datetime.datetime.strftime(order.end_datetime, '%m/%d'),
             }
         dialogue_dict = {
             'dialogue_id': dialogue.id,
