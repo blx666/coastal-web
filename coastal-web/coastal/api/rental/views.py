@@ -12,6 +12,7 @@ from datetime import datetime
 import time
 from coastal.apps.account.utils import is_confirmed_user
 
+
 @login_required
 def book_rental(request):
     if request.method != 'POST':
@@ -214,7 +215,7 @@ def delete_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     try:
-        rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
+        rental_order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
