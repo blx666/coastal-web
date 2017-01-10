@@ -645,7 +645,6 @@ def product_owner(request):
     yachts_list = []
     jets_list = []
     for product in products:
-        favorite_item = FavoriteItem.objects.filter(favorite__user=request.user, product=product)
         liked_product_id_list = []
         if request.user.is_authenticated:
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
