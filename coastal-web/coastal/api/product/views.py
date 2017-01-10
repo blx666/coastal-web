@@ -626,7 +626,7 @@ def product_review(request):
         }
         return CoastalJsonResponse(result)
     else:
-        return CoastalJsonResponse()
+        return CoastalJsonResponse({})
 
 
 def product_owner(request):
