@@ -656,7 +656,7 @@ def product_owner(request):
             spaces_list.append({
                 "id": product.id,
                 "category": product.category_id,
-                "image": product.images and product.images[0] or '',
+                "image": product.images and product.images[0].image.url or '',
                 "liked": liked,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
@@ -670,13 +670,13 @@ def product_owner(request):
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
                 "reviews_count": reviews_avg_score['id__count'],
-                "reviews_avg_score": reviews_avg_score['score__avg'],
+                "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
             })
         elif product.category.get_root().id == 2:
             yachts_dict ={
                 "id": product.id,
                 "category": product.category_id,
-                "image": product.images and product.images[0] or '',
+                "image": product.images and product.images[0].image.url or '',
                 "liked": liked,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
@@ -689,7 +689,7 @@ def product_owner(request):
                 "max_guests": product.max_guests or 0,
                 'rooms': product.rooms or 0,
                 "reviews_count": reviews_avg_score['id__count'],
-                "reviews_avg_score": reviews_avg_score['score__avg']
+                "reviews_avg_score": reviews_avg_score['score__avg'] or 0
             }
             if product.category.id == product_defs.CATEGORY_BOAT_SLIP:
                 yachts_dict['length'] = product.length or 0
@@ -700,7 +700,7 @@ def product_owner(request):
             jets_list.append({
                 "id": product.id,
                 "category": product.category_id,
-                "image": product.images and product.images[0] or '',
+                "image": product.images and product.images[0].image.url or '',
                 "liked": liked,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
@@ -714,7 +714,7 @@ def product_owner(request):
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
                 "reviews_count": reviews_avg_score['id__count'],
-                "reviews_avg_score": reviews_avg_score['score__avg'],
+                "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
             })
 
     owner = {
@@ -750,7 +750,7 @@ def product_owner(request):
     result = {
         'owner': owner,
         'review_count': review_avg_score['id__count'],
-        'review_avg_score': review_avg_score['score__avg'],
+        'review_avg_score': review_avg_score['score__avg'] or 0,
         'latest_review': latest_review,
         'products': products
     }
