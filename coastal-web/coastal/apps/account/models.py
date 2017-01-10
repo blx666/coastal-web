@@ -76,7 +76,11 @@ class CoastalBucket(models.Model):
 
 
 class Transaction(models.Model):
+    TYPE_CHOICES = (
+        ('in', 'in'),
+        ('out', 'out'),
+    )
     bucket = models.ForeignKey(CoastalBucket)
-    type = models.CharField(max_length=32)
+    type = models.CharField(max_length=32, choices=TYPE_CHOICES)
     order_number = models.CharField(max_length=64)
     date_created = models.DateTimeField(auto_now_add=True)
