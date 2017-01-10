@@ -137,3 +137,10 @@ def get_price_display(product, price):
     if not price:
         return ""
     return Currency.objects.get(code=product.currency.upper()).display + str(int(price))
+
+
+def format_date(value, default=None):
+    if value:
+        return value.strftime('%m/%d/%Y')
+    else:
+        return default
