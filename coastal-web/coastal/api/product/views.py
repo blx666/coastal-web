@@ -218,6 +218,7 @@ def product_detail(request, pid):
         content['liked'] = p.id in liked_product_id_list
         content['max_guests'] = p.max_guests or 0
         content['length'] = p.length or 0
+        content['rooms'] = p.rooms or 0
         content['image'] = ""
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
