@@ -146,7 +146,7 @@ def payment_stripe(request):
 
 
 def order_detail(request):
-    order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
+    order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
