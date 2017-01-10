@@ -19,4 +19,5 @@ urlpatterns = [
     url(r'^black-dates-for-rental/$', views.black_dates_for_rental, name='black-dates-for-rental'),
     url(r'^search/$', views.search, name='search'),
     url(r'^reviews/$', views.product_review, name='product-review'),
+    url(r'^owner/$', views.product_owner, name='product-owner'),
 ]
