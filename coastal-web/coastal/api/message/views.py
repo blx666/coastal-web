@@ -71,8 +71,8 @@ def dialogue_list(request):
             order_dict = {
                 'order_id': order.id,
                 'status': order.status,
-                'start': datetime.datetime.strftime(order.start_datetime, '%m/%d'),
-                'end': datetime.datetime.strftime(order.end_datetime, '%m/%d'),
+                'start': order.start_datetime.strftime('%m/%d'),
+                'end': order.end_datetime.strftime('%m/%d'),
             }
         dialogue_dict = {
             'dialogue_id': dialogue.id,
