@@ -196,7 +196,7 @@ def order_detail(request):
         'start_date': start_datetime,
         'end_date': end_datetime,
         'total_price_display': get_price_display(order.product, order.total_price),
-        'status': order.status,
+        'status': order.get_status_display(),
     }
     if order.status == 'charge':
         result.update({

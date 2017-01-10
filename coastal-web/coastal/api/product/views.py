@@ -198,7 +198,7 @@ def product_detail(request, pid):
     avg_score = reviews.aggregate(Avg('score'), Count('id'))
     data['reviews'] = {
         'count': avg_score['id__count'],
-        'avg_score': avg_score['score__avg'],
+        'avg_score': avg_score['score__avg'] or 0,
     }
     if last_review:
         start_time = last_review.order.start_datetime
@@ -553,7 +553,7 @@ def search(request):
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
-            'reviews':  0,
+            'reviews':  product.review_set.all().count(),
             'rental_price': product.rental_price or 0,
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
