@@ -4,7 +4,9 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
+from django.db.models import Avg, Count
 from timezonefinder import TimezoneFinder
+from datetime import datetime
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom
@@ -19,6 +21,7 @@ from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.product import defines as product_defs
 from coastal.api.rental.forms import RentalBookForm
 from coastal.api import defines as defs
+from coastal.apps.review.models import Review
 
 
 def product_list(request):
@@ -185,17 +188,24 @@ def product_detail(request, pid):
         'name': product.owner.get_full_name() or product.owner.email,
         'photo': photo,
     }
+    reviews = Review.objects.filter(product=product).order_by('-date_created')
+    last_review = reviews.first()
+    avg_score = reviews.aggregate(Avg('score'), Count('id'))
     data['reviews'] = {
-        "count": 0,
-        "avg_score": 0,
-        # "latest_review": {
-        #     "reviewer_name": "Sandra Ravikal",
-        #     "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
-        #     "stayed_range": "02/27 - 02/28",
-        #     "score": 5,
-        #     "content": "This is a sample rating of this listing."
-        # }
+        'count': avg_score['id__count'],
+        'avg_score': avg_score['score__avg'],
     }
+    if last_review:
+        start_time = last_review.order.start_datetime
+        end_time = last_review.order.end_datetime
+        data['reviews']['latest_review'] = {
+            "reviewer_id": last_review.owner_id,
+            "reviewer_name": last_review.owner.get_full_name(),
+            "reviewer_photo": last_review.owner.userprofile.photo.url or '',
+            "stayed_range": '%s - %s' % (datetime.strftime(start_time, '%Y/%m/%d'), datetime.strftime(end_time, '%Y/%m/%d')),
+            "score": last_review.score,
+            "content": last_review.content
+        }
     price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
