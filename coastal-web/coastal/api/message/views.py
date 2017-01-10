@@ -39,7 +39,7 @@ def dialogue_list(request):
     dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
     unread_dialogues = dialogues.filter(message__read=False).annotate(num_messages=Count('message'))
     unread_dialogue_count_dict = {dialogue.id: dialogue.num_messages for dialogue in unread_dialogues}
-
+    dialogues = dialogues[:100]
     today = datetime.date.today()
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
     today_list = []
