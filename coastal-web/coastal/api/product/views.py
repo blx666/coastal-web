@@ -646,10 +646,11 @@ def product_owner(request):
     jets_list = []
     for product in products:
         favorite_item = FavoriteItem.objects.filter(favorite__user=request.user, product=product)
-        if favorite_item:
-            liked = True
-        else:
-            liked = False
+        liked_product_id_list = []
+        if request.user.is_authenticated:
+            liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+                'product_id', flat=True)
+
         review = Review.objects.filter(product=product)
         reviews_avg_score = review.aggregate(Avg('score'), Count('id'))
         if product.category.get_root().id == 1:
@@ -657,7 +658,7 @@ def product_owner(request):
                 "id": product.id,
                 "category": product.category_id,
                 "image": product.images and product.images[0].image.url or '',
-                "liked": liked,
+                "liked": product.id in liked_product_id_list,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
                 "rental_price": product.rental_price,
@@ -677,7 +678,7 @@ def product_owner(request):
                 "id": product.id,
                 "category": product.category_id,
                 "image": product.images and product.images[0].image.url or '',
-                "liked": liked,
+                "liked": product.id in liked_product_id_list,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
                 "rental_price": product.rental_price,
@@ -701,7 +702,7 @@ def product_owner(request):
                 "id": product.id,
                 "category": product.category_id,
                 "image": product.images and product.images[0].image.url or '',
-                "liked": liked,
+                "liked": product.id in liked_product_id_list,
                 "for_rental": product.for_rental,
                 "for_sale": product.for_sale,
                 "rental_price": product.rental_price,
@@ -755,3 +756,38 @@ def product_owner(request):
         'products': products
     }
     return CoastalJsonResponse(result)
+
+
+def product_owner_reviews(request):
+    owner_id = request.GET.get('owner_id')
+    try:
+        user = User.objects.get(id=owner_id)
+    except User.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    reviews = Review.objects.filter(order__owner=user)
+    review_avg_score = reviews.aggregate(Avg('score'), Count('id'))
+    reviews_list = []
+    for review in reviews:
+        reviews_list.append({
+            'guest_id': review.owner_id,
+            'guest_name': review.owner.get_full_name(),
+            'guest_photo': review.owner.userprofile.photo and review.owner.userprofile.photo.url or '',
+            'date': format_date(review.date_created),
+            'score': review.score,
+            'content': review.content
+        })
+    owner = {
+        'id': user.id,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
+    }
+
+    result = {
+        'owner': owner,
+        'review_count': review_avg_score['id__count'],
+        'reviews': reviews_list,
+    }
+    return CoastalJsonResponse(result)
+
