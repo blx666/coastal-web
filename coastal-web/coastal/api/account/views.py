@@ -16,6 +16,7 @@ from coastal.apps.rental.models import RentalOrder
 from coastal.api.product.utils import get_price_display
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
+from coastal.api.product.utils import bind_product_image
 import time
 import math
 
@@ -136,14 +137,11 @@ def validate_email(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     user = request.user
-    validate_list = user.validateemail_set.values('id')
-
-    if len(validate_list) != 0:
-        validate_id = max([id_dict['id'] for id_dict in validate_list])
-        exit_validate = ValidateEmail.objects.get(id=validate_id)
-        timespan = timezone.now() - exit_validate.created_date
+    validate = user.validateemail_set.order_by('created_date').first()
+    if validate:
+        timespan = timezone.now() - validate.created_date
         if timespan.total_seconds() < 300:
-            data = {'email_confirmed': exit_validate.user.userprofile.email_confirmed}
+            data = {'email_confirmed': validate.user.userprofile.email_confirmed}
             return CoastalJsonResponse(data)
     else:
         user.userprofile.email_confirmed = 'sending'
@@ -152,12 +150,15 @@ def validate_email(request):
     validate_instance.save(user=user)
     subject = 'user validate email'
     message = '''Hi %s,
+
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
                 http://%s/api/account/validate-email/confirm/?token=%s
                 The link will be valid 24 hours later. Please resend if this happens.
+
                 Thanks,
-                The Coastal Team''' % (user.eamil, settings.SITE_DOMAIN, validate_instance.token)
-    send_mail(subject, message, settings.SUBSCRIBE_EMAIL, [user.email], connection=None, html_message=None)
+                The Coastal Team
+                ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
 
@@ -178,7 +179,6 @@ def validate_email_confirm(request):
         return HttpResponse('token already  expire')
     except validate_email.DoesNotExist:
         return HttpResponse('token is not exist')
-    return HttpResponse('token already  expire')
 
 
 @login_required
@@ -186,8 +186,8 @@ def my_activity(request):
     user = request.user
     now = datetime.now()
     start = now - timedelta(hours=23, minutes=59, seconds=59)
-    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined']))
-    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined']).filter(date_created__gte=start))
+    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined', 'invalid']))
+    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined', 'invalid']).filter(date_created__gte=start))
     if orders_finished and orders_notfinished:
         orders = orders_finished + orders_notfinished
     elif orders_finished and not orders_notfinished:
@@ -224,12 +224,12 @@ def my_activity(request):
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
-                    'phone': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
+                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
                     'name': order.owner.get_full_name(),
                 },
                 'guest': {
                     'id': order.guest_id,
-                    'phone': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
+                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
                     'name': order.guest.get_full_name(),
                 },
                 'product': {
@@ -241,7 +241,7 @@ def my_activity(request):
                 'end_date': end_datetime,
                 'total_price_display': get_price_display(order.product, order.total_price),
                 'more_info': more_info,
-                'status': order.status,
+                'status': order.get_status_display(),
             }
             order_list.append(data)
     else:
@@ -266,3 +266,65 @@ def my_activity(request):
             'order': order_list,
         }
     return CoastalJsonResponse(result)
+
+
+@login_required
+def my_account(request):
+    user = request.user
+
+    data = {}
+    data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
+
+    # userprofile
+    data['profile'] = {
+        'name': user.get_full_name(),
+        'email': user.email,
+        'email_confirmed': user.userprofile.email_confirmed,
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+    }
+
+    # my products
+    product_group = []
+    product_list = user.properties.all()
+    bind_product_image(product_list)
+    for product in product_list:
+        data_product = {}
+        data_product['id'] = product.id
+        data_product['name'] = product.name
+        data_product['image'] = product.images[0].image.url if len(product.images) else ''
+        data_product['address'] = product.country + ',' + product.city
+        data_product['status'] = product.status
+        product_group.append(data_product)
+    data['my_products'] = product_group
+
+    # my favorite
+    favorite_group = []
+    favorite_item = FavoriteItem.objects.filter(favorite__user=user)
+    product_favorite = Product.objects.filter(favoriteitem__in=favorite_item)
+    bind_product_image(product_favorite)
+    for product in product_favorite:
+        data_favorite = {}
+        data_favorite['id'] = product.id
+        data_favorite['name'] = product.name
+        data_favorite['image'] = product.images[0].image.url if len(product.images) else ''
+        data_favorite['address'] = product.country + ',' + product.city
+        favorite_group.append(data_favorite)
+    data['favorites'] = favorite_group
+
+    # my orders
+    order_group = []
+    order_list = user.owner_orders.all()
+    for order in order_list:
+        data_order = {}
+        data_order['id'] = order.id
+        data_order['type'] = order.rental_unit
+        image = order.product.productimage_set.all()
+        data_order['image'] = image[0].image.url if len(image) else ''
+        data_order['title'] = order.number
+        order_group.append(data_order)
+    data['orders'] = order_group
+
+    return CoastalJsonResponse(data)
+
+
+

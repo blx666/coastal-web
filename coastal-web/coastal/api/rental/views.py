@@ -1,17 +1,24 @@
+import math
 from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, ApproveEvent
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.product.models import Product
 from coastal.apps.payment.stripe import get_strip_payment_info
-from coastal.api.product.utils import calc_price
+from coastal.api.product.utils import calc_price, get_price_display
 from coastal.api.core.decorators import login_required
+from coastal.apps.payment.stripe import get_card_list
+from coastal.apps.product import defines as defs
+from datetime import datetime
+import time
+from coastal.apps.account.utils import is_confirmed_user
 
 
 @login_required
 def book_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
+    if not is_confirmed_user(request.user):
+        return CoastalJsonResponse(status=response.STATUS_1101)
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -37,8 +44,12 @@ def book_rental(request):
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency
+    # TODO: get currency_rate according to currency
+    rental_order.currency_rate = 1
+    rental_order.total_price_usd = math.floor(rental_order.total_price / rental_order.currency_rate)
     # rental_order.timezone = product.timezone
     rental_order.save()
+    # TODO: move generate order number into save function
     rental_order.number = str(100000+rental_order.id)
     rental_order.save()
 
@@ -72,6 +83,8 @@ def rental_approve(request):
     try:
         rental_order = RentalOrder.objects.get(owner=request.user, id=request.POST.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
     if rental_order.status != 'request':
@@ -109,3 +122,102 @@ def rental_approve(request):
         result['stripe'] = get_strip_payment_info(rental_order.total_price, rental_order.currency)
 
     return CoastalJsonResponse(result)
+
+
+@login_required
+def payment_stripe(request):
+    """
+    :param request: POST data {"rental_order_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
+    :return: json data {}
+    """
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        rental_order = RentalOrder.objects.get(guest=request.user, id=request.POST.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    # TODO: check order status
+
+    card = request.POST.get('card')
+    return CoastalJsonResponse()
+
+
+def order_detail(request):
+    order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
+    start_time = order.start_datetime
+    end_time = order.end_datetime
+    if order.product.rental_unit == 'day':
+        start_datetime = datetime.strftime(start_time, '%A/ %B %dst,%Y')
+        end_datetime = datetime.strftime(end_time, '%A/ %B %dst,%Y')
+    else:
+        start_datetime = datetime.strftime(start_time, '%A, %B %dst %H,%Y')
+        end_datetime = datetime.strftime(end_time, '%A, %B %dst %H,%Y')
+
+    if order.product.rental_unit == 'day':
+        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
+            time_info = math.ceil(
+                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
+        else:
+            time_info = math.ceil(
+                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
+    if order.product.rental_unit == 'half-day':
+        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
+    if order.product.rental_unit == 'hour':
+        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
+    if time_info > 1:
+        title = 'Book %s %ss as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
+    else:
+        title = 'Book %s %s as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
+
+    result = {
+        'title': title,
+        'product': {
+            'rooms': order.product.rooms or 0,
+            'bathrooms': order.product.bathrooms or 0,
+            'beds': order.product.beds or 0,
+        },
+        'owner': {
+            'id': order.owner.id,
+            'photo': order.owner.userprofile.photo.url,
+            'name': order.owner.get_full_name(),
+        },
+        'guest': {
+            'id': order.guest.id,
+            'photo': order.guest.userprofile.photo.url,
+            'name': order.guest.get_full_name()
+        },
+        'guests': order.guest_count,
+        'start_date': start_datetime,
+        'end_date': end_datetime,
+        'total_price_display': get_price_display(order.product, order.total_price),
+        'status': order.status,
+    }
+    if order.status == 'charge':
+        result.update({
+            'payment_list': ['coastal', 'stripe'],
+            'coastal': {
+                'balance': order.guest.coastalbucket.balance,
+            },
+            'stripe': {
+                'card_list': get_card_list(order.guest),
+            }
+        }
+        )
+    return CoastalJsonResponse(result)
+@login_required
+def delete_rental(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+    try:
+        rental_order = RentalOrder.objects.get(id=request.POST.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    rental_order.is_deleted = True
+    rental_order.save()
+    return CoastalJsonResponse()

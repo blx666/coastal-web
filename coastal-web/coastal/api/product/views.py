@@ -19,6 +19,7 @@ from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.product import defines as product_defs
 from coastal.api.rental.forms import RentalBookForm
 from coastal.api import defines as defs
+from coastal.apps.review.models import Review
 
 
 def product_list(request):
@@ -59,9 +60,13 @@ def product_list(request):
     if max_price:
         products = products.filter(rental_price__lte=max_price)
     if arrival_date:
-        products = products.filter(rentaldaterange__start_date__lte=arrival_date)
+        products = products.exclude(rentalblackoutdate__start_date__lte=arrival_date,
+                                    rentalblackoutdate__end_date__gte=arrival_date).exclude(
+            rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
     if checkout_date:
-        products = products.filter(rentaldaterange__end_date__gte=checkout_date)
+        products = products.exclude(rentalblackoutdate__start_date__lte=checkout_date,
+                                    rentalblackoutdate__end_date__gte=checkout_date).exclude(
+            rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
@@ -229,6 +234,7 @@ def product_detail(request, pid):
         content['liked'] = p.id in liked_product_id_list
         content['max_guests'] = p.max_guests or 0
         content['length'] = p.length or 0
+        content['rooms'] = p.rooms or 0
         content['image'] = ""
         content['rental_price_display'] = get_price_display(p, p.rental_price)
         content['sale_price_display'] = get_price_display(p, p.sale_price)
@@ -437,9 +443,11 @@ def recommend_product_list(request):
     else:
         next_page = int(page) + 1
     for product in recommend_products:
-        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price',
-                                                      'beds', 'max_guests'])
+        product_data = model_to_dict(product, fields=['id', 'for_rental', 'for_sale', 'rental_price', 'sale_price'])
         product_data.update({
+            'beds': product.beds or 0,
+            'max_guests': product.max_guests or 0,
+            'length': product.length or 0,
             'category': product.category_id,
             'rental_unit': product.get_rental_unit_display(),
             'rental_price_display': get_price_display(product, product.rental_price),
@@ -565,3 +573,16 @@ def search(request):
         'next_page': next_page
     }
     return CoastalJsonResponse(result)
+
+
+def product_review():
+    try:
+        reviews = Review.objects.get(product_id=request.POST.get('product_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    # for review in reviews:
+    #     pass
+    pass
