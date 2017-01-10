@@ -1,4 +1,4 @@
-from coastal.apps.message.models import Dialogue
+from coastal.apps.message.models import Dialogue, Message
 from coastal.api.message.forms import DialogueForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
@@ -7,7 +7,11 @@ from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
 import datetime
+from django.forms import model_to_dict
+from coastal.api.message.forms import MessageForm
+from django.contrib.auth.models import User
 from django.db.models import Count
+from django.utils import timezone
 
 
 @login_required
@@ -105,3 +109,95 @@ def delete_dialogue(request):
     dialogue.is_deleted = True
     dialogue.save()
     return CoastalJsonResponse()
+
+
+@login_required
+def send_message(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    message_form = MessageForm(request.POST)
+    if not message_form.is_valid():
+        return CoastalJsonResponse(message_form.errors, status=response.STATUS_400)
+
+    receiver_id = message_form.cleaned_data['receiver']
+    dialogue_id = message_form.cleaned_data['dialogue']
+    content = message_form.cleaned_data['content']
+
+    sender_obj = request.user
+    receiver_obj = User.objects.get(id=receiver_id)
+    dialogue_obj = Dialogue.objects.get(id=dialogue_id)
+    message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
+    dialogue_obj.save()
+    result = {
+        'message_id': message.id,
+    }
+
+    return CoastalJsonResponse(result)
+
+
+@login_required
+def dialogue_detail(request):
+    dialogue_id = request.GET.get('dialogue_id')
+
+    message_time = request.GET.get('message_time')
+    direction = request.GET.get('direction')
+
+    if not dialogue_id:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    dialogue = Dialogue.objects.filter(id=dialogue_id).first()
+    if not dialogue:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    product_id = dialogue.product.id
+
+    if not (message_time or direction):
+        messages = Message.objects.filter(dialogue=dialogue).order_by('-date_created')
+        messages.update(read=True)
+        messages = messages[:20]
+        message_list = []
+        for message in messages:
+            message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', 'content'])
+            message_dict['date_created'] = message.date_created.strftime('%Y-%m-%d %H:%M:%S')
+            message_list.append(message_dict)
+        message_list.reverse()
+
+        result = {
+            'product_id': product_id,
+            'messages': message_list,
+        }
+
+    if message_time and direction:
+        message_time = datetime.datetime.strptime(message_time, '%Y-%m-%d %H:%M:%S')
+        message_time = timezone.make_aware(message_time, timezone.UTC())
+        if direction == 'up':
+            up_messages = Message.objects.filter(dialogue=dialogue, date_created__lt=message_time).order_by('-date_created')
+            up_messages.update(read=True)
+            up_messages = up_messages[:20]
+            up_message_list = []
+            for message in up_messages:
+                up_message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', 'content'])
+                up_message_dict['date_created'] = message.date_created.strftime('%Y-%m-%d %H:%M:%S')
+                up_message_list.append(up_message_dict)
+            up_message_list.reverse()
+
+            result = {
+                'product_id': product_id,
+                'messages': up_message_list,
+            }
+
+        if direction == 'down':
+            down_messages = Message.objects.filter(dialogue=dialogue, date_created__gt=message_time).order_by('-date_created')
+            down_messages.update(read=True)
+            down_message_list = []
+            for message in down_messages:
+                down_message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', 'content'])
+                down_message_dict['date_created'] = message.date_created.strftime('%Y-%m-%d %H:%M:%S')
+                down_message_list.append(down_message_dict)
+            down_message_list.reverse()
+
+            result = {
+                'product_id': product_id,
+                'messages': down_message_list,
+            }
+
+    return CoastalJsonResponse(result)

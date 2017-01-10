@@ -186,8 +186,8 @@ def my_activity(request):
     user = request.user
     now = datetime.now()
     start = now - timedelta(hours=23, minutes=59, seconds=59)
-    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined']))
-    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined']).filter(date_created__gte=start))
+    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined', 'invalid']))
+    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined', 'invalid']).filter(date_created__gte=start))
     if orders_finished and orders_notfinished:
         orders = orders_finished + orders_notfinished
     elif orders_finished and not orders_notfinished:

@@ -118,7 +118,7 @@ class Product(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
-    timezone = models.CharField(max_length=100, blank=True)
+    timezone = models.CharField(max_length=100, blank=True, default='')
 
     # basic info
     max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -185,6 +185,9 @@ class Product(models.Model):
         self.status = 'published'
 
     def validate_publish_data(self):
+        if not self.productimage_set:
+            return False
+
         if not (self.for_sale or self.for_rental):
             return False
 

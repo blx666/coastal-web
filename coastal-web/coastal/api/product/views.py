@@ -4,7 +4,9 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
+from django.db.models import Avg, Count
 from timezonefinder import TimezoneFinder
+from datetime import datetime
 
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom
@@ -19,6 +21,7 @@ from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.product import defines as product_defs
 from coastal.api.rental.forms import RentalBookForm
 from coastal.api import defines as defs
+from coastal.apps.review.models import Review
 
 
 def product_list(request):
@@ -59,9 +62,13 @@ def product_list(request):
     if max_price:
         products = products.filter(rental_price__lte=max_price)
     if arrival_date:
-        products = products.filter(rentaldaterange__start_date__lte=arrival_date)
+        products = products.exclude(rentalblackoutdate__start_date__lte=arrival_date,
+                                    rentalblackoutdate__end_date__gte=arrival_date).exclude(
+            rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
     if checkout_date:
-        products = products.filter(rentaldaterange__end_date__gte=checkout_date)
+        products = products.exclude(rentalblackoutdate__start_date__lte=checkout_date,
+                                    rentalblackoutdate__end_date__gte=checkout_date).exclude(
+            rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
@@ -185,17 +192,24 @@ def product_detail(request, pid):
         'name': product.owner.get_full_name() or product.owner.email,
         'photo': photo,
     }
+    reviews = Review.objects.filter(product=product).order_by('-date_created')
+    last_review = reviews.first()
+    avg_score = reviews.aggregate(Avg('score'), Count('id'))
     data['reviews'] = {
-        "count": 0,
-        "avg_score": 0,
-        # "latest_review": {
-        #     "reviewer_name": "Sandra Ravikal",
-        #     "reviewer_photo": "http://54.169.88.72/media/user/photo012.jpg",
-        #     "stayed_range": "02/27 - 02/28",
-        #     "score": 5,
-        #     "content": "This is a sample rating of this listing."
-        # }
+        'count': avg_score['id__count'],
+        'avg_score': avg_score['score__avg'],
     }
+    if last_review:
+        start_time = last_review.order.start_datetime
+        end_time = last_review.order.end_datetime
+        data['reviews']['latest_review'] = {
+            "reviewer_id": last_review.owner_id,
+            "reviewer_name": last_review.owner.get_full_name(),
+            "reviewer_photo": last_review.owner.userprofile.photo.url or '',
+            "stayed_range": '%s - %s' % (datetime.strftime(start_time, '%Y/%m/%d'), datetime.strftime(end_time, '%Y/%m/%d')),
+            "score": last_review.score,
+            "content": last_review.content
+        }
     price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
@@ -229,6 +243,7 @@ def product_detail(request, pid):
         content['liked'] = p.id in liked_product_id_list
         content['max_guests'] = p.max_guests or 0
         content['length'] = p.length or 0
+        content['rooms'] = p.rooms or 0
         content['image'] = ""
         content['rental_price_display'] = get_price_display(p, p.rental_price)
         content['sale_price_display'] = get_price_display(p, p.sale_price)
@@ -567,3 +582,16 @@ def search(request):
         'next_page': next_page
     }
     return CoastalJsonResponse(result)
+
+
+def product_review():
+    try:
+        reviews = Review.objects.get(product_id=request.POST.get('product_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    # for review in reviews:
+    #     pass
+    pass
