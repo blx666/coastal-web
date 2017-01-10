@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.message.managers import DialogueManager
+from django.db.models.signals import post_save
 
 
 class Dialogue(models.Model):
@@ -25,3 +26,16 @@ class Message(models.Model):
     content = models.TextField()
     read = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+
+
+def post_save_dialogue(sender, **kwargs):
+    instance = kwargs['instance']
+    owner = getattr(instance, 'owner')
+    guest = getattr(instance, 'guest')
+    product = getattr(instance, 'product')
+    dialogue = Dialogue.objects.filter(owner=owner, guest=guest, product=product).first()
+    if not dialogue:
+        return
+    dialogue.order = instance
+    dialogue.save()
+post_save.connect(post_save_dialogue, sender=RentalOrder, weak=False, dispatch_uid='RentalOrder_post_save_dialogue')
