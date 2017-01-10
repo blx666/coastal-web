@@ -9,4 +9,3 @@ class MessageForm(forms.Form):
     receiver = forms.IntegerField()
     dialogue = forms.IntegerField()
     content = forms.CharField(widget=forms.Textarea)
-    _type = forms.CharField(max_length=16)
