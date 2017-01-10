@@ -621,7 +621,7 @@ def product_review(request):
         result = {
             'owner': owner,
             'product': product_dict,
-            'review_count': review_count['id_count'],
+            'review_count': review_count['id__count'],
             'reviews': reviews_list
         }
         return CoastalJsonResponse(result)
@@ -669,7 +669,7 @@ def product_owner(request):
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_avg_score['id_count'],
+                "reviews_count": reviews_avg_score['id__count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'],
             })
         elif product.category.get_root().id == 2:
@@ -688,7 +688,7 @@ def product_owner(request):
                 "city": product.city,
                 "max_guests": product.max_guests or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_avg_score['id_count'],
+                "reviews_count": reviews_avg_score['id__count'],
                 "reviews_avg_score": reviews_avg_score['score__avg']
             }
             if product.category.id == product_defs.CATEGORY_BOAT_SLIP:
@@ -713,7 +713,7 @@ def product_owner(request):
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_avg_score['id_count'],
+                "reviews_count": reviews_avg_score['id__count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'],
             })
 
@@ -749,7 +749,7 @@ def product_owner(request):
     }
     result = {
         'owner': owner,
-        'review_count': review_avg_score['id_count'],
+        'review_count': review_avg_score['id__count'],
         'review_avg_score': review_avg_score['score__avg'],
         'latest_review': latest_review,
         'products': products
