@@ -181,12 +181,12 @@ def order_detail(request):
         },
         'owner': {
             'id': order.owner.id,
-            'photo': order.owner.userprofile.photo.url,
+            'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
             'name': order.owner.get_full_name(),
         },
         'guest': {
             'id': order.guest.id,
-            'photo': order.guest.userprofile.photo.url,
+            'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
             'name': order.guest.get_full_name()
         },
         'guests': order.guest_count,
