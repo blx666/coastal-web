@@ -6,8 +6,6 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from coastal.api import defines as defs
 import datetime
 from django.forms import model_to_dict
 from coastal.api.message.forms import MessageForm
@@ -31,8 +29,8 @@ def create_dialogue(request):
 
     order = RentalOrder.objects.filter(owner=product.owner, guest=request.user,
                                        product=product).first()
-    dialogue, _ = Dialogue.objects.update_or_create(owner=product.owner, guest=request.user,
-                                                    product=product, order=order)
+    dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=product.owner, guest=request.user,
+                                                                       product=product, defaults={'order': order, 'is_deleted': False})
 
     result = {
         'dialogue_id': dialogue.id,
@@ -45,27 +43,12 @@ def dialogue_list(request):
     dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
     unread_dialogues = dialogues.filter(message__read=False).annotate(num_messages=Count('message'))
     unread_dialogue_count_dict = {dialogue.id: dialogue.num_messages for dialogue in unread_dialogues}
-
+    dialogues = dialogues[:100]
     today = datetime.date.today()
     yesterday = datetime.date.today() - datetime.timedelta(days=1)
     today_list = []
     yesterday_list = []
     past_list = []
-
-    page = request.GET.get('page', 1)
-    item = defs.PER_PAGE_ITEM
-    paginator = Paginator(dialogues, item)
-    try:
-        dialogues = paginator.page(page)
-    except PageNotAnInteger:
-        dialogues = paginator.page(1)
-    except EmptyPage:
-        dialogues = paginator.page(paginator.num_pages)
-
-    if int(page) >= paginator.num_pages:
-        next_page = 0
-    else:
-        next_page = int(page) + 1
 
     for dialogue in dialogues:
         contact = request.user == dialogue.owner and dialogue.guest or dialogue.owner
@@ -88,8 +71,8 @@ def dialogue_list(request):
             order_dict = {
                 'order_id': order.id,
                 'status': order.status,
-                'start': order.start_datetime,
-                'end': order.end_datetime,
+                'start': datetime.datetime.strftime(order.start_datetime, '%m/%d'),
+                'end': datetime.datetime.strftime(order.end_datetime, '%m/%d'),
             }
         dialogue_dict = {
             'dialogue_id': dialogue.id,
@@ -110,9 +93,22 @@ def dialogue_list(request):
         'today': today_list,
         'yesterday': yesterday_list,
         'past': past_list,
-        'next_page': next_page,
     }
     return CoastalJsonResponse(result)
+
+
+@login_required
+def delete_dialogue(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    dialogue = Dialogue.objects.filter(id=request.POST.get('dialogue_id')).first()
+    if not dialogue:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    dialogue.is_deleted = True
+    dialogue.save()
+    return CoastalJsonResponse()
 
 
 @login_required
@@ -132,7 +128,7 @@ def send_message(request):
     receiver_obj = User.objects.get(id=receiver_id)
     dialogue_obj = Dialogue.objects.get(id=dialogue_id)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
-
+    dialogue_obj.save()
     result = {
         'message_id': message.id,
     }
