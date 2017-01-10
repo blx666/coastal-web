@@ -23,7 +23,6 @@ from coastal.api.rental.forms import RentalBookForm
 from coastal.api import defines as defs
 from coastal.apps.review.models import Review
 from django.contrib.auth.models import User
-from django.db.models import Avg
 
 
 def product_list(request):
@@ -607,7 +606,7 @@ def product_review(request):
             'name': product.name,
             'image': product.productimage_set.first() and product.productimage_set.first().image.url or ''
         }
-        review_count = reviews.count()
+        review_count = reviews.aggregate(Avg('score'), Count('id'))
         reviews_list = []
         for review in reviews:
             review_dict = {
@@ -622,7 +621,7 @@ def product_review(request):
         result = {
             'owner': owner,
             'product': product_dict,
-            'review_count': review_count,
+            'review_count': review_count['id_count'],
             'reviews': reviews_list
         }
         return CoastalJsonResponse(result)
@@ -639,8 +638,7 @@ def product_owner(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
     reviews = Review.objects.filter(order__owner=user).order_by('-date_created')
-    review_count = reviews.count()
-    review_avg_score = reviews.aggregate(Avg('score'))
+    review_avg_score = reviews.aggregate(Avg('score'), Count('id'))
     products = Product.objects.filter(owner=user, status='published')
     bind_product_image(products)
     spaces_list = []
@@ -653,8 +651,7 @@ def product_owner(request):
         else:
             liked = False
         review = Review.objects.filter(product=product)
-        reviews_count = review.count()
-        reviews_avg_score = review.aggregate(Avg('score'))
+        reviews_avg_score = review.aggregate(Avg('score'), Count('id'))
         if product.category.get_root().id == 1:
             spaces_list.append({
                 "id": product.id,
@@ -672,7 +669,7 @@ def product_owner(request):
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_count,
+                "reviews_count": reviews_avg_score['id_count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'],
             })
         elif product.category.get_root().id == 2:
@@ -691,7 +688,7 @@ def product_owner(request):
                 "city": product.city,
                 "max_guests": product.max_guests or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_count,
+                "reviews_count": reviews_avg_score['id_count'],
                 "reviews_avg_score": reviews_avg_score['score__avg']
             }
             if product.category.id == product_defs.CATEGORY_BOAT_SLIP:
@@ -716,7 +713,7 @@ def product_owner(request):
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
-                "reviews_count": reviews_count,
+                "reviews_count": reviews_avg_score['id_count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'],
             })
 
@@ -752,7 +749,7 @@ def product_owner(request):
     }
     result = {
         'owner': owner,
-        'review_count': review_count,
+        'review_count': review_avg_score['id_count'],
         'review_avg_score': review_avg_score['score__avg'],
         'latest_review': latest_review,
         'products': products
