@@ -755,3 +755,38 @@ def product_owner(request):
         'products': products
     }
     return CoastalJsonResponse(result)
+
+
+def product_owner_reviews(request):
+    owner_id = request.GET.get('owner_id')
+    try:
+        user = User.objects.get(id=owner_id)
+    except User.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    reviews = Review.objects.filter(order__owner=user)
+    review_avg_score = reviews.aggregate(Avg('score'), Count('id'))
+    reviews_list = []
+    for review in reviews:
+        reviews_list.append({
+            'guest_id': review.owner_id,
+            'guest_name': review.owner.get_full_name(),
+            'guest_photo': review.owner.userprofile.photo and review.owner.userprofile.photo.url or '',
+            'date': format_date(review.date_created),
+            'score': review.score,
+            'content': review.content
+        })
+    owner = {
+        'id': user.id,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
+    }
+
+    result = {
+        'owner': owner,
+        'review_count': review_avg_score['id__count'],
+        'reviews': reviews_list,
+    }
+    return CoastalJsonResponse(result)
+
