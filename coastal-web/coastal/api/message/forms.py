@@ -6,7 +6,6 @@ class DialogueForm(forms.Form):
 
 
 class MessageForm(forms.Form):
-    sender = forms.IntegerField()
     receiver = forms.IntegerField()
     dialogue = forms.IntegerField()
     content = forms.CharField(widget=forms.Textarea)
