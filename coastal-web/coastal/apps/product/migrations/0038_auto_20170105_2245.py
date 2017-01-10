@@ -12,7 +12,11 @@ def add_timezone_product(apps, schema_editor):
     for product in product_list:
         if product.point:
             tf = TimezoneFinder()
-            product.timezone = tf.timezone_at(lng=product.point[0], lat=product.point[1])
+            timezone = tf.timezone_at(lng=product.point[0], lat=product.point[1])
+            if timezone:
+                product.timezone = timezone
+            else:
+                product.timezone = ''
         else:
             product.status = 'draft'
         product.save()
