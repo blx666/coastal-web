@@ -50,7 +50,7 @@ def product_list(request):
     if not (lon and lat and distance):
         return recommend_product_list(request)
     target = Point(lon, lat)
-    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)))
+    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)), status='published')
 
     if guests:
         products = products.filter(max_guests__gte=guests)
@@ -530,7 +530,7 @@ def black_dates_for_rental(request):
 
 
 def search(request):
-    products = Product.objects.filter(address__contains=request.GET.get('q')).order_by('-score', '-rental_usd_price', '-sale_price')
+    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('-score', '-rental_usd_price', '-sale_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM

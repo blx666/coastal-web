@@ -26,7 +26,7 @@ def home(request):
         })
 
     # get recommended products
-    products = Product.objects.order_by('-score')
+    products = Product.objects.filter(status='published').order_by('-score')
     bind_product_image(products)
     item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
@@ -78,7 +78,7 @@ def home(request):
 
 @cache_page(5 * 60)
 def images_360(request):
-    images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30]
+    images_view = ProductImage.objects.filter(caption='360-view', product__status='published').order_by('-product__score')[0:30]
     data = []
     for image_360 in images_view:
         content = {
