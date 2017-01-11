@@ -628,7 +628,7 @@ def product_review(request):
         }
         return CoastalJsonResponse(result)
     else:
-        return CoastalJsonResponse()
+        return CoastalJsonResponse({})
 
 
 def product_owner(request):
@@ -736,12 +736,6 @@ def product_owner(request):
         }
     else:
         latest_review = {
-            'guest_id': '',
-            'guest_name': '',
-            'guest_photo': '',
-            'date': '',
-            'score': '',
-            'content': ''
         }
 
     products = {
