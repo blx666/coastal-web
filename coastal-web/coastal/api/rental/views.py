@@ -226,17 +226,9 @@ def order_detail(request):
         'total_price_display': order.get_total_price_display(),
         'status': order.get_status_display(),
     }
+
     if order.status == 'charge':
-        result.update({
-            'payment_list': ['coastal', 'stripe'],
-            'coastal': {
-                'balance': order.guest.coastalbucket.balance,
-            },
-            'stripe': {
-                'card_list': get_card_list(order.guest),
-            }
-        }
-        )
+        result.update(get_payment_info(order, request.user))
     return CoastalJsonResponse(result)
 
 
