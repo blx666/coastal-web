@@ -3,11 +3,11 @@ from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, Approve
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.currency.utils import currency_list
+from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.payment.utils import get_payment_info
 from coastal.apps.payment.stripe import charge as stripe_charge
 from coastal.apps.payment.coastal import charge as coastal_charge
-from coastal.api.product.utils import calc_price, get_price_display
+from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 from coastal.apps.payment.stripe import get_card_list
 from coastal.apps.product import defines as defs
@@ -160,7 +160,7 @@ def payment_coastal(request):
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
 
     rental_order.currency = rental_order.product.currency
-    rental_order.currency_rate = currency_list()[rental_order.currency]['rate']
+    rental_order.currency_rate = get_exchange_rate(rental_order.currency)
     rental_order.total_price_usd = math.ceil(rental_order.total_price / rental_order.currency_rate)
     rental_order.save()
 
@@ -223,7 +223,7 @@ def order_detail(request):
         'guests': order.guest_count,
         'start_date': start_datetime,
         'end_date': end_datetime,
-        'total_price_display': get_price_display(order.product, order.total_price),
+        'total_price_display': order.get_total_price_display(),
         'status': order.get_status_display(),
     }
     if order.status == 'charge':

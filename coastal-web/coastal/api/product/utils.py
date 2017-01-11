@@ -5,10 +5,7 @@ from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
-from coastal.api.core import response
-from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product import defines as defs
-from coastal.apps.currency.models import Currency
 
 
 def get_similar_products(product):
@@ -131,12 +128,6 @@ def calc_price(product, rental_unit, start_date, end_date):
     if rental_amount <= 0:
         rental_amount = 0
     return [sub_rental_amount, rental_amount, discount_type, discount_rate]
-
-
-def get_price_display(product, price):
-    if not price:
-        return ""
-    return Currency.objects.get(code=product.currency.upper()).display + str(int(price))
 
 
 def format_date(value, default=None):

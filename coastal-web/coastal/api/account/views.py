@@ -239,7 +239,7 @@ def my_activity(request):
                 },
                 'start_date': start_datetime,
                 'end_date': end_datetime,
-                'total_price_display': get_price_display(order.product, order.total_price),
+                'total_price_display': order.get_total_price_display(),
                 'more_info': more_info,
                 'status': order.get_status_display(),
             }

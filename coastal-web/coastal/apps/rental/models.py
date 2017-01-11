@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
+from coastal.apps.currency.utils import price_display
 from coastal.apps.product.models import Product
 from coastal.apps.rental.managers import RentalOrderManager
 
@@ -57,6 +58,9 @@ class RentalOrder(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     objects = RentalOrderManager()
+
+    def get_total_price_display(self):
+        return price_display(self.total_price, self.currency)
 
 
 class RentalOrderDiscount(models.Model):

@@ -2,6 +2,7 @@ from django.forms.models import model_to_dict
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
+from django.views.decorators.cache import cache_page
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
@@ -47,8 +48,8 @@ def home(request):
         product_data.update({
             "category": product.category_id,
             'rental_unit': product.get_rental_unit_display(),
-            'rental_price_display': get_price_display(product, product.rental_price),
-            'sale_price_display': get_price_display(product, product.sale_price),
+            'rental_price_display': product.get_rental_price_display(),
+            'sale_price_display': product.get_sale_price_display(),
         })
         liked_product_id_list = []
         if request.user.is_authenticated:
@@ -75,6 +76,7 @@ def home(request):
     return CoastalJsonResponse(result)
 
 
+@cache_page(5 * 60)
 def images_360(request):
     images_view = ProductImage.objects.filter(caption='360-view').order_by('-product__score')[0:30]
     data = []
@@ -89,8 +91,8 @@ def images_360(request):
             'rental_unit': image_360.product.rental_unit,
             'image': image_360.image.url,
             'name': image_360.product.name,
-            'rental_price_display': get_price_display(image_360.product, image_360.product.rental_price),
-            'sale_price_display': get_price_display(image_360.product, image_360.product.sale_price),
+            'rental_price_display': image_360.product.get_rental_price_display(),
+            'sale_price_display': image_360.product.get_sale_price_display(),
         }
         data.append(content)
     return CoastalJsonResponse(data)
