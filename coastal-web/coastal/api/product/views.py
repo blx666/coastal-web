@@ -606,8 +606,8 @@ def product_review(request):
         'image': product.productimage_set.first() and product.productimage_set.first().image.url or ''
     }
     review_count = reviews.aggregate(Avg('score'), Count('id'))
+    reviews_list = []
     if reviews:
-        reviews_list = []
         for review in reviews:
             review_dict = {
                 'guest_id': review.owner_id,
@@ -628,7 +628,8 @@ def product_review(request):
         result = {
             'owner': owner,
             'product': product_dict,
-            'review_count': review_count['id__count']
+            'review_count': review_count['id__count'],
+            'reviews': reviews_list
         }
     return CoastalJsonResponse(result)
 
