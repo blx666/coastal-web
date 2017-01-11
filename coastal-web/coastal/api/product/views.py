@@ -734,12 +734,6 @@ def product_owner(request):
         }
     else:
         latest_review = {
-            'guest_id': '',
-            'guest_name': '',
-            'guest_photo': '',
-            'date': '',
-            'score': '',
-            'content': ''
         }
 
     products = {
