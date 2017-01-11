@@ -618,19 +618,13 @@ def product_review(request):
                 'content': review.content
             }
             reviews_list.append(review_dict)
-        result = {
-            'owner': owner,
-            'product': product_dict,
-            'review_count': review_count['id__count'],
-            'reviews': reviews_list
-        }
-    else:
-        result = {
-            'owner': owner,
-            'product': product_dict,
-            'review_count': review_count['id__count'],
-            'reviews': reviews_list
-        }
+
+    result = {
+        'owner': owner,
+        'product': product_dict,
+        'review_count': review_count['id__count'],
+        'reviews': reviews_list
+    }
     return CoastalJsonResponse(result)
 
 
