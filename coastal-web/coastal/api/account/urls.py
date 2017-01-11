@@ -11,4 +11,5 @@ urlpatterns = [
     url(r'^validate-email/$', views.validate_email, name='validate-email'),
     url(r'^validate-email/confirm/$', views.validate_email_confirm, name=' validate-email-confirm'),
     url(r'^my-activity/$', views.my_activity, name='my-activity'),
+    url(r'^my-account/$', views.my_account, name='my-account'),
 ]
