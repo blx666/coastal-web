@@ -106,9 +106,9 @@ def product_list(request):
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
                                                  'max_guests', 'sale_price'])
         rental_price = product.rental_price
-        if product.rental_unit == "half-day":
+        if product.rental_unit == "half-day" and rental_price:
             rental_price *= 4
-        if product.rental_unit == 'hour':
+        if product.rental_unit == 'hour' and rental_price:
             rental_price *= 24
         product_data.update({
             'rental_price': rental_price,
@@ -530,7 +530,7 @@ def black_dates_for_rental(request):
 
 
 def search(request):
-    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('-score', '-rental_usd_price', '-sale_price')
+    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('rank', '-score', '-rental_usd_price', '-sale_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
