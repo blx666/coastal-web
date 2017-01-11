@@ -208,7 +208,10 @@ def order_detail(request):
             'beds': order.product.beds or 0,
             'cancel_policy': 'Coastal does not provide online cancellation service. '
                              'Please contact us if you have any needs.',
-            'rental_rule': order.product.rental_rule or 'Nothing is set',
+            'rental_rule': {
+                'content': order.product.rental_rule or 'Nothing is set',
+                'name': '%s Rules' % order.product.category.name
+            },
         },
         'owner': {
             'id': order.owner.id,
@@ -225,6 +228,7 @@ def order_detail(request):
         'end_date': end_datetime,
         'total_price_display': order.get_total_price_display(),
         'status': order.get_status_display(),
+        'product_unit': order.product.category.name,
     }
 
     if order.status == 'charge':
