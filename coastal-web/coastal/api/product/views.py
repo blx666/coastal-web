@@ -596,20 +596,20 @@ def product_review(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
     reviews = Review.objects.filter(product=product)
+    user = product.owner
+    owner = {
+        'id': user.id,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
+    }
+    product_dict = {
+        'id': product_id,
+        'name': product.name,
+        'image': product.productimage_set.first() and product.productimage_set.first().image.url or ''
+    }
+    review_count = reviews.aggregate(Avg('score'), Count('id'))
+    reviews_list = []
     if reviews:
-        user = product.owner
-        owner = {
-            'id': user.id,
-            'name': user.get_full_name(),
-            'photo': user.userprofile.photo and user.userprofile.photo.url or ''
-        }
-        product_dict = {
-            'id': product_id,
-            'name': product.name,
-            'image': product.productimage_set.first() and product.productimage_set.first().image.url or ''
-        }
-        review_count = reviews.aggregate(Avg('score'), Count('id'))
-        reviews_list = []
         for review in reviews:
             review_dict = {
                 'guest_id': review.owner_id,
@@ -620,15 +620,14 @@ def product_review(request):
                 'content': review.content
             }
             reviews_list.append(review_dict)
-        result = {
-            'owner': owner,
-            'product': product_dict,
-            'review_count': review_count['id__count'],
-            'reviews': reviews_list
-        }
-        return CoastalJsonResponse(result)
-    else:
-        return CoastalJsonResponse({})
+
+    result = {
+        'owner': owner,
+        'product': product_dict,
+        'review_count': review_count['id__count'],
+        'reviews': reviews_list
+    }
+    return CoastalJsonResponse(result)
 
 
 def product_owner(request):
