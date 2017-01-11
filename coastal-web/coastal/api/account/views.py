@@ -152,7 +152,7 @@ def validate_email(request):
 
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
                 http://%s/api/account/validate-email/confirm/?token=%s
-                The link will be valid 24 hours later. Please resend if this happens.
+                The link will be invalid 24 hours later. Please resend if this happens.
 
                 Thanks,
                 The Coastal Team
