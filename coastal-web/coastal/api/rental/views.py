@@ -233,7 +233,7 @@ def order_detail(request):
 
 
 @login_required
-def delete_rental(request):
+def delete_order(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 

@@ -9,5 +9,5 @@ urlpatterns = [
     url(r'^payment/stripe/$', views.payment_stripe, name='payment-stripe'),
     url(r'^payment/coastal/$', views.payment_coastal, name='payment-coastal'),
     url(r'^detail/$', views.order_detail, name='detail'),
-    url(r'^delete-rental/$', views.delete_rental, name='delete-rental'),
+    url(r'^delete-order/$', views.delete_order, name='delete-order'),
 ]
