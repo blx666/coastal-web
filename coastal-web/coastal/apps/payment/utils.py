@@ -1,4 +1,4 @@
-from coastal.apps.payment.stripe import get_stripe_amount
+from coastal.apps.payment.stripe import get_stripe_amount, get_card_list
 
 
 def get_payment_info(rental_order, user):
@@ -18,6 +18,7 @@ def get_payment_info(rental_order, user):
         'updated_amount': stripe_amount,
         # TODO: currency display should not be fixed
         'updated_amount_display': 'US$%d' % stripe_amount,
+        'cards': get_card_list(user),
     }
 
     return payment_info

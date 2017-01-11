@@ -60,7 +60,7 @@ def book_rental(request):
         RentalOrderDiscount.objects.create(rental_order=rental_order, discount_rate=discount_rate, discount_type=discount_type)
     result = {
         'rental_order_id': rental_order.id,
-        'status': rental_order.status,
+        'status': rental_order.get_status_display(),
     }
 
     if rental_order.status == 'charge':
@@ -100,7 +100,7 @@ def rental_approve(request):
     rental_order.save()
 
     result = {
-        'status': rental_order.status
+        'status': rental_order.get_status_display()
     }
 
     if rental_order.status == 'charge':
@@ -135,8 +135,8 @@ def payment_stripe(request):
     success = stripe_charge(rental_order, request.user, card)
 
     return CoastalJsonResponse({
-        "paid": success and 'success' or 'failed',
-        "status": rental_order.status,
+        "payment": success and 'success' or 'failed',
+        "status": rental_order.get_status_display(),
     })
 
 
@@ -167,8 +167,8 @@ def payment_coastal(request):
     success = coastal_charge(rental_order, request.user)
 
     return CoastalJsonResponse({
-        "paid": success and 'success' or 'failed',
-        "status": rental_order.status,
+        "payment": success and 'success' or 'failed',
+        "status": rental_order.get_status_display(),
     })
 
 
