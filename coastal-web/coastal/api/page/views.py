@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
-from coastal.api.product.utils import bind_product_image, get_price_display
+from coastal.api.product.utils import bind_product_image
 from coastal.apps.account.models import FavoriteItem
 from coastal.api import defines as defs
 

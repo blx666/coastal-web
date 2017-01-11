@@ -13,7 +13,6 @@ from coastal.api.core import response
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail
 from coastal.apps.rental.models import RentalOrder
-from coastal.api.product.utils import get_price_display
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
