@@ -138,6 +138,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # cronjob
 CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
+    ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate'),
 ]
 
 # Email
