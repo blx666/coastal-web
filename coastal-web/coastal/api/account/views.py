@@ -11,9 +11,9 @@ from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import UserProfile, ValidateEmail
+from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
+from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
-from coastal.api.product.utils import get_price_display
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
@@ -153,7 +153,7 @@ def validate_email(request):
 
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
                 http://%s/api/account/validate-email/confirm/?token=%s
-                The link will be valid 24 hours later. Please resend if this happens.
+                The link will be invalid 24 hours later. Please resend if this happens.
 
                 Thanks,
                 The Coastal Team
@@ -239,7 +239,7 @@ def my_activity(request):
                 },
                 'start_date': start_datetime,
                 'end_date': end_datetime,
-                'total_price_display': get_price_display(order.product, order.total_price),
+                'total_price_display': order.get_total_price_display(),
                 'more_info': more_info,
                 'status': order.get_status_display(),
             }

@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.utils.functional import cached_property
 from treebeard.mp_tree import MP_Node
 
+from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
 
@@ -134,6 +135,7 @@ class Product(models.Model):
     cabins = models.PositiveSmallIntegerField(blank=True, null=True)
     year = models.PositiveSmallIntegerField(blank=True, null=True)
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
+    rank = models.PositiveSmallIntegerField(blank=True, null=True, default=0)
 
     currency = models.CharField(max_length=3, default='USD', blank=True)
 
@@ -231,6 +233,12 @@ class Product(models.Model):
             'hour': 1
         }
         return unit_mapping[unit] / unit_mapping[self.rental_unit] * self.rental_price
+
+    def get_rental_price_display(self):
+        return price_display(self.rental_price, self.currency)
+
+    def get_sale_price_display(self):
+        return price_display(self.sale_price, self.currency)
 
 
 class Amenity(models.Model):

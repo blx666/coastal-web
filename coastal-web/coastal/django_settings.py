@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'coastal.apps.message',
     'coastal.apps.review',
     'coastal.apps.sign',
+    'coastal.apps.sale',
 ]
 
 MIDDLEWARE = [
@@ -139,6 +140,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # cronjob
 CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
+    ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate'),
 ]
 
 # Email
@@ -148,4 +150,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
-DEFAULT_FROM_EMAIL = "dontreply@coastal.com"
+DEFAULT_FROM_EMAIL = "donotreply@coastal.com"

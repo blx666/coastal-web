@@ -1,5 +1,6 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
+from coastal.apps.currency.utils import price_display
 from coastal.apps.product.models import Product
 from coastal.apps.rental.managers import RentalOrderManager
 
@@ -34,7 +35,7 @@ class RentalOrder(models.Model):
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
     )
-    number = models.CharField(max_length=32)
+    number = models.CharField(max_length=32, unique=True)
     product = models.ForeignKey(Product)
     owner = models.ForeignKey(User, related_name="owner_orders")
     guest = models.ForeignKey(User, related_name="guest_orders")
@@ -48,6 +49,7 @@ class RentalOrder(models.Model):
     total_price_usd = models.FloatField()
     currency = models.CharField(max_length=3)
     currency_rate = models.FloatField()
+    coastal_dollar = models.FloatField(null=True)
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
@@ -56,6 +58,9 @@ class RentalOrder(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     objects = RentalOrderManager()
+
+    def get_total_price_display(self):
+        return price_display(self.total_price, self.currency)
 
 
 class RentalOrderDiscount(models.Model):
@@ -76,10 +81,14 @@ class ApproveEvent(models.Model):
 
 
 class PaymentEvent(models.Model):
+    TYPE_CHOICES = (
+        ('stripe', 'Stripe'),
+        ('coastal', 'Coastal Dollar'),
+    )
     order = models.ForeignKey(RentalOrder)
-    customer_token = models.CharField(max_length=128)
     payment_type = models.CharField(max_length=32)
     amount = models.FloatField()
+    stripe_amount = models.FloatField(null=True)
     currency = models.CharField(max_length=3)
-    reference = models.CharField(max_length=128)
+    reference = models.CharField(max_length=128, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)

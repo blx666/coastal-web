@@ -5,10 +5,7 @@ from coastal.apps.product.models import Product, ProductImage, ProductViewCount
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
-from coastal.api.core import response
-from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product import defines as defs
-from coastal.apps.currency.models import Currency
 
 
 def get_similar_products(product):
@@ -27,21 +24,31 @@ def get_similar_products(product):
         if product.rental_price:
             price = product.rental_price
             price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
+            product_index = list(price_order).index(product)
+            if product_index >= 8:
+                price_order_product = price_order[product_index - 8: product_index + 8]
+            else:
+                price_order_product = price_order[0:product_index + 8]
+            similar_price_product = sorted(price_order_product,
+                                           key=lambda price_order_product: abs(price_order_product.rental_price - price))
+            similar_price_product = list(similar_price_product)
+
+            similar_price_product.reverse()
+            similar_price_product.remove(product)
         else:
             price = product.sale_price
             price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+            product_index = list(price_order).index(product)
+            if product_index >= 8:
+                price_order_product = price_order[product_index - 8: product_index + 8]
+            else:
+                price_order_product = price_order[0:product_index + 8]
+            similar_price_product = sorted(price_order_product,
+                                           key=lambda price_order_product: abs(price_order_product.sale_price - price))
+            similar_price_product = list(similar_price_product)
 
-        product_index = list(price_order).index(product)
-        if product_index >= 8:
-            price_order_product = price_order[product_index - 8: product_index + 8]
-        else:
-            price_order_product = price_order[0:product_index + 8]
-        similar_price_product = sorted(price_order_product,
-                                       key=lambda price_order_product: abs(price_order_product.rental_price - price))
-        similar_price_product = list(similar_price_product)
-
-        similar_price_product.reverse()
-        similar_price_product.remove(product)
+            similar_price_product.reverse()
+            similar_price_product.remove(product)
     else:
         similar_price_product = []
 
@@ -133,7 +140,8 @@ def calc_price(product, rental_unit, start_date, end_date):
     return [sub_rental_amount, rental_amount, discount_type, discount_rate]
 
 
-def get_price_display(product, price):
-    if not price:
-        return ""
-    return Currency.objects.get(code=product.currency.upper()).display + str(int(price))
+def format_date(value, default=None):
+    if value:
+        return value.strftime('%m/%d/%Y')
+    else:
+        return default

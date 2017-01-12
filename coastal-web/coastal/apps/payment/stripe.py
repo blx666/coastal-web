@@ -1,5 +1,7 @@
+import math
 import stripe
 from django.conf import settings
+from coastal.apps.rental.models import PaymentEvent
 
 if settings.DEBUG:
     stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
@@ -38,16 +40,51 @@ def get_card_list(user):
     return card_list
 
 
-def get_strip_payment_info(amount, currency):
+def get_stripe_amount(amount, currency='USD'):
+    """
+    add stripe fee into amount, refer to https://support.stripe.com/questions/can-i-charge-my-stripe-fees-to-my-customers
+    :param amount: float
+    :param currency:
+    :return: float
+    """
+    # TODO
     fixed = 0.3
     percent = 0.029
-    charge_amount = (amount + fixed)/(1-percent)
-    # TODO: update the calculate with https://support.stripe.com/questions/can-i-charge-my-stripe-fees-to-my-customers
-    return {
-        'updated_amount': amount,
-        'currency': currency,
-        'updated_amount_display': 'US$%s' % int(amount),
-    }
+    return math.ceil((amount + fixed) / (1 - percent))
+
+
+def charge(rental_order, user, card):
+    if not user.userprofile.stripe_customer_id:
+        return False
+
+    stripe_amount = get_stripe_amount(rental_order.total_amount, rental_order.currency)
+
+    charge = stripe.Charge.create(
+        amount=stripe_amount * 100,  # Amount in cents
+        currency=rental_order.currency.lower(),
+        customer=user.userprofile.stripe_customer_id,
+        card=card,
+        metadata={"order_id": rental_order.number},
+    )
+    if not charge.paid:
+        return False
+
+    transaction = stripe.Balance.retrieve(id=charge.balance_transaction)
+
+    PaymentEvent.objects.create(
+        order=rental_order,
+        payment_type='stripe',
+        amount=rental_order.total_amount,
+        amount_stripe=stripe_amount,
+        currency=rental_order.currency,
+        reference=charge.id
+    )
+
+    rental_order.coastal_dollar = math.floor(transaction.net)
+    rental_order.status = 'booked'
+    rental_order.save()
+
+    return True
 
 
 # charge = stripe.Charge.create(
@@ -64,8 +101,8 @@ def get_strip_payment_info(amount, currency):
 # )
 #
 # stripe.Charge.create(
-#   amount=100,  # in cents
-#   currency="usd",
+#   amount=2000,  # in cents
+#   currency="cny",
 #   customer='cus_9oKnNn8RLvpcGJ',
 #   metadata={"order_id": "6735"},
 # )
