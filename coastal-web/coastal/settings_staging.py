@@ -2,9 +2,10 @@ from coastal.django_settings import *
 
 ADMINS = (
     ('Liu Yijun', 'liuyijun@aragoncs.com'),
+    ('Liu Yijun', 'liuy0214@163.com'),
     ('Bi Lixin', 'bilixin@aragoncs.com'),
     ('Ma Biao', 'mabiao@aragoncs.com'),
-    ('Wang Yufei', 'wangyufei@aragoncs.com'),
+    ('Wang Yufei', '2837379503@qq.com'),
     ('Wang Chuan', 'wangchuan@aragoncs.com'),
     ('Wang Xudong', 'wangxudong@aragoncs.com'),
 )
