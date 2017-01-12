@@ -119,8 +119,6 @@ def send_message(request):
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
     dialogue_obj.save()
 
-    dialogue_obj.save()
-
     result = {
         'message_id': message.id,
     }
