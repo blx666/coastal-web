@@ -135,6 +135,7 @@ class Product(models.Model):
     cabins = models.PositiveSmallIntegerField(blank=True, null=True)
     year = models.PositiveSmallIntegerField(blank=True, null=True)
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
+    rank = models.PositiveSmallIntegerField(blank=True, null=True, default=0)
 
     currency = models.CharField(max_length=3, default='USD', blank=True)
 

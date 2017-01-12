@@ -24,21 +24,31 @@ def get_similar_products(product):
         if product.rental_price:
             price = product.rental_price
             price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
+            product_index = list(price_order).index(product)
+            if product_index >= 8:
+                price_order_product = price_order[product_index - 8: product_index + 8]
+            else:
+                price_order_product = price_order[0:product_index + 8]
+            similar_price_product = sorted(price_order_product,
+                                           key=lambda price_order_product: abs(price_order_product.rental_price - price))
+            similar_price_product = list(similar_price_product)
+
+            similar_price_product.reverse()
+            similar_price_product.remove(product)
         else:
             price = product.sale_price
             price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+            product_index = list(price_order).index(product)
+            if product_index >= 8:
+                price_order_product = price_order[product_index - 8: product_index + 8]
+            else:
+                price_order_product = price_order[0:product_index + 8]
+            similar_price_product = sorted(price_order_product,
+                                           key=lambda price_order_product: abs(price_order_product.sale_price - price))
+            similar_price_product = list(similar_price_product)
 
-        product_index = list(price_order).index(product)
-        if product_index >= 8:
-            price_order_product = price_order[product_index - 8: product_index + 8]
-        else:
-            price_order_product = price_order[0:product_index + 8]
-        similar_price_product = sorted(price_order_product,
-                                       key=lambda price_order_product: abs(price_order_product.rental_price - price))
-        similar_price_product = list(similar_price_product)
-
-        similar_price_product.reverse()
-        similar_price_product.remove(product)
+            similar_price_product.reverse()
+            similar_price_product.remove(product)
     else:
         similar_price_product = []
 
