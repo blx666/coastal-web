@@ -11,7 +11,8 @@ from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import UserProfile, ValidateEmail
+from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
+from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
