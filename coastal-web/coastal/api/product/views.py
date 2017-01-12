@@ -226,7 +226,7 @@ def product_detail(request, pid):
         },
     }
 
-    if product.for_rental == 1:
+    if product.for_rental:
         price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
         discount = {
             'discount': {
@@ -237,7 +237,11 @@ def product_detail(request, pid):
                 'updated_monthly_price': price[1],
             }
         }
-        data.get('extra_info').update(discount)
+    else:
+        discount = {
+            'discount': {}
+        }
+    data.get('extra_info').update(discount)
 
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
