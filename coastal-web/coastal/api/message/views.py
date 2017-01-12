@@ -31,7 +31,6 @@ def create_dialogue(request):
                                        product=product).first()
     dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=product.owner, guest=request.user,
                                                                        product=product, defaults={'order': order, 'is_deleted': False})
-
     result = {
         'dialogue_id': dialogue.id,
     }
@@ -44,11 +43,7 @@ def dialogue_list(request):
     unread_dialogues = dialogues.filter(message__receiver=request.user, message__read=False).annotate(num_messages=Count('message'))
     unread_dialogue_count_dict = {dialogue.id: dialogue.num_messages for dialogue in unread_dialogues}
     dialogues = dialogues[:100]
-    today = datetime.date.today()
-    yesterday = datetime.date.today() - datetime.timedelta(days=1)
-    today_list = []
-    yesterday_list = []
-    past_list = []
+    dialogues_list = []
 
     for dialogue in dialogues:
         contact = request.user == dialogue.owner and dialogue.guest or dialogue.owner
@@ -71,8 +66,8 @@ def dialogue_list(request):
             order_dict = {
                 'order_id': order.id,
                 'status': order.status,
-                'start': order.start_datetime.strftime('%m/%d'),
-                'end': order.end_datetime.strftime('%m/%d'),
+                'start': order.start_datetime.strftime('%Y-%m-%d %H:%M:%S'),
+                'end': order.end_datetime.strftime('%Y-%m-%d %H:%M:%S'),
             }
         dialogue_dict = {
             'dialogue_id': dialogue.id,
@@ -80,19 +75,12 @@ def dialogue_list(request):
             'product': product_dict,
             'order': order_dict,
             'unread': unread_message_number,
+            'date_update': dialogue.date_updated.strftime('%Y-%m-%d %H:%M:%S')
         }
-        date_updated = datetime.date(dialogue.date_updated.year, dialogue.date_updated.month, dialogue.date_updated.day)
-        if date_updated == today:
-            today_list.append(dialogue_dict)
-        elif date_updated == yesterday:
-            yesterday_list.append(dialogue_dict)
-        else:
-            past_list.append(dialogue_dict)
+        dialogues_list.append(dialogue_dict)
 
     result = {
-        'today': today_list,
-        'yesterday': yesterday_list,
-        'past': past_list,
+        'dialogues': dialogues_list,
     }
     return CoastalJsonResponse(result)
 
@@ -108,6 +96,7 @@ def delete_dialogue(request):
 
     dialogue.is_deleted = True
     dialogue.save()
+
     return CoastalJsonResponse()
 
 
@@ -129,6 +118,7 @@ def send_message(request):
     dialogue_obj = Dialogue.objects.get(id=dialogue_id)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
     dialogue_obj.save()
+
     result = {
         'message_id': message.id,
     }
