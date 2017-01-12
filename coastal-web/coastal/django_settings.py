@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'coastal.apps.currency',
     'coastal.apps.message',
     'coastal.apps.review',
+    'coastal.apps.sign',
 ]
 
 MIDDLEWARE = [

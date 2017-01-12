@@ -24,6 +24,7 @@ urlpatterns = [
     url(r'^api/page/', include('coastal.api.page.urls', namespace='page')),
     url(r'^admin/', admin.site.urls),
     url(r'^api/message/', include('coastal.api.message.urls', namespace='message')),
+    url(r'^api/token/', include('coastal.api.token.urls', namespace='token')),
     url(r'^api/rental/', include('coastal.api.rental.urls', namespace='rental')),
     url(r'^api/payment/', include('coastal.api.payment.urls', namespace='payment')),
     url(r'^api/review/', include('coastal.api.review.urls', namespace='review'))
