@@ -35,7 +35,7 @@ class RentalOrder(models.Model):
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
     )
-    number = models.CharField(max_length=32)
+    number = models.CharField(max_length=32, unique=True)
     product = models.ForeignKey(Product)
     owner = models.ForeignKey(User, related_name="owner_orders")
     guest = models.ForeignKey(User, related_name="guest_orders")
