@@ -203,6 +203,7 @@ def order_detail(request):
     result = {
         'title': title,
         'product': {
+            'category': order.product.category_id,
             'rooms': order.product.rooms or 0,
             'bathrooms': order.product.bathrooms or 0,
             'beds': order.product.beds or 0,
@@ -228,7 +229,6 @@ def order_detail(request):
         'end_date': end_datetime,
         'total_price_display': order.get_total_price_display(),
         'status': order.get_status_display(),
-        'product_unit': order.product.category.name,
     }
 
     if order.status == 'charge':
