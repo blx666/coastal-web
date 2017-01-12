@@ -21,5 +21,6 @@ urlpatterns = [
     url(r'^reviews/$', views.product_review, name='product-review'),
     url(r'^owner/$', views.product_owner, name='product-owner'),
     url(r'^owner/reviews/$', views.product_owner_reviews, name='product-owner-reviews'),
+    url(r'^reported/$', views.reported, name='reported'),
 
 ]
