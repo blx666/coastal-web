@@ -164,6 +164,7 @@ class Product(models.Model):
 
     # score
     score = models.PositiveIntegerField(default=0)
+    reported = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
