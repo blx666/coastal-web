@@ -87,7 +87,7 @@ class ProductAddForm(forms.ModelForm):
                 raise forms.ValidationError('lon or lat is invalid.')
 
     def clean_black_out_dates(self):
-        black_out_dates = self.cleaned_data.get('black_out_dates')
+        black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
         if black_out_dates:
             try:
                 black_out_dates = json.loads(black_out_dates)
