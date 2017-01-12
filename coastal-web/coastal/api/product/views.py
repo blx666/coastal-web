@@ -215,7 +215,6 @@ def product_detail(request, pid):
             "score": last_review.score,
             "content": last_review.content
         }
-    price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
     data['extra_info'] = {
         'rules': {
             'name': '%s Rules' % product.category.name,
@@ -225,17 +224,24 @@ def product_detail(request, pid):
             'name': 'Cancellation Policy',
             'content': 'Coastal does not provide online cancellation service. Please contact us if you have any needs.'
         },
-        'discount': {
-            'name': 'Additional Price',
-            'weekly_discount': product.discount_weekly or 0,
-            'updated_weekly_price': price[0],
-            'monthly_discount': product.discount_monthly or 0,
-            'updated_monthly_price': price[1],
-        },
     }
 
-    if product.for_sale == 1 and product.for_rental == 0:
-        data.get('extra_info').pop('discount')
+    if product.for_rental:
+        price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
+        discount = {
+            'discount': {
+                'name': 'Additional Price',
+                'weekly_discount': product.discount_weekly or 0,
+                'updated_weekly_price': price[0],
+                'monthly_discount': product.discount_monthly or 0,
+                'updated_monthly_price': price[1],
+            }
+        }
+    else:
+        discount = {
+            'discount': {}
+        }
+    data.get('extra_info').update(discount)
 
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
@@ -530,7 +536,7 @@ def black_dates_for_rental(request):
 
 
 def search(request):
-    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('rank', '-score', '-rental_usd_price', '-sale_price')
+    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
