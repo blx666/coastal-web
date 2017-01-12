@@ -1,6 +1,7 @@
 from coastal.apps.account.models import FavoriteItem
 from coastal.apps.product.models import Product, ProductViewCount
 from coastal.apps.currency.models import Currency
+from django.utils import timezone
 import urllib.request
 import json
 
@@ -28,5 +29,6 @@ def exchange_rate():
         if currency.code in rates['rates']:
             if currency.rate != rates['rates'][currency.code]:
                 currency.rate = rates['rates'][currency.code]
+                currency.update_rate_time = timezone.now()
                 currency.save()
 
