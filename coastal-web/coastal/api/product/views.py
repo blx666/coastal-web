@@ -67,12 +67,12 @@ def product_list(request):
     if max_price:
         products = products.filter(rental_price__lte=max_price)
     if arrival_date:
-        products = products.exclude(rentalblackoutdate__start_date__lte=arrival_date,
-                                    rentalblackoutdate__end_date__gte=arrival_date).exclude(
+        products = products.exclude(blackoutdate__start_date__lte=arrival_date,
+                                    blackoutdate__end_date__gte=arrival_date).exclude(
             rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
     if checkout_date:
-        products = products.exclude(rentalblackoutdate__start_date__lte=checkout_date,
-                                    rentalblackoutdate__end_date__gte=checkout_date).exclude(
+        products = products.exclude(blackoutdate__start_date__lte=checkout_date,
+                                    blackoutdate__end_date__gte=checkout_date).exclude(
             rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
@@ -437,7 +437,7 @@ def currency_list(request):
 def black_out_date(pid, form):
     date_list = form.cleaned_data.get('black_out_dates')
     if date_list:
-        BlackOutDate.objects.all().delete()
+        BlackOutDate.objects.filter(product_id=pid).delete()
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 

@@ -7,14 +7,8 @@ from coastal.apps.rental.managers import RentalOrderManager
 
 class BlackOutDate(models.Model):
     product = models.ForeignKey(Product)
-    start_date = models.DateField(null=True)
-    end_date = models.DateField(null=True)
-
-
-class RentalDateRange(models.Model):
-    product = models.ForeignKey(Product)
-    start_date = models.DateField(null=True)
-    end_date = models.DateField(null=True)
+    start_date = models.DateTimeField(null=True)
+    end_date = models.DateTimeField(null=True)
 
 
 class RentalOrder(models.Model):
