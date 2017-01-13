@@ -134,7 +134,7 @@ def dialogue_detail(request):
     direction = request.GET.get('direction')
 
     if not dialogue_id:
-        return CoastalJsonResponse(status=response.STATUS_404)
+        return CoastalJsonResponse(status=response.STATUS_400)
     dialogue = Dialogue.objects.filter(id=dialogue_id).first()
     if not dialogue:
         return CoastalJsonResponse(status=response.STATUS_404)
@@ -155,6 +155,9 @@ def dialogue_detail(request):
             'product_id': product_id,
             'messages': message_list,
         }
+
+    if (message_time or direction) and not (message_time and direction):
+        return CoastalJsonResponse(status=response.STATUS_400)
 
     if message_time and direction:
         message_time = datetime.datetime.strptime(message_time, '%Y-%m-%d %H:%M:%S')
