@@ -793,7 +793,7 @@ def product_owner_reviews(request):
 
 
 @login_required
-def reported(request):
+def flag_junk(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 

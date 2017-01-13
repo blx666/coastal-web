@@ -178,7 +178,15 @@ def payment_coastal(request):
 
 @login_required
 def order_detail(request):
-    order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
