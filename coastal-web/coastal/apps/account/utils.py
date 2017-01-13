@@ -10,4 +10,4 @@ def create_user(email, password=None):
 
 
 def is_confirmed_user(user):
-    return user.get_full_name() and user.email_confirmed and user.userprofile.photo
+    return user.get_full_name() and user.userprofile.email_confirmed and user.userprofile.photo
