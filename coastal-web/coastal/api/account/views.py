@@ -327,4 +327,37 @@ def my_account(request):
     return CoastalJsonResponse(data)
 
 
+@login_required
+def my_calendar(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    user = request.user
+    month = time.strptime(request.POST.get('month'), '%Y-%m')
+    order_list = user.owner_orders.all()
+    data_result = []
+    orders = {}
+    for order in order_list:
+        begin_time, end_time = order.start_datetime, order.end_datetime
+        order_result = []
+        order_result.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
+        while begin_time <= end_time:
+            if (begin_time.year, begin_time.month) == (month.tm_year, month.tm_mon):
+                if str(begin_time.day) in orders:
+                    orders[str(begin_time.day)] = orders[str(begin_time.day)] + order_result
+                    for update_order in data_result:
+                        if begin_time.strftime('%Y-%m-%d') == update_order['date']:
+                            update_order['orders'] = orders[str(begin_time.day)]
+                            break
+                else:
+                    data = {}
+                    data['date'] = begin_time.strftime('%Y-%m-%d')
+                    data['date_display'] = begin_time.strftime('%B %d, %Y')
+                    data['orders'] = order_result
+                    data_result.append(data)
+                orders[str(begin_time.day)] = order_result
+            begin_time = begin_time + timedelta(days=1)
+
+    return CoastalJsonResponse(data_result)
+
 
