@@ -3,6 +3,7 @@ from coastal.api.core.decorators import login_required
 from coastal.api.core import response
 from coastal.apps.sale.models import SaleOffer
 from coastal.apps.payment.utils import sale_payment_info
+from coastal.apps.currency.models import Currency
 
 
 @login_required
@@ -56,7 +57,7 @@ def sale_detail(request):
         'sale_price': saleoffer.product.sale_price,
         'sale_price_display': saleoffer.product.get_sale_price_display(),
         'offer_price': saleoffer.price,
-        'offer_price_display': '%s%s' % (saleoffer.product.currency.display, saleoffer.price),
+        'offer_price_display': '%s%s' % (Currency.objects.get(code=saleoffer.product.currency).display, saleoffer.price),
     }
     result.update(sale_payment_info(saleoffer, user))
     return CoastalJsonResponse(result)
