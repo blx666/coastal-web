@@ -790,3 +790,17 @@ def product_owner_reviews(request):
         'reviews': reviews_list,
     }
     return CoastalJsonResponse(result)
+
+
+@login_required
+def reported(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    product = Product.objects.get(id=request.POST.get('pid'))
+    if request.POST.get('reported') == '1':
+        product.reported = 'True'
+    else:
+        product.reported = 'False'
+    product.save()
+    return CoastalJsonResponse()
