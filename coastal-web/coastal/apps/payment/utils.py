@@ -22,3 +22,20 @@ def get_payment_info(rental_order, user):
     }
 
     return payment_info
+
+
+def sale_payment_info(saleoffer, user):
+    payment_info = {}
+    payment_info['payment_list'] = ['coastal', 'stripe']
+    payment_info['coastal'] = {
+        'coastal_dollar': user.coastalbucket.balance,
+        'amount': saleoffer.price,
+    }
+
+    stripe_amount = get_stripe_amount(saleoffer.price)
+    payment_info['stripe'] = {
+        'updated_amount': stripe_amount,
+        'updated_amount_display': 'US$%d' % stripe_amount,
+        'cards': get_card_list(user),
+    }
+    return payment_info
