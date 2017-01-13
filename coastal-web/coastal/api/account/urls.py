@@ -12,4 +12,5 @@ urlpatterns = [
     url(r'^validate-email/confirm/$', views.validate_email_confirm, name=' validate-email-confirm'),
     url(r'^my-activity/$', views.my_activity, name='my-activity'),
     url(r'^my-account/$', views.my_account, name='my-account'),
+    url(r'^my-calendar/$', views.my_calendar, name='my-calendar'),
 ]

@@ -14,6 +14,7 @@ from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
+from coastal.apps.sale.models import SaleOffer
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
@@ -313,18 +314,57 @@ def my_account(request):
 
     # my orders
     order_group = []
-    order_list = user.owner_orders.all()
+    order_rental_list = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user),
+                                                        status__in=['finished', 'declined', 'invalid'])
+                             .order_by('date_created'))
+    order_sale_list = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user),
+                                                    status__in=['finished', 'declined', 'invalid'])
+                           .order_by('date_created'))
+    order_list = order_rental_list + order_sale_list
     for order in order_list:
-        data_order = {}
-        data_order['id'] = order.id
-        data_order['type'] = order.rental_unit
-        image = order.product.productimage_set.all()
-        data_order['image'] = image[0].image.url if len(image) else ''
-        data_order['title'] = order.number
-        order_group.append(data_order)
+        if order.date_updated + timedelta(days=1) < timezone.now():
+            data_order = {}
+            data_order['id'] = order.id
+            data_order['type'] = 'rental' if isinstance(order, RentalOrder) else 'sale'
+            image = order.product.productimage_set.all()
+            data_order['image'] = image[0].image.url if len(image) else ''
+            data_order['title'] = order.number
+            order_group.append(data_order)
+
     data['orders'] = order_group
 
     return CoastalJsonResponse(data)
 
+
+@login_required
+def my_calendar(request):
+    user = request.user
+
+    month = time.strptime(request.GET.get('month'), '%Y-%m')
+    order_list = user.owner_orders.all()
+    data_result = []
+    orders = {}
+    for order in order_list:
+        begin_time, end_time = order.start_datetime, order.end_datetime
+        order_result = []
+        order_result.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
+        while begin_time <= end_time:
+            if (begin_time.year, begin_time.month) == (month.tm_year, month.tm_mon):
+                if str(begin_time.day) in orders:
+                    orders[str(begin_time.day)] = orders[str(begin_time.day)] + order_result
+                    for update_order in data_result:
+                        if begin_time.strftime('%Y-%m-%d') == update_order['date']:
+                            update_order['orders'] = orders[str(begin_time.day)]
+                            break
+                else:
+                    data = {}
+                    data['date'] = begin_time.strftime('%Y-%m-%d')
+                    data['date_display'] = begin_time.strftime('%B %d, %Y')
+                    data['orders'] = order_result
+                    data_result.append(data)
+                orders[str(begin_time.day)] = order_result
+            begin_time = begin_time + timedelta(days=1)
+
+    return CoastalJsonResponse(data_result)
 
 
