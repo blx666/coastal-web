@@ -87,25 +87,26 @@ class ProductAddForm(forms.ModelForm):
                 raise forms.ValidationError('lon or lat is invalid.')
 
     def clean_black_out_dates(self):
-        black_out_dates = self.cleaned_data.get('black_out_dates')
+        black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
         if black_out_dates:
             try:
                 black_out_dates = json.loads(black_out_dates)
             except:
                 raise forms.ValidationError('the black_out_days is invalid.')
             date_list = []
+            timedelta = datetime.timedelta(hours=23,minutes=59,seconds=59)
             for day in black_out_dates:
                 if len(day) != 2:
                     raise forms.ValidationError('the black_out_days list is invalid.')
                 try:
-                    first_date = datetime.datetime.strptime(day[0], '%Y-%m-%d').date()
-                    second_date = datetime.datetime.strptime(day[1], '%Y-%m-%d').date()
+                    first_date = datetime.datetime.strptime(day[0], '%Y-%m-%d')
+                    second_date = datetime.datetime.strptime(day[1], '%Y-%m-%d')
                 except:
                     raise forms.ValidationError('the black_out_days is invalid.')
                 if first_date < second_date:
-                    date_list.append([first_date, second_date])
+                    date_list.append([first_date, second_date + timedelta])
                 else:
-                    date_list.append([second_date, first_date])
+                    date_list.append([second_date, first_date + timedelta])
             return date_list
 
     class Meta:
@@ -141,8 +142,8 @@ class ProductListFilterForm(forms.Form):
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
     guests = forms.IntegerField(required=False)
-    arrival_date = forms.DateField(required=False)
-    checkout_date = forms.DateField(required=False)
+    arrival_date = forms.DateTimeField(required=False)
+    checkout_date = forms.DateTimeField(required=False)
     min_price = forms.DecimalField(required=False)
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
