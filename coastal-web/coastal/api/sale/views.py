@@ -13,7 +13,7 @@ def approve(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
     try:
-        saleoffer = SaleOffer.objects.get(id=request.POST.get('sale_offer_id'))
+        sale_offer = SaleOffer.objects.get(id=request.POST.get('sale_offer_id'))
     except SaleOffer.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
@@ -22,14 +22,14 @@ def approve(request):
     result = {}
     if request.POST.get('approve') == '0':
         result = {
-            'status': saleoffer.get_status_display(),
+            'status': sale_offer.get_status_display(),
         }
     if request.POST.get('approve') == '1':
-        user = saleoffer.guest
+        user = sale_offer.guest
         result = {
-            'status': saleoffer.status,
+            'status': sale_offer.status,
         }
-        result.update(sale_payment_info(saleoffer, user))
+        result.update(sale_payment_info(sale_offer, user))
     return CoastalJsonResponse(result)
 
 
@@ -38,30 +38,30 @@ def sale_detail(request):
     if request.method != 'GET':
         return CoastalJsonResponse(status=response.STATUS_405)
     try:
-        saleoffer = SaleOffer.objects.get(id=request.GET.get('sale_offer_id'))
+        sale_offer = SaleOffer.objects.get(id=request.GET.get('sale_offer_id'))
     except SaleOffer.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    user = saleoffer.guest
+    user = sale_offer.guest
     result = {
         'owner': {
-            'id': saleoffer.owner_id,
-            'photo': saleoffer.owner.userprofile.photo and saleoffer.owner.userprofile.photo.url or '',
-            'name': saleoffer.owner.get_full_name() or '',
+            'id': sale_offer.owner_id,
+            'photo': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
+            'name': sale_offer.owner.get_full_name() or '',
         },
         'guest': {
-            'id ': saleoffer.guest_id,
-            'photo': saleoffer.guest.userprofile.photo and saleoffer.guest.userprofile.photo.url or '',
-            'name': saleoffer.owner.get_full_name() or ''
+            'id ': sale_offer.guest_id,
+            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
+            'name': sale_offer.owner.get_full_name() or ''
         },
-        'sale_price': saleoffer.product.sale_price,
-        'sale_price_display': saleoffer.product.get_sale_price_display(),
-        'offer_price': saleoffer.price,
-        'offer_price_display': '%s%s' % (Currency.objects.get(code=saleoffer.product.currency).display, saleoffer.price),
+        'sale_price': sale_offer.product.sale_price,
+        'sale_price_display': sale_offer.product.get_sale_price_display(),
+        'offer_price': sale_offer.price,
+        'offer_price_display': sale_offer.get_price_display(),
     }
-    result.update(sale_payment_info(saleoffer, user))
+    result.update(sale_payment_info(sale_offer, user))
     return CoastalJsonResponse(result)
 
 

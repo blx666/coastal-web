@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
 from coastal.apps.product.models import Product
 from coastal.apps.sale.managers import SaleOfferManager
+from coastal.apps.currency.utils import price_display
 
 
 class SaleOffer(models.Model):
@@ -30,3 +31,6 @@ class SaleOffer(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     objects = SaleOfferManager()
+
+    def get_price_display(self):
+        return price_display(self.price, self.product.currency)
