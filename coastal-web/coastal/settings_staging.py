@@ -1,4 +1,5 @@
 from coastal.django_settings import *
+from coastal.apps_settings import *
 
 ADMINS = (
     ('Liu Yijun', 'liuyijun@aragoncs.com'),
@@ -47,3 +48,5 @@ MEDIA_URL = 'http://54.169.88.72/media/'
 GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+# BROKER_URL = 'amqp://localhost'
