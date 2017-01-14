@@ -248,6 +248,7 @@ def my_activity(request):
                 'total_price_display': order.get_total_price_display(),
                 'more_info': more_info,
                 'status': order.get_status_display(),
+                'order_type': 'Rental',
             }
             order_list.append(data)
     else:
@@ -282,6 +283,7 @@ def my_activity(request):
                 },
                 'price_display': sale_offer.get_price_display(),
                 'status': sale_offer.get_status_display(),
+                'order_type': 'Sale',
             }
             order_list.append(content)
 
