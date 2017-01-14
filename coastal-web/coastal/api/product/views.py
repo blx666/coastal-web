@@ -67,12 +67,12 @@ def product_list(request):
     if max_price:
         products = products.filter(rental_price__lte=max_price)
     if arrival_date:
-        products = products.exclude(rentalblackoutdate__start_date__lte=arrival_date,
-                                    rentalblackoutdate__end_date__gte=arrival_date).exclude(
+        products = products.exclude(blackoutdate__start_date__lte=arrival_date,
+                                    blackoutdate__end_date__gte=arrival_date).exclude(
             rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
     if checkout_date:
-        products = products.exclude(rentalblackoutdate__start_date__lte=checkout_date,
-                                    rentalblackoutdate__end_date__gte=checkout_date).exclude(
+        products = products.exclude(blackoutdate__start_date__lte=checkout_date,
+                                    blackoutdate__end_date__gte=checkout_date).exclude(
             rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
@@ -98,27 +98,35 @@ def product_list(request):
         if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
-                                                 'max_guests', 'sale_price'])
+                                                 'max_guests'])
             if not product.length:
                 product_data['length'] = 0
         else:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
-                                                 'max_guests', 'sale_price'])
-        rental_price = product.rental_price
-        if product.rental_unit == "half-day" and rental_price:
-            rental_price *= 4
-        if product.rental_unit == 'hour' and rental_price:
-            rental_price *= 24
+                                                 'max_guests'])
+        if product.for_rental:
+            product_data.update({
+                'rental_price': product.rental_price,
+                'rental_unit': 'Day',
+                'rental_price_display': product.get_rental_price_display(),
+        })
+            rental_price = product.rental_price
+            if product.rental_unit == "half-day":
+                rental_price *= 4
+            if product.rental_unit == 'hour':
+                rental_price *= 24
+        if product.for_sale:
+            product_data.update({
+                'sale_price': product.sale_price,
+                'sale_price_display': product.get_sale_price_display(),
+        })
+
         product_data.update({
-            'rental_price': rental_price,
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
             "lon": product.point[0],
             "lat": product.point[1],
-            'rental_unit': 'Day',
-            'rental_price_display': product.get_rental_price_display(),
-            'sale_price_display': product.get_sale_price_display(),
         })
         data.append(product_data)
     result = {
@@ -437,7 +445,7 @@ def currency_list(request):
 def black_out_date(pid, form):
     date_list = form.cleaned_data.get('black_out_dates')
     if date_list:
-        BlackOutDate.objects.all().delete()
+        BlackOutDate.objects.filter(product_id=pid).delete()
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
@@ -793,7 +801,7 @@ def product_owner_reviews(request):
 
 
 @login_required
-def reported(request):
+def flag_junk(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 

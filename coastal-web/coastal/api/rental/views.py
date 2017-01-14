@@ -11,9 +11,11 @@ from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 from coastal.apps.payment.stripe import get_card_list
 from coastal.apps.product import defines as defs
+from coastal.apps.account.utils import is_confirmed_user
+from coastal.apps.rental.utils import validate_rental_date
+from coastal.apps.currency.utils import get_exchange_rate
 from datetime import datetime
 import time
-from coastal.apps.account.utils import is_confirmed_user
 
 
 @login_required
@@ -29,14 +31,17 @@ def book_rental(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
-    if product.is_no_one:
-        status = 'charge'
-    else:
-        status = 'request'
 
     rental_order = form.save(commit=False)
-    rental_order.status = status
-    # TODO: validate the date
+    valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
+    if valid:
+        return CoastalJsonResponse(status=response.STATUS_400)
+
+    if product.is_no_one:
+        rental_order.status = 'charge'
+    else:
+        rental_order.status = 'request'
+
     rental_order.product = product
     rental_order.guest = request.user
     rental_order.owner = product.owner
@@ -47,10 +52,9 @@ def book_rental(request):
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency
-    # TODO: get currency_rate according to currency
-    rental_order.currency_rate = 1
+    rental_order.currency_rate = get_exchange_rate(rental_order.currency)
     rental_order.total_price_usd = math.floor(rental_order.total_price / rental_order.currency_rate)
-    # rental_order.timezone = product.timezone
+    rental_order.timezone = product.timezone
     rental_order.save()
     # TODO: move generate order number into save function
     rental_order.number = str(100000+rental_order.id)
@@ -174,7 +178,15 @@ def payment_coastal(request):
 
 @login_required
 def order_detail(request):
-    order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
+    except RentalOrder.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
