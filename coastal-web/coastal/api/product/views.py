@@ -98,27 +98,35 @@ def product_list(request):
         if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
-                                                 'max_guests', 'sale_price'])
+                                                 'max_guests'])
             if not product.length:
                 product_data['length'] = 0
         else:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
-                                                 'max_guests', 'sale_price'])
-        rental_price = product.rental_price
-        if product.rental_unit == "half-day" and rental_price:
-            rental_price *= 4
-        if product.rental_unit == 'hour' and rental_price:
-            rental_price *= 24
+                                                 'max_guests'])
+        if product.for_rental:
+            product_data.update({
+                'rental_price': product.rental_price,
+                'rental_unit': 'Day',
+                'rental_price_display': product.get_rental_price_display(),
+        })
+            rental_price = product.rental_price
+            if product.rental_unit == "half-day":
+                rental_price *= 4
+            if product.rental_unit == 'hour':
+                rental_price *= 24
+        if product.for_sale:
+            product_data.update({
+                'sale_price': product.sale_price,
+                'sale_price_display': product.get_sale_price_display(),
+        })
+
         product_data.update({
-            'rental_price': rental_price,
             "category": product.category_id,
             "images": [i.image.url for i in product.images],
             "lon": product.point[0],
             "lat": product.point[1],
-            'rental_unit': 'Day',
-            'rental_price_display': product.get_rental_price_display(),
-            'sale_price_display': product.get_sale_price_display(),
         })
         data.append(product_data)
     result = {
