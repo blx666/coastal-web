@@ -1,3 +1,7 @@
 from django.contrib import admin
+from coastal.apps.sns.models import Report
 
-# Register your models here.
+
+class ReportAdmin(admin.ModelAdmin):
+    list_display = ['product', 'status', 'user']
+admin.site.register(Report, ReportAdmin)
