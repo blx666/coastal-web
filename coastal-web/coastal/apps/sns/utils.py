@@ -29,14 +29,12 @@ def publish_message(content, dialogue_id, receiver_obj):
     receiver_list = Token.objects.filter(user=receiver_obj)
     if not receiver_list:
         return CoastalJsonResponse(status=response.STATUS_404)
-    publish_message_list = []
     for reciver in receiver_list:
         publish_message = aws.publish(
             Message=json.dumps(result_message),
             TargetArn=reciver.endpoint,
             MessageStructure='json'
         )
-        publish_message_list.append(publish_message)
 
 
 def to_bind_token(uuid, token, user):

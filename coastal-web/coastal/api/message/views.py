@@ -13,10 +13,6 @@ from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
 from coastal.apps.sns.utils import publish_message
-#from boto3.session import Session
-#import boto3,json
-#from django.conf import settings
-#from coastal.apps.sns.models import Token
 
 
 @login_required
