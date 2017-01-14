@@ -12,6 +12,7 @@ from coastal.api.message.forms import MessageForm
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
+from coastal.apps.sns.utils import publish_message
 
 
 @login_required
@@ -118,6 +119,8 @@ def send_message(request):
     dialogue_obj = Dialogue.objects.get(id=dialogue_id)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
     dialogue_obj.save()
+
+    publish_message(content, dialogue_id, receiver_obj)
 
     result = {
         'message_id': message.id,

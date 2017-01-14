@@ -57,7 +57,7 @@ def charge(rental_order, user, card):
     if not user.userprofile.stripe_customer_id:
         return False
 
-    stripe_amount = get_stripe_amount(rental_order.total_amount, rental_order.currency)
+    stripe_amount = get_stripe_amount(rental_order.total_price, rental_order.currency)
 
     charge = stripe.Charge.create(
         amount=stripe_amount * 100,  # Amount in cents
@@ -74,7 +74,7 @@ def charge(rental_order, user, card):
     PaymentEvent.objects.create(
         order=rental_order,
         payment_type='stripe',
-        amount=rental_order.total_amount,
+        amount=rental_order.total_price,
         amount_stripe=stripe_amount,
         currency=rental_order.currency,
         reference=charge.id

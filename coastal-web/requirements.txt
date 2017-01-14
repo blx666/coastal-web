@@ -7,3 +7,4 @@ psycopg2==2.6.2
 Pillow==3.4.2
 django-crontab==0.7.1
 timezonefinder==1.5.7
+boto3==1.4.3
