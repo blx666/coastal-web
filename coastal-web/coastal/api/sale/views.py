@@ -1,11 +1,11 @@
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.api.core import response
-from coastal.apps.sale.models import SaleOffer
+from coastal.apps.sale.models import SaleOffer, SaleApproveEvent, SalePaymentEvent
 from coastal.apps.payment.utils import sale_payment_info
 from coastal.apps.currency.models import Currency
 from coastal.apps.account.utils import is_confirmed_user
-from coastal.api.sale.forms import SaleOfferForm
+from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
 
 
 @login_required
@@ -19,17 +19,24 @@ def approve(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    result = {}
-    if request.POST.get('approve') == '0':
-        result = {
-            'status': sale_offer.get_status_display(),
-        }
-    if request.POST.get('approve') == '1':
-        user = sale_offer.guest
-        result = {
-            'status': sale_offer.status,
-        }
-        result.update(sale_payment_info(sale_offer, user))
+    form = SaleApproveForm(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
+    approve = form.cleaned_data.get('approve')
+    note = form.cleaned_data.get('note')
+    SaleApproveEvent.objects.create(sale_offer=sale_offer, approve=approve, notes=note)
+
+    if approve:
+        sale_offer.status = 'charge'
+    else:
+        sale_offer.status = 'declined'
+    sale_offer.save()
+
+    result = {
+        'status': sale_offer.get_status_display(),
+    }
+    result.update(sale_payment_info(sale_offer, request.user))
     return CoastalJsonResponse(result)
 
 
