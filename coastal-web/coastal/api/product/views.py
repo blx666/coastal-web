@@ -27,7 +27,7 @@ from coastal.apps.product import defines as product_defs
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.review.models import Review
-from coastal.apps.sns.models import Report
+from coastal.apps.support.models import Report
 
 
 def product_list(request):
