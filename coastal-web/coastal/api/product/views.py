@@ -27,6 +27,7 @@ from coastal.apps.product import defines as product_defs
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from coastal.apps.review.models import Review
+from coastal.apps.support.models import Report
 
 
 def product_list(request):
@@ -806,9 +807,6 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     product = Product.objects.get(id=request.POST.get('pid'))
-    if request.POST.get('reported') == '1':
-        product.reported = 'True'
-    else:
-        product.reported = 'False'
-    product.save()
+    status = request.POST.get('reported')
+    Report.objects.create(product=product, user=request.user, status=status)
     return CoastalJsonResponse()

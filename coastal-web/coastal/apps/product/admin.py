@@ -4,7 +4,7 @@ from .models import Category, Product, ProductImage, ProductViewCount
 
 class ProductAdmin(admin.ModelAdmin):
 
-    list_display = ['name', 'status', 'score', 'reported']
+    list_display = ['name', 'status', 'score']
 
     def get_form(self, request, obj=None, **kwargs):
         if not request.user.is_superuser:
