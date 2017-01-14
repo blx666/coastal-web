@@ -49,4 +49,4 @@ GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# BROKER_URL = 'amqp://localhost'
+BROKER_URL = 'amqp://localhost'
