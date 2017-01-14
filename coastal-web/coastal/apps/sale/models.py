@@ -38,7 +38,7 @@ class SaleOffer(models.Model):
 
 class SaleApproveEvent(models.Model):
     sale_offer = models.ForeignKey(SaleOffer)
-    approve = models.BooleanField
+    approve = models.BooleanField()
     notes = models.TextField(blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
