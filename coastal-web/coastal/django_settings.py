@@ -50,7 +50,7 @@ INSTALLED_APPS = [
     'coastal.apps.review',
     'coastal.apps.sns',
     'coastal.apps.sale',
-    'coastal.apps.admin',
+    'coastal.apps.support',
 ]
 
 MIDDLEWARE = [
