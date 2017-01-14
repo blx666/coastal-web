@@ -5,8 +5,8 @@ from coastal.apps.product.models import Product
 
 class Report(models.Model):
     STATUS_CHOICE = (
-        (0, '0'),
-        (1, '1'),
+        (0, 'Todo'),
+        (1, 'Done'),
     )
     product = models.ForeignKey(Product, related_name='product')
     datetime = models.DateTimeField(auto_now_add=True)
