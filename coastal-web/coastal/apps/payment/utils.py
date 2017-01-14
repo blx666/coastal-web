@@ -36,7 +36,7 @@ def sale_payment_info(saleoffer, user):
     stripe_amount = get_stripe_amount(saleoffer.price)
     payment_info['stripe'] = {
         'updated_amount': stripe_amount,
-        'updated_amount_display': 'US$%d' % stripe_amount,
+        'updated_amount_display': price_display(stripe_amount, rental_order.product.currency),
         'cards': get_card_list(user),
     }
     return payment_info
