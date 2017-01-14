@@ -178,7 +178,7 @@ def payment_coastal(request):
 
 @login_required
 def order_detail(request):
-    if request.method != 'POST':
+    if request.method != 'GET':
         return CoastalJsonResponse(status=response.STATUS_405)
 
     try:
