@@ -14,6 +14,7 @@ from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
+from coastal.apps.sale.models import SaleOffer
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
@@ -183,11 +184,17 @@ def validate_email_confirm(request):
 
 @login_required
 def my_activity(request):
+    if request.method != 'GET':
+        return CoastalJsonResponse(status=response.STATUS_405)
+    order_list = []
     user = request.user
     now = datetime.now()
     start = now - timedelta(hours=23, minutes=59, seconds=59)
     orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined', 'invalid']))
     orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined', 'invalid']).filter(date_created__gte=start))
+    sale_offer_not_finished = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).exclude(status__in=['finished', 'decline', 'invalid']))
+    sale_offer_finished = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).filter(status__in=['finished', 'decline', 'invalid']).filter(date_created__gte=start))
+
     if orders_finished and orders_notfinished:
         orders = orders_finished + orders_notfinished
     elif orders_finished and not orders_notfinished:
@@ -197,7 +204,6 @@ def my_activity(request):
     else:
         orders = []
     if orders:
-        order_list = []
         for order in orders:
             start_time = order.start_datetime
             end_time = order.end_datetime
@@ -246,6 +252,38 @@ def my_activity(request):
             order_list.append(data)
     else:
         order_list = []
+
+    if sale_offer_finished and sale_offer_not_finished:
+        sale_offers = sale_offer_finished + sale_offer_not_finished
+    elif sale_offer_finished and not sale_offer_not_finished:
+        sale_offers = sale_offer_finished
+    elif not sale_offer_finished and sale_offer_not_finished:
+        sale_offers = sale_offer_not_finished
+    else:
+        sale_offers = []
+    if sale_offers:
+        for sale_offer in sale_offers:
+            content = {
+                'id': sale_offer.id,
+                'owner': {
+                    'id': sale_offer.owner_id,
+                    'image': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
+                    'name': sale_offer.guest.get_full_name(),
+                },
+                'guest': {
+                    'id': sale_offer.guest_id,
+                    'image': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
+                    'name': sale_offer.guest.get_full_name(),
+                },
+                'product': {
+                    'id': sale_offer.product_id,
+                    'image': sale_offer.product.productimage_set.first() and sale_offer.product.productimage_set.first().image.url or '',
+                    'name': sale_offer.product.name,
+                },
+                'price_display': sale_offer.get_price_display(),
+                'status': sale_offer.get_status_display(),
+            }
+            order_list.append(content)
 
     if user.recently_viewed.all():
         recently_views = user.recently_viewed.all()[0:20]
