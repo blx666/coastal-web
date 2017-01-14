@@ -6,8 +6,8 @@ from coastal.apps.account.models import UserProfile
 class RegistrationForm(forms.ModelForm):
     email = forms.EmailField()
     password = forms.CharField(min_length=6)
-    uuid = forms.CharField()
-    token = forms.CharField()
+    uuid = forms.CharField(required=True)
+    token = forms.CharField(required=True)
 
     def clean_email(self):
         email = self.cleaned_data['email']
