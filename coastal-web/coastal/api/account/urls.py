@@ -13,5 +13,5 @@ urlpatterns = [
     url(r'^my-activity/$', views.my_activity, name='my-activity'),
     url(r'^my-account/$', views.my_account, name='my-account'),
     url(r'^my-calendar/$', views.my_calendar, name='my-calendar'),
-    url(r'^my-order-dates/$', views.my_order_dates, name='my-order-dates'),
+    url(r'^my-calendar/dates/$', views.my_order_dates, name='my-order-dates'),
 ]
