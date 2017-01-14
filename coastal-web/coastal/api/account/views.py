@@ -18,6 +18,7 @@ from coastal.apps.sale.models import SaleOffer
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
+from coastal.apps.sns.utils import bind_token
 import time
 import math
 
@@ -30,8 +31,13 @@ def register(request):
     if not register_form.is_valid():
         return CoastalJsonResponse(register_form.errors, status=response.STATUS_400)
 
-    user = create_user(register_form.cleaned_data['email'], register_form.cleaned_data['password'])
+    cleaned_data = register_form.cleaned_data
+    user = create_user(cleaned_data['email'], cleaned_data['password'])
+
     auth_login(request, user)
+    if cleaned_data['uuid'] and cleaned_data['token']:
+        bind_token(cleaned_data['uuid'], cleaned_data['token'], user)
+
     data = {
         'user_id': user.id,
         'logged': request.user.is_authenticated(),
@@ -51,6 +57,12 @@ def login(request):
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
     if user:
         auth_login(request, user)
+
+        uuid = request.POST.get('uuid')
+        token = request.POST.get('token')
+        if uuid and token:
+            bind_token(uuid, token, user)
+
         data = {
             'user_id': user.id,
             'logged': request.user.is_authenticated(),
