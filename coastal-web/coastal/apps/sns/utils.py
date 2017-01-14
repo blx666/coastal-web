@@ -37,7 +37,7 @@ def publish_message(content, dialogue_id, receiver_obj):
         )
 
 
-def to_bind_token(uuid, token, user):
+def bind_token(uuid, token, user):
     aws_key = settings.AWS_ACCESS_KEY_ID
     aws_secret = settings.AWS_SECRET_ACCESS_KEY
     region_name = settings.REGION
