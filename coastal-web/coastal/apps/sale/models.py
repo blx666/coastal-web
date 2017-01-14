@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.core.validators import validate_comma_separated_integer_list
 from coastal.apps.product.models import Product
 from coastal.apps.sale.managers import SaleOfferManager
+from coastal.apps.currency.utils import price_display
 
 
 class SaleOffer(models.Model):
@@ -30,3 +31,27 @@ class SaleOffer(models.Model):
     is_deleted = models.BooleanField(default=False)
 
     objects = SaleOfferManager()
+
+    def get_price_display(self):
+        return price_display(self.price, self.product.currency)
+
+
+class SaleApproveEvent(models.Model):
+    sale_offer = models.ForeignKey(SaleOffer)
+    approve = models.BooleanField
+    notes = models.TextField(blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+
+class SalePaymentEvent(models.Model):
+    TYPE_CHOICES = (
+        ('stripe', 'Stripe'),
+        ('coastal', 'Coastal Dollar'),
+    )
+    sale_offer = models.ForeignKey(SaleOffer)
+    payment_type = models.CharField(max_length=32)
+    amount = models.FloatField()
+    stripe_amount = models.FloatField(null=True)
+    currency = models.CharField(max_length=3)
+    reference = models.CharField(max_length=128, blank=True)
+    date_created = models.DateTimeField(auto_now_add=True)

@@ -269,12 +269,6 @@ class ProductImage(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
 
-class RentalBlackOutDate(models.Model):
-    product = models.ForeignKey(Product)
-    start_date = models.DateField()
-    end_date = models.DateField()
-
-
 class ProductViewCount(models.Model):
     product = models.OneToOneField(Product)
     count = models.PositiveIntegerField(default=0)
