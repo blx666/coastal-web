@@ -2,6 +2,7 @@
 import math
 import datetime
 from coastal.apps.product.models import Product, ProductImage, ProductViewCount
+from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
@@ -145,3 +146,25 @@ def format_date(value, default=None):
         return value.strftime('%m/%d/%Y')
     else:
         return default
+
+
+def filter_product_date(products, arrival_date, checkout_date):
+    timedelta= checkout_date - arrival_date
+    product_list = []
+    for product in products:
+        black_out_arrival_dates = BlackOutDate.objects.filter(start_date__lte=arrival_date, end_date__gte=arrival_date)
+        black_out_checkout_dates = BlackOutDate.objects.filter(start_date__lte=checkout_date, end_date__gte=checkout_date)
+        rental_order_arrival_dates = RentalOrder.objects.filter(start_datetime__lte=arrival_date, end_datetime__gte=arrival_date)
+        rental_order_checkout_dates = RentalOrder.objects.filter(start_datetime__lte=checkout_date, end_datetime__gte=checkout_date)
+        total_time = datetime.timedelta(seconds=0)
+        for date in black_out_arrival_dates:
+            total_time += date.end_date - arrival_date + datetime.timedelta(seconds=1)
+        for date in black_out_checkout_dates:
+            total_time += checkout_date - date.start_date
+        for date in rental_order_arrival_dates:
+            total_time += date.end_datetime - arrival_date
+        for date in rental_order_checkout_dates:
+            total_time += checkout_date - date.start_datetime
+        if total_time == timedelta:
+            product_list.append(product.id)
+    return product_list
