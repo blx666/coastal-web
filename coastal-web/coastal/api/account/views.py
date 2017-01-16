@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
+from dateutil.rrule import rrule, DAILY
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.apps.account.utils import create_user
@@ -417,5 +418,40 @@ def my_calendar(request):
             begin_time = begin_time + timedelta(days=1)
 
     return CoastalJsonResponse(data_result)
+
+
+@login_required
+def my_order_dates(request):
+    user = request.user
+    now_year = timezone.now()
+    now_year = datetime(now_year.year, now_year.month, 1, tzinfo=now_year.tzinfo)
+    next_year = datetime(now_year.year + 1, now_year.month, 1, tzinfo=now_year.tzinfo)
+    order_list = user.owner_orders.filter(Q(end_datetime__gte=now_year) & Q(start_datetime__lt=next_year))
+    date_list = []
+    for order in order_list:
+        begin_time, end_time = order.start_datetime, order.end_datetime
+        for every_day in rrule(DAILY, dtstart=begin_time, until=end_time):
+            if every_day >= now_year and every_day <  next_year:
+                format_day = datetime(every_day.year, every_day.month, every_day.day).strftime("%Y-%m-%d")
+                if format_day not in date_list:
+                    date_list.append(format_day)
+
+    return CoastalJsonResponse(date_list)
+
+
+@login_required
+def my_orders(request):
+    user = request.user
+    date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
+    date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
+    order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
+    data = {}
+    data['date'] = date.strftime('%Y-%m-%d')
+    data['date_display'] = date.strftime('%B %d, %Y')
+    orders = []
+    for order in order_list:
+        orders.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
+    data['orders'] = orders
+    return CoastalJsonResponse(data)
 
 
