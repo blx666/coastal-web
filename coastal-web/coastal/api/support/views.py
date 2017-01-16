@@ -6,11 +6,11 @@ from coastal.api.core import response
 def sent_message(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
-    try:
-        form = HelpCenterForm(request.POST)
+
+    form = HelpCenterForm(request.POST)
+    if form.is_valid():
         form.save()
-    except:
+        data = {'send': 'success'}
+    else:
         data = {'send': 'failed'}
-        return CoastalJsonResponse(data)
-    data = {'send': 'success'}
     return CoastalJsonResponse(data)

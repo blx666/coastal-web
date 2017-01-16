@@ -327,6 +327,7 @@ def my_account(request):
 
     data = {}
     data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
+    # data = {'coastal_dollar': user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0,}
 
     # userprofile
     data['profile'] = {
@@ -341,12 +342,14 @@ def my_account(request):
     product_list = user.properties.all()
     bind_product_image(product_list)
     for product in product_list:
-        data_product = {}
-        data_product['id'] = product.id
-        data_product['name'] = product.name
-        data_product['image'] = product.images[0].image.url if len(product.images) else ''
-        data_product['address'] = product.country + ',' + product.city
-        data_product['status'] = product.status
+        data_product = {
+            'id': product.id,
+            'name': product.name,
+            'image': product.images[0].image.url if len(product.images) else '',
+            'address': product.country + ',' + product.city,
+            'status': product.status
+        }
+
         product_group.append(data_product)
     data['my_products'] = product_group
 
@@ -356,11 +359,12 @@ def my_account(request):
     product_favorite = Product.objects.filter(favoriteitem__in=favorite_item)
     bind_product_image(product_favorite)
     for product in product_favorite:
-        data_favorite = {}
-        data_favorite['id'] = product.id
-        data_favorite['name'] = product.name
-        data_favorite['image'] = product.images[0].image.url if len(product.images) else ''
-        data_favorite['address'] = product.country + ',' + product.city
+        data_favorite = {
+            'id': product.id,
+            'name': product.name,
+            'image': product.images[0].image.url if len(product.images) else '',
+            'address': product.country + ',' + product.city,
+        }
         favorite_group.append(data_favorite)
     data['favorites'] = favorite_group
 
@@ -375,12 +379,13 @@ def my_account(request):
     order_list = order_rental_list + order_sale_list
     for order in order_list:
         if order.date_updated + timedelta(days=1) < timezone.now():
-            data_order = {}
-            data_order['id'] = order.id
-            data_order['type'] = 'rental' if isinstance(order, RentalOrder) else 'sale'
             image = order.product.productimage_set.all()
-            data_order['image'] = image[0].image.url if len(image) else ''
-            data_order['title'] = order.number
+            data_order = {
+                'id': order.id,
+                'type': 'rental' if isinstance(order, RentalOrder) else 'sale',
+                'image': image[0].image.url if len(image) else '',
+                'title': order.number,
+            }
             order_group.append(data_order)
 
     data['orders'] = order_group
@@ -409,10 +414,12 @@ def my_calendar(request):
                             update_order['orders'] = orders[str(begin_time.day)]
                             break
                 else:
-                    data = {}
-                    data['date'] = begin_time.strftime('%Y-%m-%d')
-                    data['date_display'] = begin_time.strftime('%B %d, %Y')
-                    data['orders'] = order_result
+                    data = {
+                        'date': begin_time.strftime('%Y-%m-%d'),
+                        'date_display': begin_time.strftime('%B %d, %Y'),
+                        'orders': order_result
+                    }
+
                     data_result.append(data)
                 orders[str(begin_time.day)] = order_result
             begin_time = begin_time + timedelta(days=1)
@@ -445,9 +452,10 @@ def my_orders(request):
     date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
     date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
     order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
-    data = {}
-    data['date'] = date.strftime('%Y-%m-%d')
-    data['date_display'] = date.strftime('%B %d, %Y')
+    data = {
+        'date': date.strftime('%Y-%m-%d'),
+        'date_display': date.strftime('%B %d, %Y'),
+    }
     orders = []
     for order in order_list:
         orders.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
