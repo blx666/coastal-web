@@ -118,7 +118,7 @@ def send_message(request):
     receiver_obj = User.objects.get(id=receiver_id)
     dialogue_obj = Dialogue.objects.get(id=dialogue_id)
     if not (receiver_obj and dialogue_obj):
-        return CoastalJsonResponse(message_form.errors, status=response.STATUS_400)
+        return CoastalJsonResponse(message_form.errors, status=response.STATUS_405)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
     dialogue_obj.save()
 
@@ -208,7 +208,7 @@ def dialogue_detail(request):
 
             result = {
                 'product_id': product_id,
-                'messages': down_message_list,
+                'messages': down_message_list[1:],
             }
 
     return CoastalJsonResponse(result)
