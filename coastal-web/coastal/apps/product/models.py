@@ -240,6 +240,14 @@ class Product(models.Model):
     def get_sale_price_display(self):
         return price_display(self.sale_price, self.currency)
 
+    def get_product_type(self):
+        if self.for_rental and self.for_sale:
+            return 'both'
+        if self.for_sale or self.for_rental:
+            if self.for_sale:
+                return 'sale'
+            return 'rental'
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (

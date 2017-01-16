@@ -327,7 +327,6 @@ def my_account(request):
 
     data = {}
     data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
-    # data = {'coastal_dollar': user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0,}
 
     # userprofile
     data['profile'] = {
@@ -347,7 +346,8 @@ def my_account(request):
             'name': product.name,
             'image': product.images[0].image.url if len(product.images) else '',
             'address': product.country + ',' + product.city,
-            'status': product.status
+            'status': product.status,
+            'type': product.get_product_type(),
         }
 
         product_group.append(data_product)
@@ -364,6 +364,7 @@ def my_account(request):
             'name': product.name,
             'image': product.images[0].image.url if len(product.images) else '',
             'address': product.country + ',' + product.city,
+            'type': product.get_product_type(),
         }
         favorite_group.append(data_favorite)
     data['favorites'] = favorite_group
@@ -384,7 +385,7 @@ def my_account(request):
                 'id': order.id,
                 'type': 'rental' if isinstance(order, RentalOrder) else 'sale',
                 'image': image[0].image.url if len(image) else '',
-                'title': order.number,
+                'name': order.number,
             }
             order_group.append(data_order)
 
