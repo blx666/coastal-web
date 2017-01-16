@@ -30,11 +30,18 @@ def publish_message(content, dialogue_id, receiver_obj, sender_name):
     if not receiver_list:
         return CoastalJsonResponse(status=response.STATUS_404)
     for reciver in receiver_list:
-        publish_message = aws.publish(
-            Message=json.dumps(result_message),
-            TargetArn=reciver.endpoint,
-            MessageStructure='json'
+        endpoint_attributes = aws.get_endpoint_attributes(
+            EndpointArn=reciver.endpoint,
         )
+        enabled = endpoint_attributes['Attributes']['Enabled']
+        if not enabled:
+            return CoastalJsonResponse(status=response.STATUS_1200)
+        else:
+            publish_message = aws.publish(
+                Message=json.dumps(result_message),
+                TargetArn=reciver.endpoint,
+                MessageStructure='json'
+            )
 
 
 def to_bind_token(uuid, token, user):
