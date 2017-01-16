@@ -152,10 +152,10 @@ def filter_product_date(products, arrival_date, checkout_date):
     timedelta= checkout_date - arrival_date
     product_list = []
     for product in products:
-        black_out_arrival_dates = BlackOutDate.objects.filter(start_date__lte=arrival_date, end_date__gte=arrival_date)
-        black_out_checkout_dates = BlackOutDate.objects.filter(start_date__lte=checkout_date, end_date__gte=checkout_date)
-        rental_order_arrival_dates = RentalOrder.objects.filter(start_datetime__lte=arrival_date, end_datetime__gte=arrival_date)
-        rental_order_checkout_dates = RentalOrder.objects.filter(start_datetime__lte=checkout_date, end_datetime__gte=checkout_date)
+        black_out_arrival_dates = BlackOutDate.objects.filter(start_date__lte=arrival_date, end_date__gte=arrival_date, product=product)
+        black_out_checkout_dates = BlackOutDate.objects.filter(start_date__lte=checkout_date, end_date__gte=checkout_date, product=product)
+        rental_order_arrival_dates = RentalOrder.objects.filter(start_datetime__lte=arrival_date, end_datetime__gte=arrival_date, product=product)
+        rental_order_checkout_dates = RentalOrder.objects.filter(start_datetime__lte=checkout_date, end_datetime__gte=checkout_date, product=product)
         total_time = datetime.timedelta(seconds=0)
         for date in black_out_arrival_dates:
             total_time += date.end_date - arrival_date + datetime.timedelta(seconds=1)
