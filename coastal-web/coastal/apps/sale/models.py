@@ -16,6 +16,13 @@ class SaleOffer(models.Model):
         ('paid', 'In Transaction'),  # Pay owner
         ('finished', 'Finished'),
     )
+    CONDITION_CHOICES = (
+        ('1', 'Conditional financing'),
+        ('2', '14-day escrow'),
+        ('3', '30-day escrow'),
+        ('4', '60-day escrow'),
+        ('5', 'Inspection'),
+    )
 
     number = models.CharField(max_length=32, unique=True)
     product = models.ForeignKey(Product)
@@ -34,6 +41,13 @@ class SaleOffer(models.Model):
 
     def get_price_display(self):
         return price_display(self.price, self.product.currency)
+
+    def get_condition_list(self):
+        conditions_list = []
+        conditions = self.conditions.split(',')
+        for i in conditions:
+            conditions_list.append(self.CONDITION_CHOICES[int(i)-1][1])
+        return conditions_list
 
 
 class SaleApproveEvent(models.Model):
