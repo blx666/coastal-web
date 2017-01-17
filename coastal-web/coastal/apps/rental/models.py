@@ -86,3 +86,9 @@ class PaymentEvent(models.Model):
     currency = models.CharField(max_length=3)
     reference = models.CharField(max_length=128, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
+
+
+class RentalOutDate(models.Model):
+    product = models.ForeignKey(Product)
+    start_date = models.DateTimeField(null=True)
+    end_date = models.DateTimeField(null=True)
