@@ -1,6 +1,6 @@
 import math
 import time
-from datetime import datetime
+import datetime
 from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, ApproveEvent
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
@@ -12,7 +12,7 @@ from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user
-from coastal.apps.rental.utils import validate_rental_date
+from coastal.apps.rental.utils import validate_rental_date, rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 
@@ -47,14 +47,18 @@ def book_rental(request):
 
     sub_total_price, total_price, discount_type, discount_rate = \
         calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
-
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency
     rental_order.currency_rate = get_exchange_rate(rental_order.currency)
     rental_order.total_price_usd = math.ceil(rental_order.total_price / rental_order.currency_rate)
     rental_order.timezone = product.timezone
+    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_order.rental_unit == 'day':
+        rental_order.start_datetime += datetime.timedelta(hours=12)
+        rental_order.end_datetime -= datetime.timedelta(hours=11, minutes=59, seconds=59)
+
     rental_order.save()
+    rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime, rental_order.rental_unit)
     # TODO: move generate order number into save function
     rental_order.number = str(100000+rental_order.id)
     rental_order.save()
@@ -204,11 +208,11 @@ def order_detail(request):
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
-        start_datetime = datetime.strftime(start_time, '%A/ %B %dst,%Y')
-        end_datetime = datetime.strftime(end_time, '%A/ %B %dst,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %dst,%Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %dst,%Y')
     else:
-        start_datetime = datetime.strftime(start_time, '%A, %B %dst %H,%Y')
-        end_datetime = datetime.strftime(end_time, '%A, %B %dst %H,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%A, %B %dst %H,%Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%A, %B %dst %H,%Y')
 
     if order.product.rental_unit == 'day':
         if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
