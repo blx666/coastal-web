@@ -21,8 +21,8 @@ from coastal.apps.rental.tasks import expire_order_request, expire_order_charge,
 def book_rental(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
-    # if not is_confirmed_user(request.user):
-    #     return CoastalJsonResponse(status=response.STATUS_1101)
+    if not is_confirmed_user(request.user):
+        return CoastalJsonResponse(status=response.STATUS_1101)
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -53,7 +53,7 @@ def book_rental(request):
     rental_order.currency_rate = get_exchange_rate(rental_order.currency)
     rental_order.total_price_usd = math.ceil(rental_order.total_price / rental_order.currency_rate)
     rental_order.timezone = product.timezone
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_unit == 'day':
+    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_order.rental_unit == 'day':
         rental_order.start_datetime += datetime.timedelta(hours=12)
         rental_order.end_datetime -= datetime.timedelta(hours=11, minutes=59, seconds=59)
 
