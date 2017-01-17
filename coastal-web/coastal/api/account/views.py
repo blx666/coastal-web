@@ -5,6 +5,7 @@ from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
+from dateutil.rrule import rrule, DAILY
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.apps.account.utils import create_user
@@ -18,6 +19,7 @@ from coastal.apps.sale.models import SaleOffer
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
 from coastal.api.product.utils import bind_product_image
+from coastal.apps.sns.utils import bind_token
 import time
 import math
 
@@ -30,8 +32,13 @@ def register(request):
     if not register_form.is_valid():
         return CoastalJsonResponse(register_form.errors, status=response.STATUS_400)
 
-    user = create_user(register_form.cleaned_data['email'], register_form.cleaned_data['password'])
+    cleaned_data = register_form.cleaned_data
+    user = create_user(cleaned_data['email'], cleaned_data['password'])
+
     auth_login(request, user)
+    if cleaned_data['uuid'] and cleaned_data['token']:
+        bind_token(cleaned_data['uuid'], cleaned_data['token'], user)
+
     data = {
         'user_id': user.id,
         'logged': request.user.is_authenticated(),
@@ -51,6 +58,12 @@ def login(request):
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
     if user:
         auth_login(request, user)
+
+        uuid = request.POST.get('uuid')
+        token = request.POST.get('token')
+        if uuid and token:
+            bind_token(uuid, token, user)
+
         data = {
             'user_id': user.id,
             'logged': request.user.is_authenticated(),
@@ -328,12 +341,15 @@ def my_account(request):
     product_list = user.properties.all()
     bind_product_image(product_list)
     for product in product_list:
-        data_product = {}
-        data_product['id'] = product.id
-        data_product['name'] = product.name
-        data_product['image'] = product.images[0].image.url if len(product.images) else ''
-        data_product['address'] = product.country + ',' + product.city
-        data_product['status'] = product.status
+        data_product = {
+            'id': product.id,
+            'name': product.name,
+            'image': product.images[0].image.url if len(product.images) else '',
+            'address': product.country + ',' + product.city,
+            'status': product.status,
+            'type': product.get_product_type(),
+        }
+
         product_group.append(data_product)
     data['my_products'] = product_group
 
@@ -343,11 +359,13 @@ def my_account(request):
     product_favorite = Product.objects.filter(favoriteitem__in=favorite_item)
     bind_product_image(product_favorite)
     for product in product_favorite:
-        data_favorite = {}
-        data_favorite['id'] = product.id
-        data_favorite['name'] = product.name
-        data_favorite['image'] = product.images[0].image.url if len(product.images) else ''
-        data_favorite['address'] = product.country + ',' + product.city
+        data_favorite = {
+            'id': product.id,
+            'name': product.name,
+            'image': product.images[0].image.url if len(product.images) else '',
+            'address': product.country + ',' + product.city,
+            'type': product.get_product_type(),
+        }
         favorite_group.append(data_favorite)
     data['favorites'] = favorite_group
 
@@ -402,6 +420,18 @@ def my_account(request):
                 order_group.append(data_order)
 
         data['orders'] = order_group
+    for order in order_list:
+        if order.date_updated + timedelta(days=1) < timezone.now():
+            image = order.product.productimage_set.all()
+            data_order = {
+                'id': order.id,
+                'type': 'rental' if isinstance(order, RentalOrder) else 'sale',
+                'image': image[0].image.url if len(image) else '',
+                'name': order.number,
+            }
+            order_group.append(data_order)
+
+    data['orders'] = order_group
 
     return CoastalJsonResponse(data)
 
@@ -427,14 +457,52 @@ def my_calendar(request):
                             update_order['orders'] = orders[str(begin_time.day)]
                             break
                 else:
-                    data = {}
-                    data['date'] = begin_time.strftime('%Y-%m-%d')
-                    data['date_display'] = begin_time.strftime('%B %d, %Y')
-                    data['orders'] = order_result
+                    data = {
+                        'date': begin_time.strftime('%Y-%m-%d'),
+                        'date_display': begin_time.strftime('%B %d, %Y'),
+                        'orders': order_result
+                    }
+
                     data_result.append(data)
                 orders[str(begin_time.day)] = order_result
             begin_time = begin_time + timedelta(days=1)
 
     return CoastalJsonResponse(data_result)
+
+
+@login_required
+def my_order_dates(request):
+    user = request.user
+    now_year = timezone.now()
+    now_year = datetime(now_year.year, now_year.month, 1, tzinfo=now_year.tzinfo)
+    next_year = datetime(now_year.year + 1, now_year.month, 1, tzinfo=now_year.tzinfo)
+    order_list = user.owner_orders.filter(Q(end_datetime__gte=now_year) & Q(start_datetime__lt=next_year))
+    date_list = []
+    for order in order_list:
+        begin_time, end_time = order.start_datetime, order.end_datetime
+        for every_day in rrule(DAILY, dtstart=begin_time, until=end_time):
+            if every_day >= now_year and every_day <  next_year:
+                format_day = datetime(every_day.year, every_day.month, every_day.day).strftime("%Y-%m-%d")
+                if format_day not in date_list:
+                    date_list.append(format_day)
+
+    return CoastalJsonResponse(date_list)
+
+
+@login_required
+def my_orders(request):
+    user = request.user
+    date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
+    date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
+    order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
+    data = {
+        'date': date.strftime('%Y-%m-%d'),
+        'date_display': date.strftime('%B %d, %Y'),
+    }
+    orders = []
+    for order in order_list:
+        orders.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
+    data['orders'] = orders
+    return CoastalJsonResponse(data)
 
 

@@ -81,7 +81,6 @@ def charge(rental_order, user, card):
     )
 
     rental_order.coastal_dollar = math.floor(transaction.net)
-    rental_order.status = 'booked'
     rental_order.save()
 
     return True

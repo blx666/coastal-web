@@ -14,6 +14,7 @@ from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user
 from coastal.apps.rental.utils import validate_rental_date
 from coastal.apps.currency.utils import get_exchange_rate
+from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 
 
 @login_required
@@ -68,6 +69,9 @@ def book_rental(request):
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
 
+    if rental_order.status == 'request':
+        expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+
     return CoastalJsonResponse(result)
 
 
@@ -107,6 +111,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
+        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -135,6 +140,12 @@ def payment_stripe(request):
         return CoastalJsonResponse({"card": "It is required."}, status=response.STATUS_400)
 
     success = stripe_charge(rental_order, request.user, card)
+
+    if success:
+        rental_order.status = 'booked'
+        rental_order.save()
+
+        check_in.apply_async((rental_order.id,), countdown=60 * 60)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -167,6 +178,13 @@ def payment_coastal(request):
     rental_order.save()
 
     success = coastal_charge(rental_order, request.user)
+
+    if success:
+        rental_order.coastal_dollar = rental_order.total_price_usd
+        rental_order.status = 'booked'
+        rental_order.save()
+
+        check_in.apply_async((rental_order.id,), countdown=60 * 60)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',

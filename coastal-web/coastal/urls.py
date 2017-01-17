@@ -28,6 +28,7 @@ urlpatterns = [
     url(r'^api/payment/', include('coastal.api.payment.urls', namespace='payment')),
     url(r'^api/review/', include('coastal.api.review.urls', namespace='review')),
     url(r'^api/sale/', include('coastal.api.sale.urls', namespace='sale')),
+    url(r'^api/help-center/', include('coastal.api.support.urls', namespace='help')),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

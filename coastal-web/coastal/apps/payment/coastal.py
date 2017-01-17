@@ -22,8 +22,4 @@ def charge(rental_order, user):
         currency='USD',
     )
 
-    rental_order.coastal_dollar = rental_order.total_price_usd
-    rental_order.status = 'booked'
-    rental_order.save()
-
     return True

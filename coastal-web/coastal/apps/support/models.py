@@ -12,3 +12,10 @@ class Report(models.Model):
     datetime = models.DateTimeField(auto_now_add=True)
     status = models.PositiveSmallIntegerField(choices=STATUS_CHOICE, default=0)
     user = models.ForeignKey(User, related_name='report_user')
+
+
+class Helpcenter(models.Model):
+    email = models.EmailField()
+    subject = models.CharField(max_length=225, null=True)
+    content = models.TextField()
+    create_date = models.DateTimeField(auto_now_add=True)

@@ -117,10 +117,13 @@ def send_message(request):
     sender_obj = request.user
     receiver_obj = User.objects.get(id=receiver_id)
     dialogue_obj = Dialogue.objects.get(id=dialogue_id)
+    if not (receiver_obj and dialogue_obj):
+        return CoastalJsonResponse(message_form.errors, status=response.STATUS_405)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
     dialogue_obj.save()
 
-    publish_message(content, dialogue_id, receiver_obj)
+    sender_name = sender_obj.first_name
+    publish_message(content, dialogue_id, receiver_obj, sender_name)
 
     result = {
         'message_id': message.id,
@@ -145,7 +148,12 @@ def dialogue_detail(request):
 
     if not (message_time or direction):
         messages = Message.objects.filter(dialogue=dialogue).order_by('-date_created')
-        messages.update(read=True)
+
+        for single_message in messages:
+            if single_message.receiver == request.user:
+                single_message.read = True
+                single_message.save()
+
         messages = messages[:20]
         message_list = []
         for message in messages:
@@ -167,7 +175,12 @@ def dialogue_detail(request):
         message_time = timezone.make_aware(message_time, timezone.UTC())
         if direction == 'up':
             up_messages = Message.objects.filter(dialogue=dialogue, date_created__lt=message_time).order_by('-date_created')
-            up_messages.update(read=True)
+
+            for single_message in up_messages:
+                if single_message.receiver == request.user:
+                    single_message.read = True
+                    single_message.save()
+
             up_messages = up_messages[:20]
             up_message_list = []
             for message in up_messages:
@@ -183,7 +196,12 @@ def dialogue_detail(request):
 
         if direction == 'down':
             down_messages = Message.objects.filter(dialogue=dialogue, date_created__gt=message_time).order_by('-date_created')
-            down_messages.update(read=True)
+
+            for single_message in down_messages:
+                if single_message.receiver == request.user:
+                    single_message.read = True
+                    single_message.save()
+
             down_message_list = []
             for message in down_messages:
                 down_message_dict = model_to_dict(message, fields=['id', 'sender', 'receiver', 'content'])
@@ -193,7 +211,7 @@ def dialogue_detail(request):
 
             result = {
                 'product_id': product_id,
-                'messages': down_message_list,
+                'messages': down_message_list[1:],
             }
 
     return CoastalJsonResponse(result)
