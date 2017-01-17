@@ -6,6 +6,7 @@ STATUS_405 = 405
 STATUS_1100 = 1100
 STATUS_1000 = 1000
 STATUS_1101 = 1101
+STATUS_1200 = 1200
 
 STATUS_CODE = {
     0: 'ok',
@@ -20,6 +21,9 @@ STATUS_CODE = {
     STATUS_1000: 'The username and password are not matched.',
     STATUS_1100: 'The user is not login.',
     STATUS_1101: 'The user info is incomplete.',
+
+    # 1200-1299 sns
+    STATUS_1200: 'Endpoint is disabled'
 }
 
 
