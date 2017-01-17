@@ -294,7 +294,7 @@ def my_activity(request):
                     'image': sale_offer.product.productimage_set.first() and sale_offer.product.productimage_set.first().image.url or '',
                     'name': sale_offer.product.name,
                 },
-                'price_display': sale_offer.get_price_display(),
+                'total_price_display': sale_offer.get_price_display(),
                 'status': sale_offer.get_status_display(),
                 'type': 'sale',
             }

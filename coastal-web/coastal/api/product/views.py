@@ -807,6 +807,6 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     product = Product.objects.get(id=request.POST.get('pid'))
-    status = request.POST.get('reported')
-    Report.objects.create(product=product, user=request.user, status=status)
+    if request.POST.get('reported') == '1':
+        Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()
