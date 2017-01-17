@@ -378,6 +378,48 @@ def my_account(request):
                                                     status__in=['finished', 'declined', 'invalid'])
                            .order_by('date_created'))
     order_list = order_rental_list + order_sale_list
+    if order_list:
+        for order in order_list:
+            if order.date_updated + timedelta(days=1) < timezone.now():
+                if order in order_rental_list:
+                    start_time = order.start_datetime
+                    end_time = order.end_datetime
+                    if order.product.rental_unit == 'day':
+                        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
+                            time_info = math.ceil(
+                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
+                        else:
+                            time_info = math.ceil(
+                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
+                    if order.product.rental_unit == 'half-day':
+                        time_info = math.ceil(
+                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
+                    if order.product.rental_unit == 'hour':
+                        time_info = math.ceil(
+                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
+                    if time_info > 1:
+                        title_info = '%s %ss' % (time_info, order.product.rental_unit.title())
+                    else:
+                        title_info = '%s %s' % (time_info, order.product.rental_unit.title())
+
+                data_order = {}
+                data_order['id'] = order.id
+                data_order['type'] = 'rental' if isinstance(order, RentalOrder) else 'sale'
+                image = order.product.productimage_set.all()
+                data_order['image'] = image[0].image.url if len(image) else ''
+                if request.user == order.owner:
+                    if order in order_rental_list:
+                        data_order['title'] = '%s booked %s at your %s at %s' % (order.guest.get_full_name(), title_info, order.product.category.name, order.product.city)
+                    else:
+                        data_order['title'] = '%s bought %s at %s' % (order.guest.get_full_name(), order.product.category.name, order.product.city)
+                else:
+                    if order in order_rental_list:
+                        data_order['title'] = 'I booked %s at %s\'s %s at %s' % (title_info, order.owner.get_full_name(), order.product.category.name, order.product.city)
+                    else:
+                        data_order['title'] = 'I bought %s\'s %s at %s' % (order.owner.get_full_name(), order.product.category.name, order.product.city)
+                order_group.append(data_order)
+
+        data['orders'] = order_group
     for order in order_list:
         if order.date_updated + timedelta(days=1) < timezone.now():
             image = order.product.productimage_set.all()
