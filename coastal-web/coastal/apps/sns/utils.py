@@ -6,7 +6,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
 
 
-def publish_message(content, dialogue_id, receiver_obj):
+def publish_message(content, dialogue_id, receiver_obj, sender_name):
     aws_key = settings.AWS_ACCESS_KEY_ID
     aws_secret = settings.AWS_SECRET_ACCESS_KEY
     region_name = settings.REGION
@@ -15,7 +15,7 @@ def publish_message(content, dialogue_id, receiver_obj):
     aws = boto3.client('sns')
     message = {
         'aps': {
-            'alert': content[0:21],
+            'alert': sender_name+':'+content[0:21],
             'sound': 'default'
         },
         'type': 'message',
@@ -30,11 +30,18 @@ def publish_message(content, dialogue_id, receiver_obj):
     if not receiver_list:
         return CoastalJsonResponse(status=response.STATUS_404)
     for reciver in receiver_list:
-        publish_message = aws.publish(
-            Message=json.dumps(result_message),
-            TargetArn=reciver.endpoint,
-            MessageStructure='json'
+        endpoint_attributes = aws.get_endpoint_attributes(
+            EndpointArn=reciver.endpoint,
         )
+        enabled = endpoint_attributes['Attributes']['Enabled']
+        if not enabled:
+            return CoastalJsonResponse(status=response.STATUS_1200)
+        else:
+            publish_message = aws.publish(
+                Message=json.dumps(result_message),
+                TargetArn=reciver.endpoint,
+                MessageStructure='json'
+            )
 
 
 def bind_token(uuid, token, user):
