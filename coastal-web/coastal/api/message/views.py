@@ -152,6 +152,7 @@ def dialogue_detail(request):
         for single_message in messages:
             if single_message.receiver == request.user:
                 single_message.read = True
+                single_message.save()
 
         messages = messages[:20]
         message_list = []
@@ -178,6 +179,7 @@ def dialogue_detail(request):
             for single_message in up_messages:
                 if single_message.receiver == request.user:
                     single_message.read = True
+                    single_message.save()
 
             up_messages = up_messages[:20]
             up_message_list = []
@@ -198,6 +200,7 @@ def dialogue_detail(request):
             for single_message in down_messages:
                 if single_message.receiver == request.user:
                     single_message.read = True
+                    single_message.save()
 
             down_message_list = []
             for message in down_messages:
