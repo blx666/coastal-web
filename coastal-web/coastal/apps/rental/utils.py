@@ -14,16 +14,18 @@ def validate_rental_date(product, start_date, end_date):
 
 
 def rental_out_date(product, start_datetime, end_datetime, rental_unit):
-    start_out_date = RentalOutDate.objects.filter(end_date=start_datetime)
-    end_out_date = RentalOutDate.objects.filter(start_date=end_datetime)
-    if start_datetime < start_datetime.replace(hour=12):
+    if start_datetime.hour < 12:
         start_datetime = start_datetime.replace(hour=0)
-    elif start_datetime > start_datetime.replace(hour=12):
+    elif start_datetime.hour > 12:
         start_datetime = start_datetime.replace(hour=12)
-    if end_datetime < end_datetime.replace(hour=12):
+    if end_datetime.hour < 12:
         end_datetime = end_datetime.replace(hour=12)
-    elif end_datetime > end_datetime.replace(hour=12):
-        end_datetime = end_datetime.replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
+    elif end_datetime.hour > 12:
+        end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+
+    start_out_date = RentalOutDate.objects.filter(end_date=start_datetime, product=product)
+    end_out_date = RentalOutDate.objects.filter(start_date=end_datetime, product=product)
+
     if start_out_date and end_out_date:
         start_out_date.update(end_date=end_out_date[0].end_date)
         end_out_date.delete()
