@@ -43,9 +43,12 @@ def home(request):
     product_list = []
     for product in products:
         product_data = model_to_dict(product,
-                                     fields=['id', 'for_rental', 'for_sale', 'rental_price', 'beds',
-                                             'max_guests', 'sale_price', 'city'])
+                                     fields=['id', 'for_rental', 'for_sale', 'rental_price',
+                                             'sale_price', 'city'])
         product_data.update({
+            'max_guests': product.max_guests or 0,
+            'length': product.length or 0,
+            'beds': product.beds or 0,
             "category": product.category_id,
             'rental_unit': product.get_rental_unit_display(),
             'rental_price_display': product.get_rental_price_display(),
@@ -95,4 +98,10 @@ def images_360(request):
             'sale_price_display': image_360.product.get_sale_price_display(),
         }
         data.append(content)
-    return CoastalJsonResponse(data)
+    content = []
+
+    for i in data:
+        if i['product_id'] not in [p['product_id'] for p in content]:
+            content.append(i)
+
+    return CoastalJsonResponse(content)

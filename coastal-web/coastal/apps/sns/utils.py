@@ -34,7 +34,7 @@ def publish_message(content, dialogue_id, receiver_obj, sender_name):
             EndpointArn=reciver.endpoint,
         )
         enabled = endpoint_attributes['Attributes']['Enabled']
-        if not enabled:
+        if enabled == 'false':
             return CoastalJsonResponse(status=response.STATUS_1200)
         else:
             publish_message = aws.publish(

@@ -377,6 +377,9 @@ def product_update(request):
             i.save()
     product.save()
 
+    if form.changed_data.get('action') == 'cancel':
+        product.update(status='cancelled')
+
     if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
             product.publish()
@@ -807,6 +810,6 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     product = Product.objects.get(id=request.POST.get('pid'))
-    status = request.POST.get('reported')
-    Report.objects.create(product=product, user=request.user, status=status)
+    if request.POST.get('reported') == '1':
+        Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()
