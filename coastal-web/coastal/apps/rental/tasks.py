@@ -1,6 +1,6 @@
 from celery import shared_task
 from coastal.apps.rental.models import RentalOrder
-
+from coastal.apps.rental.utils import clean_rental_out_date
 
 @shared_task
 def expire_order_request(order_id):
@@ -13,6 +13,7 @@ def expire_order_request(order_id):
     if order.status == 'request':
         order.status = 'invalid'
         order.save()
+        clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
 
         # TODO: send notification
 
@@ -28,7 +29,7 @@ def expire_order_charge(order_id):
     if order.status == 'charge':
         order.status = 'invalid'
         order.save()
-
+        clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
         # TODO: send notification
 
 

@@ -12,7 +12,7 @@ from coastal.api.product.utils import calc_price
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user
-from coastal.apps.rental.utils import validate_rental_date, rental_out_date
+from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 
@@ -58,7 +58,7 @@ def book_rental(request):
         rental_order.end_datetime -= datetime.timedelta(hours=11, minutes=59, seconds=59)
 
     rental_order.save()
-    rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime, rental_order.rental_unit)
+    rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
     # TODO: move generate order number into save function
     rental_order.number = str(100000+rental_order.id)
     rental_order.save()
@@ -73,8 +73,8 @@ def book_rental(request):
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
 
-    if rental_order.status == 'request':
-        expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+    # if rental_order.status == 'request':
+        # expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -105,9 +105,11 @@ def rental_approve(request):
 
     if approve:
         rental_order.status = 'charge'
+        rental_order.save()
     else:
         rental_order.status = 'declined'
-    rental_order.save()
+        rental_order.save()
+        clean_rental_out_date(rental_order.product,rental_order.start_datetime,rental_order.end_datetime)
 
     result = {
         'status': rental_order.get_status_display()
