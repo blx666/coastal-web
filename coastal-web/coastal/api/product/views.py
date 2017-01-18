@@ -538,7 +538,7 @@ def black_dates_for_rental(request):
     black_date_for_rental = product.blackoutdate_set.all()
     data = []
     for date in black_date_for_rental:
-        date_data = [date.start_date, date.end_date]
+        date_data = [date.start_date.date().strftime("%Y-%m-%d"), date.end_date.date().strftime("%Y-%m-%d")]
         data.append(date_data)
     rental_order = RentalOrder.objects.filter(product=product)
     for date in rental_order:
