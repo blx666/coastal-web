@@ -54,13 +54,12 @@ def dialogue_list(request):
         contact_dict = {
             'user_id': contact.id,
             'name': contact.get_full_name(),
-            'photo': contact.userprofile.photo.url if contact.userprofile.photo else '',
+            'photo': contact.userprofile.photo and contact.userprofile.photo.url or '',
         }
-        product_image = ProductImage.objects.filter(product=product).first()
         product_dict = {
             'product_id': product.id,
             'name': product.name,
-            'image': product_image.image.url,
+            'image': product.productimage_set.first() and product.productimage_set.first().image.url or '',
         }
         order_dict = {}
         if order:
