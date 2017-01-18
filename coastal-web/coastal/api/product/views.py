@@ -7,6 +7,7 @@ from django.core.paginator import PageNotAnInteger
 from django.db.models import Avg, Count
 from django.forms.models import model_to_dict
 from django.views.decorators.cache import cache_page
+from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
 
@@ -25,7 +26,7 @@ from coastal.apps.currency.models import Currency
 from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as product_defs
 from coastal.apps.product.models import Product, ProductImage, Amenity
-from coastal.apps.rental.models import BlackOutDate, RentalOrder
+from coastal.apps.rental.models import BlackOutDate, RentalOrder, RentalOutDate
 from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 
@@ -531,20 +532,39 @@ def delete_image(request):
 
 
 def black_dates_for_rental(request):
+    from datetime import timedelta
     product_id = request.GET.get('product_id')
+    rental_unit = request.GET.get('rental_unit')
     try:
         product = Product.objects.get(id=product_id)
     except:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
-    black_date_for_rental = product.blackoutdate_set.all()
+    date_ranges = product.blackoutdate_set.all()
     data = []
-    for date in black_date_for_rental:
-        date_data = [date.start_date.date(), date.end_date.date()]
-        data.append(date_data)
-    rental_order = RentalOrder.objects.filter(product=product)
-    for date in rental_order:
-        date_data = [date.start_datetime.date(), date.end_datetime.date()]
-        data.append(date_data)
+    for dr in date_ranges:
+        data.append([localtime(dr.start_date).date(), localtime(dr.end_date).date()])
+
+    date_ranges2 = RentalOutDate.objects.filter(product=product)
+    for dr in date_ranges2:
+        start_date = localtime(dr.start_date)
+        end_date = localtime(dr.end_date)
+        if rental_unit == 'day':
+            if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT, product_defs.CATEGORY_ROOM):
+                start_date = start_date - timedelta(hours=12)
+                end_date = end_date - timedelta(hours=12) - timedelta(seconds=1)
+                data.append([start_date.date(), end_date.date()])
+            else:
+                end_date = end_date - timedelta(seconds=1)
+                data.append([start_date.date(), end_date.date()])
+        else:
+            if start_date.hour == 12:
+                start_date += timedelta(hours=12)
+            if end_date.hour == 12:
+                end_date -= timedelta(hours=12)
+            if start_date != end_date:
+                end_date -= timedelta(seconds=1)
+                data.append([start_date.date(), end_date.date()])
+
     return CoastalJsonResponse(data)
 
 

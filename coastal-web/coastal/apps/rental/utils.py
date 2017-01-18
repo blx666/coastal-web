@@ -13,7 +13,7 @@ def validate_rental_date(product, start_date, end_date):
     return black_out_dates or rental_dates
 
 
-def rental_out_date(product, start_datetime, end_datetime, rental_unit):
+def rental_out_date(product, start_datetime, end_datetime):
     if start_datetime.hour < 12:
         start_datetime = start_datetime.replace(hour=0)
     elif start_datetime.hour > 12:
@@ -36,3 +36,27 @@ def rental_out_date(product, start_datetime, end_datetime, rental_unit):
     else:
         RentalOutDate.objects.create(product=product, start_date=start_datetime, end_date=end_datetime)
 
+
+def clean_rental_out_date(product, start_datetime, end_datetime):
+    if start_datetime.hour < 12:
+        start_datetime = start_datetime.replace(hour=0)
+    elif start_datetime.hour > 12:
+        start_datetime = start_datetime.replace(hour=12)
+    if end_datetime.hour < 12:
+        end_datetime = end_datetime.replace(hour=12)
+    elif end_datetime.hour > 12:
+        end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+    rental_date = RentalOutDate.objects.filter(start_date=start_datetime,end_date=end_datetime, product=product)
+    if rental_date:
+        rental_date.delete()
+    rental_date = RentalOutDate.objects.filter(start_date__lt=start_datetime,end_date__gt=end_datetime, product=product)
+    if rental_date:
+        end_date = rental_date[0].end_date
+        RentalOutDate.objects.create(product=product, start_date=end_datetime,end_date=end_date)
+        rental_date.update(end_date=start_datetime)
+    rental_date = RentalOutDate.objects.filter(start_date=start_datetime,end_date__gt=end_datetime, product=product)
+    if rental_date:
+        rental_date.update(start_date=end_datetime)
+    rental_date = RentalOutDate.objects.filter(start_date__lt=start_datetime, end_date=end_datetime, product=product)
+    if rental_date:
+        rental_date.update(end_date=start_datetime)
