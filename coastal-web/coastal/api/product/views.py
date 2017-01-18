@@ -542,7 +542,7 @@ def black_dates_for_rental(request):
         data.append(date_data)
     rental_order = RentalOrder.objects.filter(product=product)
     for date in rental_order:
-        date_data = [date.start_datetime.date(), date.end_datetime.date()]
+        date_data = [date.start_datetime.date().strftime("%Y-%m-%d"), date.end_datetime.date().strftime("%Y-%m-%d")]
         data.append(date_data)
     return CoastalJsonResponse(data)
 
