@@ -73,8 +73,8 @@ def book_rental(request):
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
 
-    # if rental_order.status == 'request':
-        # expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+    if rental_order.status == 'request':
+        expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
 
