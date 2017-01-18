@@ -29,7 +29,6 @@ ALLOWED_HOSTS = []
 
 SITE_DOMAIN = '127.0.0.1:8000'
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -51,6 +50,7 @@ INSTALLED_APPS = [
     'coastal.apps.sns',
     'coastal.apps.sale',
     'coastal.apps.support',
+    'coastal.apps.coastline',
 ]
 
 MIDDLEWARE = [
