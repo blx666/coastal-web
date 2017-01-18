@@ -378,7 +378,7 @@ def product_update(request):
     product.save()
 
     if form.changed_data.get('action') == 'cancel':
-        product.update(status='draft')
+        product.update(status='cancelled')
 
     if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
