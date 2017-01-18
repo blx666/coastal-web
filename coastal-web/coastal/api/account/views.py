@@ -381,7 +381,7 @@ def my_account(request):
     if order_list:
         for order in order_list:
             if order.date_updated + timedelta(days=1) < timezone.now():
-                if order in order_rental_list:
+                if isinstance(order, RentalOrder):
                     start_time = order.start_datetime
                     end_time = order.end_datetime
                     if order.product.rental_unit == 'day':
