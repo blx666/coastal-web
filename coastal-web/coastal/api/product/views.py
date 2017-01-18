@@ -538,11 +538,11 @@ def black_dates_for_rental(request):
     black_date_for_rental = product.blackoutdate_set.all()
     data = []
     for date in black_date_for_rental:
-        date_data = [date.start_date.date().strftime("%Y-%m-%d"), date.end_date.date().strftime("%Y-%m-%d")]
+        date_data = [date.start_date.date(), date.end_date.date()]
         data.append(date_data)
     rental_order = RentalOrder.objects.filter(product=product)
     for date in rental_order:
-        date_data = [date.start_datetime.date().strftime("%Y-%m-%d"), date.end_datetime.date().strftime("%Y-%m-%d")]
+        date_data = [date.start_datetime.date(), date.end_datetime.date()]
         data.append(date_data)
     return CoastalJsonResponse(data)
 
