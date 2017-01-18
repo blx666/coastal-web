@@ -377,6 +377,10 @@ def product_update(request):
             i.save()
     product.save()
 
+    if form.cleaned_data.get('action') == 'cancel':
+        product.status = 'cancelled'
+        product.save()
+
     if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
             product.publish()
@@ -535,7 +539,7 @@ def black_dates_for_rental(request):
     black_date_for_rental = product.blackoutdate_set.all()
     data = []
     for date in black_date_for_rental:
-        date_data = [date.start_date, date.end_date]
+        date_data = [date.start_date.date(), date.end_date.date()]
         data.append(date_data)
     rental_order = RentalOrder.objects.filter(product=product)
     for date in rental_order:
@@ -807,6 +811,6 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     product = Product.objects.get(id=request.POST.get('pid'))
-    status = request.POST.get('reported')
-    Report.objects.create(product=product, user=request.user, status=status)
+    if request.POST.get('reported') == '1':
+        Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()

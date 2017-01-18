@@ -2,6 +2,7 @@
 import math
 import datetime
 from coastal.apps.product.models import Product, ProductImage, ProductViewCount
+from coastal.apps.rental.models import BlackOutDate, RentalOrder
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
