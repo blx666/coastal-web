@@ -407,16 +407,8 @@ def my_account(request):
                 data_order['type'] = 'rental' if isinstance(order, RentalOrder) else 'sale'
                 image = order.product.productimage_set.all()
                 data_order['image'] = image[0].image.url if len(image) else ''
-                data_order['owner'] = {
-                    'id': order.owner_id,
-                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name(),
-                }
-                data_order['guest'] = {
-                    'id': order.guest_id,
-                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
-                }
+                data_order['owner_id'] = order.owner_id
+                data_order['guest_id'] = order.guest_id
                 if request.user == order.owner:
                     if order in order_rental_list:
                         data_order['name'] = '%s booked %s at your %s at %s' % (order.guest.get_full_name(), title_info, order.product.category.name, order.product.city)
