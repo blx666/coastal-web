@@ -575,11 +575,11 @@ def search(request):
     item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
-        products = paginator.page(page)
+        product_page = paginator.page(page)
     except PageNotAnInteger:
-        products = paginator.page(1)
+        product_page = paginator.page(1)
     except EmptyPage:
-        products = paginator.page(paginator.num_pages)
+        product_page = paginator.page(paginator.num_pages)
 
     if int(page) >= paginator.num_pages:
         next_page = 0
@@ -590,7 +590,7 @@ def search(request):
         liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list('product_id',
                                                                                                      flat=True)
     products_list = []
-    for product in products:
+    for product in product_page:
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
