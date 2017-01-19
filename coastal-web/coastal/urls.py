@@ -19,8 +19,10 @@ from django.conf.urls.static import static
 from django.contrib import admin
 
 urlpatterns = [
+    url(r'^account/', include('coastal.apps.account.urls', namespace='account')),
+
     url(r'^api/products/', include('coastal.api.product.urls', namespace='product')),
-    url(r'^api/account/', include('coastal.api.account.urls', namespace='account')),
+    url(r'^api/account/', include('coastal.api.account.urls', namespace='api-account')),
     url(r'^api/page/', include('coastal.api.page.urls', namespace='page')),
     url(r'^admin/', admin.site.urls),
     url(r'^api/message/', include('coastal.api.message.urls', namespace='message')),
@@ -32,3 +34,4 @@ urlpatterns = [
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
