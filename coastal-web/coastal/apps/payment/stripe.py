@@ -23,6 +23,32 @@ def add_card(user, token):
         user.save()
 
 
+def get_stripe_info(user):
+    if user.userprofile.stripe_customer_id:
+        customer = stripe.Customer.retrieve(user.userprofile.stripe_customer_id)
+        info = {
+            "has_more": customer.sources.has_more,
+            "total_count": customer.sources.total_count,
+            "id": customer.id,
+            "default_source": customer.default_source,
+            "sources": {"data": []}
+        }
+
+        for card in customer.sources.data:
+            info['sources']['data'].append({
+                "brand": card.brand,
+                "customer": card.customer,
+                "cvc_check": card.cvc_check,
+                "exp_month": card.exp_month,
+                "exp_year": card.exp_year,
+                "id": card.id,
+                "last4": card.last4,
+                "funding": card.funding
+            })
+        return info
+    return {}
+
+
 def get_card_list(user):
     card_list = []
 
