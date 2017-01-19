@@ -848,13 +848,13 @@ def all_detail(request):
     for pi in ProductImage.objects.filter(product=product):
         if pi.caption != ProductImage.CAPTION_360:
             image = {
-                'id': pi.id,
+                'image_id': pi.id,
                 'url': pi.image.url,
             }
             images.append(image)
         else:
             view = {
-                'id': pi.id,
+                'image_id': pi.id,
                 'url': pi.image.url,
             }
             views.append(view)
