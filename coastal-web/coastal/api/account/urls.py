@@ -14,4 +14,6 @@ urlpatterns = [
     url(r'^my-calendar/$', views.my_calendar, name='my-calendar'),
     url(r'^my-calendar/dates/$', views.my_order_dates, name='my-order-dates'),
     url(r'^my-calendar/orders/$', views.my_orders, name='my-orders'),
+
+    url(r'^stripe-info/$', views.stripe_info, name='stripe-info'),
 ]

@@ -12,6 +12,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
 from coastal.apps.account.models import ValidateEmail, FavoriteItem
+from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.sale.models import SaleOffer
@@ -477,3 +478,6 @@ def my_orders(request):
     return CoastalJsonResponse(data)
 
 
+@login_required
+def stripe_info(request):
+    return CoastalJsonResponse(get_stripe_info(request.user))
