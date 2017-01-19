@@ -68,6 +68,7 @@ def sale_detail(request):
         'offer_price': sale_offer.price,
         'offer_price_display': sale_offer.get_price_display(),
         'conditions': sale_offer.get_condition_list(),
+        'status': sale_offer.get_status_display(),
     }
     result.update(sale_payment_info(sale_offer, user))
     return CoastalJsonResponse(result)

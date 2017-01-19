@@ -844,3 +844,72 @@ def flag_junk(request):
     if request.POST.get('reported') == '1':
         Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()
+
+
+def all_detail(request):
+    product = Product.objects.get(id=request.GET.get('product_id'))
+    images = []
+    views = []
+    for pi in ProductImage.objects.filter(product=product):
+        if pi.caption != ProductImage.CAPTION_360:
+            image = {
+                'id': pi.id,
+                'url': pi.image.url,
+            }
+            images.append(image)
+        else:
+            view = {
+                'id': pi.id,
+                'url': pi.image.url,
+            }
+            views.append(view)
+    if product.for_rental:
+        price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
+        discount = {
+            'discount': {
+                'weekly_discount': product.discount_weekly or 0,
+                'updated_weekly_price': price[0],
+                'updated_weekly_price_display': price_display(price[0], product.currency),
+                'monthly_discount': product.discount_monthly or 0,
+                'updated_monthly_price': price[1],
+                'updated_monthly_price_display': price_display(price[1], product.currency),
+            }
+        }
+    else:
+        discount = {
+            'discount': {}
+        }
+    black_out_dates = BlackOutDate.objects.filter(product=product)
+    if black_out_dates:
+        content = []
+        for i in black_out_dates:
+            data = []
+            data.append(localtime(i.start_date).date())
+            data.append(localtime(i.end_date).date())
+            content.append(data)
+    else:
+        content = []
+    result = {
+        'id': product.id,
+        'category': product.category_id,
+        'images': images,
+        '360-images': views,
+        'for_rental': product.for_rental,
+        'for_sale': product.for_sale,
+        'rental_price': product.rental_price or 0,
+        'rental_price_display': product.get_rental_price_display(),
+        'rental_unit': product.get_rental_unit_display(),
+        'currency': product.currency,
+        'sale_price': product.sale_price or 0,
+        'sale_price_display': product.get_sale_price_display(),
+        'lon': product.point[0] or 0,
+        'lat': product.point[1] or 0,
+        'address': product.address or '',
+        'name': product.name,
+        'description': product.description or '',
+        'amenities': product.get_amenities_display(),
+        'rental_rule': product.rental_rule,
+        'black_out_dates': content,
+    }
+    result.update(discount)
+    return CoastalJsonResponse(result)
