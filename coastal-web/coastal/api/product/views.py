@@ -29,6 +29,7 @@ from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.rental.models import BlackOutDate, RentalOrder, RentalOutDate
 from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
+from coastal.apps.coastline.utils import distance_from_coastline
 
 
 def product_list(request):
@@ -312,6 +313,7 @@ def product_add(request):
     if 'lon' and 'lat' in form.data:
         tf = TimezoneFinder()
         product.timezone = tf.timezone_at(lng=form.cleaned_data['lon'], lat=form.cleaned_data['lat'])
+        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or float('inf')
     product.save()
     pid = product.id
     black_out_date(pid, form)
@@ -376,6 +378,9 @@ def product_update(request):
         for i in form.cleaned_data.get('images'):
             i.product = product
             i.save()
+
+    if 'lan' and 'lat' in form.cleaned_data:
+        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or float('inf')
     product.save()
 
     if form.cleaned_data.get('action') == 'cancel':
