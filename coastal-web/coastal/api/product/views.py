@@ -574,7 +574,7 @@ def black_dates_for_rental(request):
 
 
 def search(request):
-    products = Product.objects.filter(address__contains=request.GET.get('q'), status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_price')
+    products = Product.objects.filter(address__icontains=request.GET.get('q'), status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
@@ -848,13 +848,13 @@ def all_detail(request):
     for pi in ProductImage.objects.filter(product=product):
         if pi.caption != ProductImage.CAPTION_360:
             image = {
-                'id': pi.id,
+                'image_id': pi.id,
                 'url': pi.image.url,
             }
             images.append(image)
         else:
             view = {
-                'id': pi.id,
+                'image_id': pi.id,
                 'url': pi.image.url,
             }
             views.append(view)
