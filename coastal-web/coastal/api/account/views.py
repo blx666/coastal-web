@@ -109,7 +109,8 @@ def update_profile(request):
                 setattr(user, 'first_name', name_list.pop())
                 setattr(user, 'last_name', ' '.join(name_list))
             else:
-                setattr(user.userprofile, key, form.cleaned_data[key])
+                if hasattr(user.userprofile, key):
+                    setattr(user.userprofile, key, form.cleaned_data[key])
         user.save()
         user.userprofile.save()
         data = {
