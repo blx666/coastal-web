@@ -138,7 +138,7 @@ class Product(models.Model):
     rank = models.PositiveSmallIntegerField(blank=True, null=True, default=0)
 
     currency = models.CharField(max_length=3, default='USD', blank=True)
-    distance_from_coastal = models.FloatField(max_length=32, blank=True, null=True)
+    distance_from_coastal = models.FloatField(max_length=32, blank=True, null=True, editable=False)
 
     # rental info
     rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
