@@ -7,7 +7,7 @@ def update_product_distance_from_coastal(apps, schema_editor):
     products = Product.objects.all()
     for product in products:
         if product.point:
-            product.distance_from_coastal = distance_from_coastline(product.point[0], product.point[1]) or 99999999
+            product.distance_from_coastal = distance_from_coastline(product.point[0], product.point[1]) or float('inf')
         product.save()
 
 

@@ -313,7 +313,7 @@ def product_add(request):
     if 'lon' and 'lat' in form.data:
         tf = TimezoneFinder()
         product.timezone = tf.timezone_at(lng=form.cleaned_data['lon'], lat=form.cleaned_data['lat'])
-        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or 99999999999
+        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or float('inf')
     product.save()
     pid = product.id
     black_out_date(pid, form)
@@ -380,7 +380,7 @@ def product_update(request):
             i.save()
 
     if 'lan' and 'lat' in form.cleaned_data:
-        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or 99999999999
+        product.distance_from_coastal = distance_from_coastline(form.cleaned_data['lon'], form.cleaned_data['lat']) or float('inf')
     product.save()
 
     if form.cleaned_data.get('action') == 'cancel':
