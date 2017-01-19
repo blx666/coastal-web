@@ -905,6 +905,11 @@ def all_detail(request):
         'amenities': product.get_amenities_display(),
         'rental_rule': product.rental_rule,
         'black_out_dates': content,
+        'desc_about_it': product.desc_about_it or '',
+        'desc_guest_access': product.desc_guest_access or '',
+        'desc_interaction': product.desc_interaction or '',
+        'desc_getting_around': product.desc_getting_around or '',
+        'desc_other_to_note': product.desc_other_to_note or '',
     }
     result.update(discount)
     return CoastalJsonResponse(result)
