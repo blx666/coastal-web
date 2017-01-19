@@ -10,6 +10,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
+from datetime import timedelta
 
 from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -50,6 +51,8 @@ def product_list(request):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
+    max_coastline_distance = form.cleaned_data['max_coastline_distance']
+    min_coastline_distance = form.cleaned_data['min_coastline_distance']
     if not (lon and lat and distance):
         return recommend_product_list(request)
     target = Point(lon, lat)
@@ -69,14 +72,16 @@ def product_list(request):
         products = products.filter(rental_price__gte=min_price)
     if max_price:
         products = products.filter(rental_price__lte=max_price)
-    if arrival_date:
-        products = products.exclude(blackoutdate__start_date__lte=arrival_date,
-                                    blackoutdate__end_date__gte=arrival_date).exclude(
-            rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
-    if checkout_date:
-        products = products.exclude(blackoutdate__start_date__lte=checkout_date,
-                                    blackoutdate__end_date__gte=checkout_date).exclude(
-            rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
+
+    if arrival_date and checkout_date:
+        products = products.exclude(blackoutdate__start_date__lte=arrival_date,blackoutdate__end_date__gte=checkout_date).exclude(rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+    elif checkout_date:
+        arrival_date = datetime.now().replace(hour=0, minute=0, second=0)
+        products = products.exclude(blackoutdate__start_date__lte=arrival_date,blackoutdate__end_date__gte=checkout_date).exclude(rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+    if max_coastline_distance and min_coastline_distance:
+        products = products.filter(distance_from_coastal__gte=min_coastline_distance,distance_from_coastal__lte=max_coastline_distance)
+    elif max_coastline_distance:
+        products = products.filter(distance_from_coastal__gte=max_coastline_distance)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
