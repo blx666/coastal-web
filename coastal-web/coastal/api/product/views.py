@@ -87,6 +87,8 @@ def product_list(request):
                                    distance_from_coastal__lte=max_coastline_distance)
     elif min_coastline_distance:
         products = products.filter(distance_from_coastal__gte=min_coastline_distance)
+    elif max_coastline_distance:
+        products = products.filter(distance_from_coastal__lte=max_coastline_distance)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
