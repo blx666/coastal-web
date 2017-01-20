@@ -580,11 +580,11 @@ def search(request):
     item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
     try:
-        products = paginator.page(page)
+        product_page = paginator.page(page)
     except PageNotAnInteger:
-        products = paginator.page(1)
+        product_page = paginator.page(1)
     except EmptyPage:
-        products = paginator.page(paginator.num_pages)
+        product_page = paginator.page(paginator.num_pages)
 
     if int(page) >= paginator.num_pages:
         next_page = 0
@@ -595,7 +595,7 @@ def search(request):
         liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list('product_id',
                                                                                                      flat=True)
     products_list = []
-    for product in products:
+    for product in product_page:
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
@@ -906,6 +906,11 @@ def all_detail(request):
         'rental_rule': product.rental_rule,
         'black_out_dates': content,
         'rental_type': product.rental_type,
+        'desc_about_it': product.desc_about_it or '',
+        'desc_guest_access': product.desc_guest_access or '',
+        'desc_interaction': product.desc_interaction or '',
+        'desc_getting_around': product.desc_getting_around or '',
+        'desc_other_to_note': product.desc_other_to_note or '',
     }
     result.update(discount)
     return CoastalJsonResponse(result)
