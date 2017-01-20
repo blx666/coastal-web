@@ -155,9 +155,6 @@ def payment_stripe(request):
 
     success = stripe_charge(sale_offer, request.user, card)
     if success:
-        sale_offer.product.owner = request.user
-        sale_offer.product.save()
-
         owner = sale_offer.owner
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
@@ -200,9 +197,6 @@ def payment_coastal(request):
 
     success = coastal_charge(sale_offer, request.user)
     if success:
-        sale_offer.product.owner = request.user
-        sale_offer.product.save()
-
         owner = sale_offer.owner
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
