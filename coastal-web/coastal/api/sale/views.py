@@ -13,6 +13,7 @@ from coastal.apps.payment.stripe import sale_charge as stripe_charge
 from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction
 
+
 @login_required
 def approve(request):
     if request.method != 'POST':
