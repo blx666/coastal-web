@@ -256,8 +256,10 @@ def product_detail(request, pid):
                 'name': 'Additional Price',
                 'weekly_discount': product.discount_weekly or 0,
                 'updated_weekly_price': price[0],
+                'updated_weekly_price_display': price_display(price[0], product.currency),
                 'monthly_discount': product.discount_monthly or 0,
                 'updated_monthly_price': price[1],
+                'updated_monthly_price_display': price_display(price[1], product.currency),
             }
         }
     else:
@@ -281,6 +283,7 @@ def product_detail(request, pid):
         content['image'] = ""
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
+        content['rental_unit'] = p.rental_unit
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
                 content['image'] = img.image.url
