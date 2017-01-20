@@ -30,6 +30,10 @@ class SaleOffer(models.Model):
     guest = models.ForeignKey(User, related_name='guest_offers')
     price = models.PositiveIntegerField()
     conditions = models.CharField(max_length=30, blank=True, validators=[validate_comma_separated_integer_list])
+    price_usd = models.FloatField()
+    currency = models.CharField(max_length=3)
+    currency_rate = models.FloatField()
+    coastal_dollar = models.FloatField(null=True)
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 

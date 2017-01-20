@@ -1,3 +1,5 @@
+import math
+
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.api.core import response
@@ -5,8 +7,11 @@ from coastal.apps.sale.models import SaleOffer, SaleApproveEvent, SalePaymentEve
 from coastal.apps.payment.utils import sale_payment_info
 from coastal.apps.currency.models import Currency
 from coastal.apps.account.utils import is_confirmed_user
+from coastal.apps.currency.utils import get_exchange_rate
 from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
-
+from coastal.apps.payment.stripe import sale_charge as stripe_charge
+from coastal.apps.payment.coastal import sale_charge as coastal_charge
+from coastal.apps.account.models import CoastalBucket, Transaction
 
 @login_required
 def approve(request):
@@ -78,8 +83,8 @@ def sale_detail(request):
 def make_offer(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
-    # if not is_confirmed_user(request.user):
-    #     return CoastalJsonResponse(status=response.STATUS_1101)
+    if not is_confirmed_user(request.user):
+        return CoastalJsonResponse(status=response.STATUS_1101)
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -93,6 +98,10 @@ def make_offer(request):
     sale_offer.status = 'request'
     sale_offer.owner = product.owner
     sale_offer.guest = request.user
+    sale_offer.currency = product.currency
+    sale_offer.currency_rate = get_exchange_rate(sale_offer.currency)
+    sale_offer.price_usd = math.ceil(sale_offer.price / sale_offer.currency_rate)
+    sale_offer.timezone = product.timezone
     sale_offer.save()
     sale_offer.number = str(100000+sale_offer.id)
     sale_offer.save()
@@ -119,3 +128,92 @@ def delete_offer(request):
     sale_offer.save()
 
     return CoastalJsonResponse()
+
+
+@login_required
+def payment_stripe(request):
+    """
+    :param request: POST data {"sale_offer_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
+    :return: json data {}
+    """
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        sale_offer = SaleOffer.objects.get(guest=request.user, id=request.POST.get('sale_offer_id'))
+    except SaleOffer.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    if sale_offer.status != 'charge':
+        return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
+
+    card = request.POST.get('card_id')
+    if not card:
+        return CoastalJsonResponse({"card_id": "It is required."}, status=response.STATUS_400)
+
+    success = stripe_charge(sale_offer, request.user, card)
+    if success:
+        sale_offer.product.owner = request.user
+        sale_offer.product.save()
+
+        owner = sale_offer.owner
+        bucket = CoastalBucket.objects.get(user=owner)
+        bucket.balance += sale_offer.price_usd
+        bucket.save()
+        Transaction.objects.create(
+            bucket=bucket,
+            type='in',
+            order_number=sale_offer.number
+        )
+
+    return CoastalJsonResponse({
+        "payment": success and 'success' or 'failed',
+        "status": sale_offer.get_status_display(),
+    })
+
+
+@login_required
+def payment_coastal(request):
+    """
+    :param request: POST data {"sale_offer_id": 1}
+    :return: json data {}
+    """
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    try:
+        sale_offer = SaleOffer.objects.get(guest=request.user, id=request.POST.get('sale_offer_id'))
+    except SaleOffer.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
+    if sale_offer.status != 'charge':
+        return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
+
+    sale_offer.currency = sale_detail.product.currency
+    sale_offer.currency_rate = get_exchange_rate(sale_offer.currency)
+    sale_offer.price_usd = math.ceil(sale_offer.price / sale_offer.currency_rate)
+    sale_offer.save()
+
+    success = coastal_charge(sale_offer, request.user)
+    if success:
+        sale_offer.product.owner = request.user
+        sale_offer.product.save()
+
+        owner = sale_offer.owner
+        bucket = CoastalBucket.objects.get(user=owner)
+        bucket.balance += sale_offer.price_usd
+        bucket.save()
+        Transaction.objects.create(
+            bucket=bucket,
+            type='in',
+            order_number=sale_offer.number
+        )
+
+    return CoastalJsonResponse({
+        "payment": success and 'success' or 'failed',
+        "status": sale_offer.get_status_display(),
+    })
