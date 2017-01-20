@@ -37,9 +37,9 @@ def book_rental(request):
         return CoastalJsonResponse(status=response.STATUS_400)
 
     if product.is_no_one:
-        rental_order.status = 'charge'
-    else:
         rental_order.status = 'request'
+    else:
+        rental_order.status = 'charge'
 
     rental_order.product = product
     rental_order.guest = request.user

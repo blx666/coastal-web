@@ -13,7 +13,7 @@ class SaleOffer(models.Model):
         ('declined', 'Declined'),  # The offer has been declined by host
         ('invalid', 'Invalid'),  # The offer did not be handle within 24 hours
         ('charge', 'Unpaid'),  # The offer need to be paid for by guest
-        ('paid', 'In Transaction'),  # Pay owner
+        ('pay', 'In Transaction'),  # Pay owner
         ('finished', 'Finished'),
     )
     CONDITION_CHOICES = (
@@ -30,6 +30,10 @@ class SaleOffer(models.Model):
     guest = models.ForeignKey(User, related_name='guest_offers')
     price = models.PositiveIntegerField()
     conditions = models.CharField(max_length=30, blank=True, validators=[validate_comma_separated_integer_list])
+    price_usd = models.FloatField()
+    currency = models.CharField(max_length=3)
+    currency_rate = models.FloatField()
+    coastal_dollar = models.FloatField(null=True)
 
     status = models.CharField(max_length=32, choices=STATUS_CHOICES)
 
