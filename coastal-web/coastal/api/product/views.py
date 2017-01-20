@@ -533,7 +533,8 @@ def discount_calculator(request):
 
 def delete_image(request):
     if not request.POST.get('images'):
-        return CoastalJsonResponse(status=response.STATUS_400)
+        return CoastalJsonResponse({'images': 'The field is required'}, status=response.STATUS_400)
+
     images = request.POST.get('images').split(',')
     for image in images:
         image = ProductImage.objects.filter(id=image)
