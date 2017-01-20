@@ -13,7 +13,7 @@ class SaleOffer(models.Model):
         ('declined', 'Declined'),  # The offer has been declined by host
         ('invalid', 'Invalid'),  # The offer did not be handle within 24 hours
         ('charge', 'Unpaid'),  # The offer need to be paid for by guest
-        ('paid', 'In Transaction'),  # Pay owner
+        ('pay', 'In Transaction'),  # Pay owner
         ('finished', 'Finished'),
     )
     CONDITION_CHOICES = (

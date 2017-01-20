@@ -165,6 +165,8 @@ def payment_stripe(request):
             type='in',
             order_number=sale_offer.number
         )
+        sale_offer.status = 'finished'
+        sale_offer.save()
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -207,6 +209,8 @@ def payment_coastal(request):
             type='in',
             order_number=sale_offer.number
         )
+        sale_offer.status = 'finished'
+        sale_offer.save()
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',

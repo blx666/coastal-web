@@ -47,7 +47,7 @@ def sale_charge(sale_order, user):
     )
 
     sale_order.coastal_dollar = sale_order.price_usd
-    sale_order.status = 'paid'
+    sale_order.status = 'pay'
     sale_order.save()
 
     return True

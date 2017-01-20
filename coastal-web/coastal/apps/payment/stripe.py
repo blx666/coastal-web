@@ -142,7 +142,7 @@ def sale_charge(sale_order, user, card):
     )
 
     sale_order.coastal_dollar = math.floor(transaction.net)
-    sale_order.status = 'paid'
+    sale_order.status = 'pay'
     sale_order.save()
 
     return True
