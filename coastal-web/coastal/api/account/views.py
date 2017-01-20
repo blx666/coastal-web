@@ -2,17 +2,17 @@ from django.contrib.auth import authenticate, login as auth_login, logout as aut
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
-from django.http.response import HttpResponse
 from django.utils import timezone
 from django.db.models import Q
 from dateutil.rrule import rrule, DAILY
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
 from coastal.apps.account.utils import create_user
-from coastal.api.core.response import CoastalJsonResponse, STATUS_CODE
+from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import UserProfile, ValidateEmail, FavoriteItem
+from coastal.apps.account.models import ValidateEmail, FavoriteItem
+from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.sale.models import SaleOffer
@@ -167,7 +167,7 @@ def validate_email(request):
     message = '''Hi %s,
 
                 To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
-                http://%s/api/account/validate-email/confirm/?token=%s
+                http://%s/account/confirm-email/?token=%s
                 The link will be invalid 24 hours later. Please resend if this happens.
 
                 Thanks,
@@ -176,24 +176,6 @@ def validate_email(request):
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
-
-
-def validate_email_confirm(request):
-    try:
-        validate_email = ValidateEmail.objects.get(token=request.GET.get("token"))
-
-        userprofile = validate_email.user.userprofile
-        if userprofile.email_confirmed == 'confirmed':
-            return HttpResponse('user already  validate')
-
-        if validate_email.expiration_date >= timezone.now():
-            # not expiration date
-            userprofile.email_confirmed = 'confirmed'
-            userprofile.save()
-            return CoastalJsonResponse()
-        return HttpResponse('token already  expire')
-    except validate_email.DoesNotExist:
-        return HttpResponse('token is not exist')
 
 
 @login_required
@@ -497,3 +479,6 @@ def my_orders(request):
     return CoastalJsonResponse(data)
 
 
+@login_required
+def stripe_info(request):
+    return CoastalJsonResponse(get_stripe_info(request.user))

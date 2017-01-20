@@ -92,6 +92,7 @@ def images_360(request):
             'sale_price': image_360.product.sale_price,
             'currency': image_360.product.currency,
             'rental_unit': image_360.product.rental_unit,
+            'rental_unit_display': image_360.product.get_rental_unit_display(),
             'image': image_360.image.url,
             'name': image_360.product.name,
             'rental_price_display': image_360.product.get_rental_price_display(),

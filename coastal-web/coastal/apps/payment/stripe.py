@@ -2,6 +2,8 @@ import math
 import stripe
 from django.conf import settings
 from coastal.apps.rental.models import PaymentEvent
+from coastal.apps.sale.models import SalePaymentEvent
+
 
 if settings.DEBUG:
     stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
@@ -21,6 +23,32 @@ def add_card(user, token):
         )
         user.userprofile.stripe_customer_id = customer.stripe_id
         user.save()
+
+
+def get_stripe_info(user):
+    if user.userprofile.stripe_customer_id:
+        customer = stripe.Customer.retrieve(user.userprofile.stripe_customer_id)
+        info = {
+            "has_more": customer.sources.has_more,
+            "total_count": customer.sources.total_count,
+            "id": customer.id,
+            "default_source": customer.default_source,
+            "sources": {"data": []}
+        }
+
+        for card in customer.sources.data:
+            info['sources']['data'].append({
+                "brand": card.brand,
+                "customer": card.customer,
+                "cvc_check": card.cvc_check,
+                "exp_month": card.exp_month,
+                "exp_year": card.exp_year,
+                "id": card.id,
+                "last4": card.last4,
+                "funding": card.funding
+            })
+        return info
+    return {}
 
 
 def get_card_list(user):
@@ -86,6 +114,38 @@ def charge(rental_order, user, card):
     return True
 
 
+def sale_charge(sale_order, user, card):
+    if not user.userprofile.stripe_customer_id:
+        return False
+
+    stripe_amount = get_stripe_amount(sale_order.price, sale_order.currency)
+
+    charge = stripe.Charge.create(
+        amount=stripe_amount * 100,  # Amount in cents
+        currency=sale_order.currency.lower(),
+        customer=user.userprofile.stripe_customer_id,
+        card=card,
+        metadata={"order_id": sale_order.number},
+    )
+    if not charge.paid:
+        return False
+
+    transaction = stripe.Balance.retrieve(id=charge.balance_transaction)
+
+    SalePaymentEvent.objects.create(
+        order=sale_order,
+        payment_type='stripe',
+        amount=sale_order.price,
+        amount_stripe=stripe_amount,
+        currency=sale_order.currency,
+        reference=charge.id
+    )
+
+    sale_order.coastal_dollar = math.floor(transaction.net)
+    sale_order.status = 'pay'
+    sale_order.save()
+
+    return True
 # charge = stripe.Charge.create(
 #     amount=1000,  # Amount in cents
 #     currency="usd",
