@@ -10,6 +10,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
+from datetime import timedelta
 
 from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -50,6 +51,8 @@ def product_list(request):
     category = form.cleaned_data['category']
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
+    max_coastline_distance = form.cleaned_data['max_coastline_distance']
+    min_coastline_distance = form.cleaned_data['min_coastline_distance']
     if not (lon and lat and distance):
         return recommend_product_list(request)
     target = Point(lon, lat)
@@ -69,14 +72,23 @@ def product_list(request):
         products = products.filter(rental_price__gte=min_price)
     if max_price:
         products = products.filter(rental_price__lte=max_price)
-    if arrival_date:
+
+    if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
-                                    blackoutdate__end_date__gte=arrival_date).exclude(
-            rentalorder__start_datetime__lte=arrival_date, rentalorder__end_datetime__gte=arrival_date)
-    if checkout_date:
-        products = products.exclude(blackoutdate__start_date__lte=checkout_date,
                                     blackoutdate__end_date__gte=checkout_date).exclude(
-            rentalorder__start_datetime__lte=checkout_date, rentalorder__end_datetime__gte=checkout_date)
+            rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+    elif checkout_date:
+        arrival_date = datetime.now().replace(hour=0, minute=0, second=0)
+        products = products.exclude(blackoutdate__start_date__lte=arrival_date,
+                                    blackoutdate__end_date__gte=checkout_date).exclude(
+            rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+    if max_coastline_distance and min_coastline_distance:
+        products = products.filter(distance_from_coastal__gte=min_coastline_distance,
+                                   distance_from_coastal__lte=max_coastline_distance)
+    elif min_coastline_distance:
+        products = products.filter(distance_from_coastal__gte=min_coastline_distance)
+    elif max_coastline_distance:
+        products = products.filter(distance_from_coastal__lte=max_coastline_distance)
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     bind_product_image(products)
@@ -244,8 +256,10 @@ def product_detail(request, pid):
                 'name': 'Additional Price',
                 'weekly_discount': product.discount_weekly or 0,
                 'updated_weekly_price': price[0],
+                'updated_weekly_price_display': price_display(price[0], product.currency),
                 'monthly_discount': product.discount_monthly or 0,
                 'updated_monthly_price': price[1],
+                'updated_monthly_price_display': price_display(price[1], product.currency),
             }
         }
     else:
@@ -269,6 +283,7 @@ def product_detail(request, pid):
         content['image'] = ""
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
+        content['rental_unit'] = p.rental_unit
         for img in p.images:
             if img.caption != ProductImage.CAPTION_360:
                 content['image'] = img.image.url
@@ -897,14 +912,15 @@ def all_detail(request):
         'currency': product.currency,
         'sale_price': product.sale_price or 0,
         'sale_price_display': product.get_sale_price_display(),
-        'lon': product.point[0] or 0,
-        'lat': product.point[1] or 0,
+        'lon': product.point and product.point[0] or 0,
+        'lat': product.point and product.point[1] or 0,
         'address': product.address or '',
         'name': product.name,
         'description': product.description or '',
-        'amenities': product.get_amenities_display(),
+        'amenities': list(product.amenities.values_list('id', flat=True)),
         'rental_rule': product.rental_rule,
         'black_out_dates': content,
+        'rental_type': product.rental_type,
         'desc_about_it': product.desc_about_it or '',
         'desc_guest_access': product.desc_guest_access or '',
         'desc_interaction': product.desc_interaction or '',
