@@ -5,6 +5,7 @@ from coastal.apps.rental.models import PaymentEvent
 from coastal.apps.sale.models import SalePaymentEvent
 
 
+# TODO update api_key
 if settings.DEBUG:
     stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
 else:
@@ -22,7 +23,7 @@ def add_card(user, token):
             description="from Coastal APP",
         )
         user.userprofile.stripe_customer_id = customer.stripe_id
-        user.save()
+        user.userprofile.save()
 
 
 def get_stripe_info(user):
