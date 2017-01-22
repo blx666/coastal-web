@@ -1,6 +1,7 @@
 from django import forms
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.product.models import Product
+from coastal.apps.product import defines as defs
 
 
 class RentalBookForm(forms.ModelForm):
@@ -21,6 +22,9 @@ class RentalBookForm(forms.ModelForm):
         if unit and product:
             if unit_mapping[unit] < unit_mapping[product.rental_unit]:
                 raise forms.ValidationError('the rental_unit is invalid.')
+        guest_count = self.cleaned_data.get('guest_count')
+        if product.category_id != defs.CATEGORY_BOAT_SLIP and not guest_count:
+            raise forms.ValidationError({'guest_count' : 'This field is required.'})
 
 
 class RentalApproveForm(forms.Form):
