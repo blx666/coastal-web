@@ -2,7 +2,7 @@ from coastal.apps.message.models import Dialogue, Message
 from coastal.api.message.forms import DialogueForm
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
-from coastal.apps.product.models import Product, ProductImage
+from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
@@ -13,6 +13,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count
 from django.utils import timezone
 from coastal.apps.sns.utils import publish_message
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
 @login_required
@@ -122,7 +123,10 @@ def send_message(request):
     dialogue_obj.save()
 
     sender_name = sender_obj.first_name
-    publish_message(content, dialogue_id, receiver_obj, sender_name)
+    try:
+        publish_message(content, dialogue_id, receiver_obj, sender_name)
+    except (NoEndpoint, DisabledEndpoint):
+        pass
 
     result = {
         'message_id': message.id,
