@@ -66,7 +66,7 @@ def dialogue_list(request):
         if order:
             order_dict = {
                 'order_id': order.id,
-                'status': order.status,
+                'status': order.get_status_display(),
                 'start': order.start_datetime.strftime('%Y-%m-%d %H:%M:%S'),
                 'end': order.end_datetime.strftime('%Y-%m-%d %H:%M:%S'),
             }
