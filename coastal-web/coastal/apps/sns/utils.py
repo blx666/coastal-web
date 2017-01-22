@@ -78,7 +78,7 @@ def bind_token(uuid, token, user):
     boto3.setup_default_session(aws_access_key_id=aws_key, aws_secret_access_key=aws_secret, region_name=region_name)
     aws = boto3.client('sns')
 
-    token_obj = Token.objects.filter(uuid=uuid, token=token).first()
+    token_obj = Token.objects.filter(token=token).first()
     if not token_obj:
         endpoint = aws.create_platform_endpoint(
             PlatformApplicationArn=settings.PLATFORM_APPLICATION_ARN,
@@ -87,8 +87,8 @@ def bind_token(uuid, token, user):
         endpoint_arn = endpoint['EndpointArn']
     else:
         endpoint_arn = token_obj.endpoint
-    Token.objects.update_or_create(uuid=uuid, defaults={'user': user, 'token': token, 'endpoint': endpoint_arn,
-                                                        'uuid': uuid})
+    Token.objects.update_or_create(token=token, defaults={'user': user, 'token': token, 'endpoint': endpoint_arn,
+                                                          'uuid': uuid})
 
 
 # TODO
