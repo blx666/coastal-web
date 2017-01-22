@@ -218,9 +218,15 @@ def my_activity(request):
             if order.product.rental_unit == 'hour':
                 time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/3600)
             if time_info > 1:
-                more_info = '%s people %s %ss' % (order.guest_count, time_info, order.product.rental_unit.title())
+                if order.guest_count:
+                    more_info = '%s people %s %ss' % (order.guest_count, time_info, order.product.rental_unit.title())
+                else:
+                    more_info = '%s %ss' % (time_info, order.product.rental_unit.title())
             else:
-                more_info = '%s people %s %s' % (order.guest_count, time_info, order.product.rental_unit.title())
+                if order.guest_count:
+                    more_info = '%s people %s %s' % (order.guest_count, time_info, order.product.rental_unit.title())
+                else:
+                    more_info = '%s %s' % (time_info, order.product.rental_unit.title())
             data = {
                 'id': order.id,
                 'owner': {
