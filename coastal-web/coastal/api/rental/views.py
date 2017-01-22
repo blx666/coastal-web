@@ -15,6 +15,7 @@ from coastal.apps.account.utils import is_confirmed_user
 from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
+from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
 
 
 @login_required
@@ -32,14 +33,16 @@ def book_rental(request):
     product = form.cleaned_data.get('product')
 
     rental_order = form.save(commit=False)
-    valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
+    valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)  # 有效可以租的日期
     if valid:
         return CoastalJsonResponse(status=response.STATUS_400)
 
     if product.is_no_one:
         rental_order.status = 'request'
+        publish_get_order(rental_order)
     else:
         rental_order.status = 'charge'
+        # publish_confirmed_order(rental_order)
 
     rental_order.product = product
     rental_order.guest = request.user
@@ -72,6 +75,7 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
+        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
 
     if rental_order.status == 'request':
         expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
@@ -106,10 +110,12 @@ def rental_approve(request):
     if approve:
         rental_order.status = 'charge'
         rental_order.save()
+        publish_confirmed_order(rental_order)
     else:
         rental_order.status = 'declined'
         rental_order.save()
-        clean_rental_out_date(rental_order.product,rental_order.start_datetime,rental_order.end_datetime)
+        clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
+        publish_refuse_order(rental_order)
 
     result = {
         'status': rental_order.get_status_display()
@@ -191,6 +197,7 @@ def payment_coastal(request):
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        publish_paid_order(rental_order)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
