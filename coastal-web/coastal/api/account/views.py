@@ -6,7 +6,7 @@ from django.utils import timezone
 from django.db.models import Q
 from dateutil.rrule import rrule, DAILY
 
-from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm
+from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm, FacebookLoginForm
 from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
@@ -15,6 +15,7 @@ from coastal.apps.account.models import ValidateEmail, FavoriteItem
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
+from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
 from datetime import datetime, timedelta, time
 from coastal.apps.product import defines as defs
@@ -42,6 +43,40 @@ def register(request):
     data = {
         'user_id': user.id,
         'logged': request.user.is_authenticated(),
+        "has_agency_info": user.userprofile.has_agency_info,
+        'email': user.email,
+        'email_confirmed': user.userprofile.email_confirmed,
+        'name': user.get_full_name(),
+        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+    }
+    return CoastalJsonResponse(data)
+
+
+def facebook_login(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    form = FacebookLoginForm(request.POST)
+    if not form.is_valid():
+        return CoastalJsonResponse(form.errors, status=response.STATUS_400)
+
+    user = User.objects.filter(username=form.cleaned_data['userid']).first()
+    if user:
+        auth_login(request, user)
+    else:
+        name_list = form.cleaned_data['name'].split()
+        user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['mail'],
+                                   first_name=name_list.pop(), last_name=' '.join(name_list))
+        UserProfile.objects.create(user=user, email_confirmed='confirmed')
+        CoastalBucket.objects.create(user=user)
+        auth_login(request, user)
+
+    if form.cleaned_data['token']:
+        bind_token(form.cleaned_data['uuid'], form.cleaned_data['token'], user)
+
+    data = {
+        'user_id': user.id,
+        'logged': user.is_authenticated(),
         "has_agency_info": user.userprofile.has_agency_info,
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
@@ -109,7 +144,8 @@ def update_profile(request):
                 setattr(user, 'first_name', name_list.pop())
                 setattr(user, 'last_name', ' '.join(name_list))
             else:
-                setattr(user.userprofile, key, form.cleaned_data[key])
+                if key in form.cleaned_data:
+                    setattr(user.userprofile, key, form.cleaned_data[key])
         user.save()
         user.userprofile.save()
         data = {
@@ -487,3 +523,5 @@ def my_orders(request):
 @login_required
 def stripe_info(request):
     return CoastalJsonResponse(get_stripe_info(request.user))
+
+
