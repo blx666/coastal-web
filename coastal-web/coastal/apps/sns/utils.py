@@ -3,6 +3,7 @@ import logging
 
 import boto3
 from boto3.session import Session
+from botocore.client import ClientError
 
 from django.conf import settings
 from coastal.apps.sns.models import Token
@@ -142,10 +143,15 @@ def bind_token(uuid, token, user):
 
     token_obj = Token.objects.filter(token=token).first()
     if not token_obj:
-        endpoint = aws.create_platform_endpoint(
-            PlatformApplicationArn=settings.PLATFORM_APPLICATION_ARN,
-            Token=token
-        )
+        try:
+            endpoint = aws.create_platform_endpoint(
+                PlatformApplicationArn=settings.PLATFORM_APPLICATION_ARN,
+                Token=token
+            )
+        except ClientError as e:
+            logger.error('Create Platform Endpoint on AWS: %s \n %s' % (token, e))
+            return
+
         endpoint_arn = endpoint['EndpointArn']
     else:
         endpoint_arn = token_obj.endpoint
