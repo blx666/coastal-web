@@ -73,7 +73,7 @@ def publish_message(content, dialogue_id, receiver_obj, sender_name):
 # place an order
 def publish_get_order(rental_order):
     owner = rental_order.owner
-    message = 'You have a new rental request. You must confirm in 24 hours,or it will be cancelled automatically'
+    message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically'
     push_notification(owner, message)
 
 

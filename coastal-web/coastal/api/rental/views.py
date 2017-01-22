@@ -33,7 +33,7 @@ def book_rental(request):
     product = form.cleaned_data.get('product')
 
     rental_order = form.save(commit=False)
-    valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)  # 有效可以租的日期
+    valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
         return CoastalJsonResponse(status=response.STATUS_400)
 
