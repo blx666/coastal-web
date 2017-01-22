@@ -60,19 +60,19 @@ def facebook_login(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
-    user = User.objects.filter(username=form.cleaned_data('userid')).first()
+    user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
         auth_login(request, user)
     else:
-        name_list = form.cleaned_data('name').split()
-        user = User.objects.create(username=form.cleaned_data('userid'), email=form.cleaned_data('mail'),
+        name_list = form.cleaned_data['name'].split()
+        user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['mail'],
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
         UserProfile.objects.create(user=user, email_confirmed='confirmed')
         CoastalBucket.objects.create(user=user)
         auth_login(request, user)
 
-    if form.cleaned_data('token') and form.cleaned_data['uuid']:
-        bind_token(form.cleaned_data['uuid'], form.cleaned_data('token'), user)
+    if form.cleaned_data['token']:
+        bind_token(form.cleaned_data['uuid'], form.cleaned_data['token'], user)
 
     data = {
         'user_id': user.id,
