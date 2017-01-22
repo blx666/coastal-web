@@ -11,9 +11,9 @@ ADMINS = (
     ('Wang Xudong', 'wangxudong@aragoncs.com'),
 )
 
-ALLOWED_HOSTS = ['54.169.88.72']
+ALLOWED_HOSTS = ['54.169.88.72', 'service-test.itscoastal.com']
 
-SITE_DOMAIN = '54.169.88.72'
+SITE_DOMAIN = 'service-test.itscoastal.com'
 
 DATABASES = {
     'default': {
@@ -32,13 +32,23 @@ LOGGING = {
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler',
-        }
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, "logs/coastal.log"),
+        },
     },
     'loggers': {
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
             'propagate': False,
+        },
+        'coastal': {
+            'handlers': ['file', 'mail_admins'],
+            'level': 'DEBUG',
+            'propagate': True,
         },
     },
 }
