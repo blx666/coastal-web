@@ -106,7 +106,7 @@ def charge(rental_order, user, card):
         order=rental_order,
         payment_type='stripe',
         amount=rental_order.total_price,
-        amount_stripe=stripe_amount,
+        stripe_amount=stripe_amount,
         currency=rental_order.currency,
         reference=_charge.id
     )
@@ -146,7 +146,7 @@ def sale_charge(sale_order, user, card):
         order=sale_order,
         payment_type='stripe',
         amount=sale_order.price,
-        amount_stripe=stripe_amount,
+        stripe_amount=stripe_amount,
         currency=sale_order.currency,
         reference=charge.id
     )
