@@ -4,6 +4,7 @@ from coastal.apps.product.models import Product
 
 
 class RentalBookForm(forms.ModelForm):
+    guest_count = forms.IntegerField(required=False)
 
     class Meta:
         model = RentalOrder
