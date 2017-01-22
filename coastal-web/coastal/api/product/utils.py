@@ -110,7 +110,7 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
 
 def calc_price(product, rental_unit, start_date, end_date):
     rental_price = product.get_price(rental_unit)
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM):
+    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_unit == 'day':
         end_date -= datetime.timedelta(days=1)
 
     total_time = end_date.timestamp() - start_date.timestamp()
