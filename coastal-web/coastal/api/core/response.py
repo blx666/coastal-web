@@ -20,7 +20,7 @@ STATUS_CODE = {
     # 1000-1099 Account Register & Login
     STATUS_1000: 'The username and password are not matched.',
     STATUS_1100: 'The user is not login.',
-    STATUS_1101: 'The user info is incomplete.',
+    STATUS_1101: 'Please verify your profile info.',
 
     # 1200-1299 sns
     STATUS_1200: 'Endpoint is disabled'
