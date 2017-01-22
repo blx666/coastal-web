@@ -65,7 +65,7 @@ def facebook_login(request):
         auth_login(request, user)
     else:
         name_list = form.cleaned_data['name'].split()
-        user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['mail'],
+        user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
         UserProfile.objects.create(user=user, email_confirmed='confirmed')
         CoastalBucket.objects.create(user=user)
