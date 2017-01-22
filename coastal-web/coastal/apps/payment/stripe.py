@@ -154,7 +154,7 @@ def sale_charge(sale_order, user, card):
         coastal_dollar = transaction.net
     except TypeError as e:
         logger.error('Get Stripe Balance Error: \n%s' % e)
-        coastal_dollar = sale_order.total_price_usd
+        coastal_dollar = sale_order.price_usd
 
     sale_order.coastal_dollar = math.floor(coastal_dollar)
     sale_order.status = 'pay'
