@@ -130,17 +130,15 @@ def sale_charge(sale_order, user, card):
 
     stripe_amount = get_stripe_amount(sale_order.price, sale_order.currency)
 
-    charge = stripe.Charge.create(
+    _charge = stripe.Charge.create(
         amount=stripe_amount * 100,  # Amount in cents
         currency=sale_order.currency.lower(),
         customer=user.userprofile.stripe_customer_id,
         card=card,
         metadata={"order_id": sale_order.number},
     )
-    if not charge.paid:
+    if not _charge.paid:
         return False
-
-    transaction = stripe.Balance.retrieve(id=charge.balance_transaction)
 
     SalePaymentEvent.objects.create(
         order=sale_order,
@@ -148,14 +146,23 @@ def sale_charge(sale_order, user, card):
         amount=sale_order.price,
         stripe_amount=stripe_amount,
         currency=sale_order.currency,
-        reference=charge.id
+        reference=_charge.id
     )
 
-    sale_order.coastal_dollar = math.floor(transaction.net)
+    try:
+        transaction = stripe.Balance.retrieve(id=_charge.balance_transaction)
+        coastal_dollar = transaction.net
+    except TypeError as e:
+        logger.error('Get Stripe Balance Error: \n%s' % e)
+        coastal_dollar = sale_order.total_price_usd
+
+    sale_order.coastal_dollar = math.floor(coastal_dollar)
     sale_order.status = 'pay'
     sale_order.save()
 
     return True
+
+
 # charge = stripe.Charge.create(
 #     amount=1000,  # Amount in cents
 #     currency="usd",
