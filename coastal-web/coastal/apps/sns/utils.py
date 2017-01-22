@@ -6,7 +6,7 @@ from boto3.session import Session
 
 from django.conf import settings
 from coastal.apps.sns.models import Token
-from coastal.apps.sns.expections import NoEndpoint, DisabledEndpoint
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 logger = logging.getLogger(__name__)
 
