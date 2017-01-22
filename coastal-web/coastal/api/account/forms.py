@@ -40,3 +40,16 @@ class UserProfileForm(forms.ModelForm):
 class CheckEmailForm(forms.Form):
     email = forms.EmailField(required=True)
 
+
+class FacebookLoginForm(forms.Form):
+    userid = forms.CharField()
+    email = forms.EmailField()
+    name = forms.CharField(max_length=128)
+    token = forms.CharField(required=False)
+    uuid = forms.CharField(required=False)
+
+
+
+
+
+
