@@ -141,7 +141,7 @@ def sale_charge(sale_order, user, card):
         return False
 
     SalePaymentEvent.objects.create(
-        order=sale_order,
+        sale_offer=sale_order,
         payment_type='stripe',
         amount=sale_order.price,
         stripe_amount=stripe_amount,
