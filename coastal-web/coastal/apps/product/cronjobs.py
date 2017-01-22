@@ -1,10 +1,14 @@
 from coastal.apps.account.models import FavoriteItem
 from coastal.apps.product.models import Product, ProductViewCount
 from coastal.apps.currency.models import Currency
+from coastal.apps.rental.models import RentalOrder
+from coastal.apps.sale.models import SaleOffer
+from coastal.apps.currency.utils import get_exchange_rate
+
 from django.utils import timezone
 import urllib.request
 import json
-
+import math
 
 def update_product_score():
     products = Product.objects.all()
@@ -32,3 +36,13 @@ def exchange_rate():
                 currency.update_rate_time = timezone.now()
                 currency.save()
 
+    rental_orders = RentalOrder.objects.all()
+    for rental_order in rental_orders:
+        rental_order.currency_rate = get_exchange_rate(rental_order.currency)
+        rental_order.total_price_usd = math.ceil(rental_order.total_price / rental_order.currency_rate)
+        rental_order.save()
+    sale_offers = SaleOffer.objecys.all()
+    for sale_offer in sale_offers:
+        sale_offer.currency_rate = get_exchange_rate(sale_offer.currency)
+        sale_offer.price_usd = math.ceil(sale_offer.price / sale_offer.currency_rate)
+        sale_offer.save()
