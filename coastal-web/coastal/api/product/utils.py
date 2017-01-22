@@ -74,7 +74,7 @@ def bind_product_image(products):
     :param products: product obj list
     :return: None
     """
-    product_images = ProductImage.objects.filter(product__in=products)
+    product_images = ProductImage.objects.filter(product__in=products).exclude(caption='360-view')
 
     image_group = {}
     for image in product_images:
