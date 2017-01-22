@@ -1,9 +1,11 @@
 import math
 import stripe
+import logging
 from django.conf import settings
 from coastal.apps.rental.models import PaymentEvent
 from coastal.apps.sale.models import SalePaymentEvent
 
+logger = logging.getLogger(__name__)
 
 # TODO update api_key
 if settings.DEBUG:
@@ -88,17 +90,17 @@ def charge(rental_order, user, card):
 
     stripe_amount = get_stripe_amount(rental_order.total_price, rental_order.currency)
 
-    charge = stripe.Charge.create(
+    _charge = stripe.Charge.create(
         amount=stripe_amount * 100,  # Amount in cents
         currency=rental_order.currency.lower(),
         customer=user.userprofile.stripe_customer_id,
         card=card,
         metadata={"order_id": rental_order.number},
     )
-    if not charge.paid:
-        return False
+    logger.debug('Stripe Charge: \n%s' % charge)
 
-    transaction = stripe.Balance.retrieve(id=charge.balance_transaction)
+    if not _charge.paid:
+        return False
 
     PaymentEvent.objects.create(
         order=rental_order,
@@ -106,10 +108,17 @@ def charge(rental_order, user, card):
         amount=rental_order.total_price,
         amount_stripe=stripe_amount,
         currency=rental_order.currency,
-        reference=charge.id
+        reference=_charge.id
     )
 
-    rental_order.coastal_dollar = math.floor(transaction.net)
+    try:
+        transaction = stripe.Balance.retrieve(id=_charge.balance_transaction)
+        coastal_dollar = transaction.net
+    except TypeError as e:
+        logger.error('Get Stripe Balance Error: \n%s' % e)
+        coastal_dollar = rental_order.total_price_usd
+
+    rental_order.coastal_dollar = math.floor(coastal_dollar)
     rental_order.save()
 
     return True
