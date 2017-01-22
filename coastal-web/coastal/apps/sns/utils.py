@@ -24,7 +24,6 @@ def push_notification(receiver, content, extra_attr=None):
             'alert': content,
             'sound': 'default'
         },
-        'type': 'message',
     }
 
     if extra_attr:
@@ -63,9 +62,10 @@ def push_notification(receiver, content, extra_attr=None):
 
 
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
-    message = '%s: %s' % (sender_name, content[0:21])  # TODO: why 21?
+    message = '%s: %s' % (sender_name, content[0:20])  # TODO: why 21?
     extra_attr = {
-        'dialogue_id': dialogue_id
+        'dialogue_id': dialogue_id,
+        'type': 'message',
     }
     push_notification(receiver_obj, message, extra_attr)
 
