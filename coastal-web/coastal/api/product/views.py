@@ -31,6 +31,7 @@ from coastal.apps.rental.models import BlackOutDate, RentalOrder, RentalOutDate
 from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
+from coastal.apps.currency.utils import price_display
 
 
 def product_list(request):
@@ -122,9 +123,9 @@ def product_list(request):
                                                  'max_guests'])
         if product.for_rental:
             product_data.update({
-                'rental_price': product.rental_price,
+                'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': product.get_rental_price_display(),
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
@@ -544,6 +545,9 @@ def discount_calculator(request):
 
 
 def delete_image(request):
+    if not request.POST.get('images'):
+        return CoastalJsonResponse({'images': 'The field is required'}, status=response.STATUS_400)
+
     images = request.POST.get('images').split(',')
     for image in images:
         image = ProductImage.objects.filter(id=image)
@@ -850,14 +854,25 @@ def flag_junk(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
-    product = Product.objects.get(id=request.POST.get('pid'))
+    try:
+        product = Product.objects.get(id=request.POST.get('pid'))
+    except Product.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
     if request.POST.get('reported') == '1':
         Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()
 
 
 def all_detail(request):
-    product = Product.objects.get(id=request.GET.get('product_id'))
+    try:
+        product = Product.objects.get(id=request.GET.get('product_id'))
+    except Product.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):

@@ -80,12 +80,11 @@ def sale_detail(request):
     return CoastalJsonResponse(result)
 
 
-# @login_required
+@login_required
 def make_offer(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
-    if not is_confirmed_user(request.user):
-        return CoastalJsonResponse(status=response.STATUS_1101)
+
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')

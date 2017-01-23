@@ -12,6 +12,11 @@ class UserProfile(models.Model):
         ('sending', 'sending'),
         ('confirmed', 'confirmed'),
     )
+    CLIENT_CHOICES = (
+        ('', '-------'),
+        ('facebook', 'Facebook'),
+    )
+
     user = models.OneToOneField(User)
     is_agent = models.NullBooleanField()
     agency_email = models.EmailField(max_length=128, null=True, blank=True)
@@ -20,6 +25,7 @@ class UserProfile(models.Model):
     photo = models.ImageField(upload_to='user/%Y/%m', null=True, blank=True)
     email_confirmed = models.CharField(max_length=32, choices=state, blank=True, default='unconfirmed')
     stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
+    client = models.CharField(max_length=20, default='', blank=True, choices=CLIENT_CHOICES)
 
     @property
     def has_agency_info(self):

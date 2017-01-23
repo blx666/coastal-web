@@ -1,6 +1,8 @@
 from celery import shared_task
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.rental.utils import clean_rental_out_date
+from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_check_in_order, publish_check_out_order
+
 
 @shared_task
 def expire_order_request(order_id):
@@ -14,6 +16,8 @@ def expire_order_request(order_id):
         order.status = 'invalid'
         order.save()
         clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
+        publish_unconfirmed_order(order)
+
 
         # TODO: send notification
 
@@ -31,7 +35,7 @@ def expire_order_charge(order_id):
         order.save()
         clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
         # TODO: send notification
-
+        publish_unpay_order(order)
 
 @shared_task
 def check_in(order_id):
@@ -46,6 +50,7 @@ def check_in(order_id):
         order.save()
 
         pay_owner.apply_async((order_id,), countdown=3 * 60 * 60)
+        publish_check_in_order(order)
 
 
 @shared_task
@@ -76,5 +81,6 @@ def check_out(order_id):
     if order.status == 'paid':
         order.status = 'finished'
         order.save()
+        publish_check_out_order(order)
 
         # TODO: send notification
