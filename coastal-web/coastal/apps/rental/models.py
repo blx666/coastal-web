@@ -24,6 +24,7 @@ class RentalOrder(models.Model):
         ('check-out', 'In Transaction'),  # Guest has been checked out (auto set by system)
         ('finished', 'Finished'),
     )
+    END_STATUS_LIST = ['declined', 'invalid', 'finished']
     CHARGE_UNIT_CHOICES = (
         ('day', 'Day'),
         ('half-day', 'Half-Day'),

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.core.cache import cache
 from django.utils.functional import cached_property
 from treebeard.mp_tree import MP_Node
 
@@ -247,6 +248,38 @@ class Product(models.Model):
         if self.for_sale:
             return 'sale'
         return 'rental'
+
+    def _product_images(self):
+        cache_key = 'product_images|%s' % self.id
+        image_info = cache.get(cache_key)
+        if image_info is not None:
+            return image_info
+
+        image_info = {
+            'images': [],
+            'images_360': []
+        }
+
+        images = self.productimage_set.exclude(caption=ProductImage.CAPTION_360)
+        for img in images:
+            image_info['images'].append({
+                'image_id': img.id,
+                'url': img.image.url
+            })
+
+        images_360 = self.productimage_set.filter(caption=ProductImage.CAPTION_360)
+        for img in images_360:
+            image_info['images_360'].append({
+                'image_id': img.id,
+                'url': img.image.url
+            })
+
+        cache.set(cache_key, image_info, 60)
+        return image_info
+
+    def get_main_image(self):
+        image_info = self._product_images()
+        return image_info['images'] and image_info['images'][0]['url'] or ''
 
 
 class Amenity(models.Model):
