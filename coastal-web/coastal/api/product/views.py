@@ -853,14 +853,25 @@ def flag_junk(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
-    product = Product.objects.get(id=request.POST.get('pid'))
+    try:
+        product = Product.objects.get(id=request.POST.get('pid'))
+    except Product.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
+
     if request.POST.get('reported') == '1':
         Report.objects.create(product=product, user=request.user)
     return CoastalJsonResponse()
 
 
 def all_detail(request):
-    product = Product.objects.get(id=request.GET.get('product_id'))
+    try:
+        product = Product.objects.get(id=request.GET.get('product_id'))
+    except Product.DoesNotExist:
+        return CoastalJsonResponse(status=response.STATUS_404)
+    except ValueError:
+        return CoastalJsonResponse(status=response.STATUS_404)
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
