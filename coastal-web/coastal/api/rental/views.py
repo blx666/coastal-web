@@ -36,6 +36,7 @@ def book_rental(request):
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
         return CoastalJsonResponse(status=response.STATUS_400)
+    rental_order.owner = product.owner
 
     if product.is_no_one:
         rental_order.status = 'request'
@@ -46,7 +47,7 @@ def book_rental(request):
 
     rental_order.product = product
     rental_order.guest = request.user
-    rental_order.owner = product.owner
+
 
     sub_total_price, total_price, discount_type, discount_rate = \
         calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
