@@ -239,11 +239,11 @@ def my_activity(request):
             start_time = order.start_datetime
             end_time = order.end_datetime
             if order.product.rental_unit == 'day':
-                start_datetime = datetime.strftime(start_time, '%A, %B %dst')
-                end_datetime = datetime.strftime(end_time, '%A, %B %dst')
+                start_datetime = datetime.strftime(start_time, '%A, %B, %dst')
+                end_datetime = datetime.strftime(end_time, '%A, %B, %dst')
             else:
-                start_datetime = datetime.strftime(start_time, '%A, %B %dst %H')
-                end_datetime = datetime.strftime(end_time, '%A, %B %dst %H')
+                start_datetime = datetime.strftime(start_time, '%A, %B, %dst, %l:%M %p')
+                end_datetime = datetime.strftime(end_time, '%A, %B, %dst, %l:%M %p')
             if order.product.rental_unit == 'day':
                 if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
                     time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/(3600*24))+1
