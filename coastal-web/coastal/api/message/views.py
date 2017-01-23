@@ -115,8 +115,8 @@ def send_message(request):
     content = message_form.cleaned_data['content']
 
     sender_obj = request.user
-    receiver_obj = User.objects.get(id=receiver_id)
-    dialogue_obj = Dialogue.objects.get(id=dialogue_id)
+    receiver_obj = User.objects.filter(id=receiver_id).first()
+    dialogue_obj = Dialogue.objects.filter(id=dialogue_id).first()
     if not (receiver_obj and dialogue_obj):
         return CoastalJsonResponse(message_form.errors, status=response.STATUS_405)
     message = Message.objects.create(sender=sender_obj, receiver=receiver_obj, dialogue=dialogue_obj, content=content)
