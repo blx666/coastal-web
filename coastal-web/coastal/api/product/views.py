@@ -31,6 +31,7 @@ from coastal.apps.rental.models import BlackOutDate, RentalOrder, RentalOutDate
 from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
+from coastal.apps.currency.utils import price_display
 
 
 def product_list(request):
@@ -122,9 +123,9 @@ def product_list(request):
                                                  'max_guests'])
         if product.for_rental:
             product_data.update({
-                'rental_price': product.get_price(product.rental_price),
+                'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': product.get_rental_price_display(product.get_price(product.rental_price)),
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
