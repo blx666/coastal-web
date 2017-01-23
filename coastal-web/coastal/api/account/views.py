@@ -392,23 +392,16 @@ def my_account(request):
                 if isinstance(order, RentalOrder):
                     start_time = order.start_datetime
                     end_time = order.end_datetime
-                    if order.product.rental_unit == 'day':
-                        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-                            time_info = math.ceil(
-                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
-                        else:
-                            time_info = math.ceil(
-                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
-                    if order.product.rental_unit == 'half-day':
-                        time_info = math.ceil(
-                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
-                    if order.product.rental_unit == 'hour':
-                        time_info = math.ceil(
-                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
-                    if time_info > 1:
-                        title_info = '%s %ss' % (time_info, order.product.rental_unit.title())
-                    else:
-                        title_info = '%s %s' % (time_info, order.product.rental_unit.title())
+
+                    _unit_mapping = {
+                        'day': 24,
+                        'half-day': 6,
+                        'hour': 1,
+                    }
+                    time_length = math.ceil(
+                        (end_time - start_time).total_seconds() / 3600 / _unit_mapping[order.rental_unit])
+                    time_length_display = (time_length > 1 and '%s %ss' or '%s %s') % (
+                        time_length, order.get_rental_unit_display())
 
                 data_order = {}
                 data_order['id'] = order.id
@@ -419,12 +412,12 @@ def my_account(request):
                 data_order['guest_id'] = order.guest_id
                 if request.user == order.owner:
                     if order in order_rental_list:
-                        data_order['name'] = '%s booked %s at your %s at %s' % (order.guest.get_full_name(), title_info, order.product.category.name, order.product.city)
+                        data_order['name'] = '%s booked %s at your %s at %s' % (order.guest.get_full_name(), time_length_display, order.product.category.name, order.product.city)
                     else:
                         data_order['name'] = '%s bought %s at %s' % (order.guest.get_full_name(), order.product.category.name, order.product.city)
                 else:
                     if order in order_rental_list:
-                        data_order['name'] = 'I booked %s at %s\'s %s at %s' % (title_info, order.owner.get_full_name(), order.product.category.name, order.product.city)
+                        data_order['name'] = 'I booked %s at %s\'s %s at %s' % (time_length_display, order.owner.get_full_name(), order.product.category.name, order.product.city)
                     else:
                         data_order['name'] = 'I bought %s\'s %s at %s' % (order.owner.get_full_name(), order.product.category.name, order.product.city)
                 order_group.append(data_order)
