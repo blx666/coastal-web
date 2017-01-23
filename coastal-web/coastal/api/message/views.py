@@ -61,6 +61,8 @@ def dialogue_list(request):
             'product_id': product.id,
             'name': product.name,
             'image': product.productimage_set.first() and product.productimage_set.first().image.url or '',
+            'for_rental': product.for_rental,
+            'for_sale': product.for_sale,
         }
         order_dict = {}
         if order:
