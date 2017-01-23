@@ -218,11 +218,11 @@ def order_detail(request):
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
-        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d,%Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d, %Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d, %Y')
     else:
-        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p,%A/ %B %d,%Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p,%A/ %B %d,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p, %A/ %B %d, %Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p, %A/ %B %d, %Y')
 
     if order.product.rental_unit == 'day':
         if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
