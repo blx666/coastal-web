@@ -228,13 +228,14 @@ def my_activity(request):
     user = request.user
 
     recently_viewed = user.recently_viewed.all()[0:20]
-    products = get_products_by_id(recently_viewed.valus_list('product_id', flat=True))
+    products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
     for item in recently_viewed:
         p = products[item.product_id]
         result['recently_views'].append({
             'id': p.id,
             'name': p.name,
             'image': p.main_image and p.main_image.image.url or '',
+            'status': p.status,
         })
 
     # now = datetime.now()
@@ -249,7 +250,8 @@ def my_activity(request):
         status__in=SaleOffer.END_STATUS_LIST, date_updated__gt=yesterday)
 
     orders = sorted(chain(active_orders, finished_orders, active_offers, finished_offers),
-                    key=lambda instance: instance.date_updated)
+                    key=lambda instance: instance.date_updated,
+                    reverse=True)
 
     for order in orders:
         if isinstance(order, RentalOrder):
@@ -370,6 +372,7 @@ def my_account(request):
             'image': product.images[0].image.url if len(product.images) else '',
             'address': product.country + ',' + product.city,
             'type': product.get_product_type(),
+            'status': product.status,
         }
         favorite_group.append(data_favorite)
     data['favorites'] = favorite_group
