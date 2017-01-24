@@ -16,7 +16,7 @@ from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
     DiscountCalculatorFrom
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view, \
-    get_product_discount, calc_price, format_date
+    get_product_discount, calc_price, format_date, bind_product_main_image
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
@@ -271,6 +271,7 @@ def product_detail(request, pid):
 
     similar_products = get_similar_products(product)
     bind_product_image(similar_products)
+    bind_product_main_image(similar_products)
     similar_product_dict = []
     for p in similar_products:
         content = model_to_dict(p, fields=['id', 'category', 'liked', 'for_rental', 'for_sale', 'rental_price',
@@ -284,11 +285,7 @@ def product_detail(request, pid):
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
         content['rental_unit'] = p.rental_unit
-        imgs = [img for img in p.images]
-        if imgs:
-            content['image'] = sorted(imgs, key=lambda img : img.date_created)[-1].image.url
-        else:
-            content['image'] = ''
+        content['image'] = p.main_image and p.main_image.image.url or ''
 
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
