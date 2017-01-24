@@ -308,6 +308,9 @@ class ProductImage(models.Model):
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        ordering = ['display_order', '-date_created']
+
 
 class ProductViewCount(models.Model):
     product = models.OneToOneField(Product)

@@ -1,7 +1,5 @@
-import math
-from itertools import chain
-
 from dateutil.rrule import rrule, DAILY
+from itertools import chain
 
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
