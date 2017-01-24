@@ -482,18 +482,24 @@ def my_order_dates(request):
 
 @login_required
 def my_orders(request):
-    user = request.user
-    date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
-    date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
-    order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
+    if not request.GET.get('date'):
+        return CoastalJsonResponse({'date': 'The field is required.'}, status=response.STATUS_400)
+
+    date = datetime.strptime(request.GET.get('date'), '%Y-%m-%d')
+    start_time = timezone.make_aware(date)
+    end_time = timezone.make_aware(date + timezone.timedelta(days=1))
+    order_list = request.user.owner_orders.filter(Q(end_datetime__gte=start_time) & Q(start_datetime__lt=end_time))
     data = {
         'date': date.strftime('%Y-%m-%d'),
         'date_display': date.strftime('%B %d, %Y'),
+        'orders': [],
     }
-    orders = []
     for order in order_list:
-        orders.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
-    data['orders'] = orders
+        data['orders'].append({
+            'id': order.id,
+            'guests': order.guest_count,
+            'product_name': order.product.name,
+        })
     return CoastalJsonResponse(data)
 
 
