@@ -281,14 +281,14 @@ def product_detail(request, pid):
         content['max_guests'] = p.max_guests or 0
         content['length'] = p.length or 0
         content['rooms'] = p.rooms or 0
-        content['image'] = ""
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
         content['rental_unit'] = p.rental_unit
-        for img in p.images:
-            if img.caption != ProductImage.CAPTION_360:
-                content['image'] = img.image.url
-                break
+        imgs = [img for img in p.images]
+        if imgs:
+            content['image'] = sorted(imgs, key=lambda img : img.date_created)[-1].image.url
+        else:
+            content['image'] = ''
 
         similar_product_dict.append(content)
     data['similar_products'] = similar_product_dict
