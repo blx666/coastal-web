@@ -16,6 +16,7 @@ from coastal.apps.rental.utils import validate_rental_date, rental_out_date, cle
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
 @login_required
@@ -40,14 +41,15 @@ def book_rental(request):
 
     if product.is_no_one:
         rental_order.status = 'request'
-        publish_get_order(rental_order)
+        try:
+            publish_get_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         rental_order.status = 'charge'
-        # publish_confirmed_order(rental_order)
 
     rental_order.product = product
     rental_order.guest = request.user
-
 
     sub_total_price, total_price, discount_type, discount_rate = \
         calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
@@ -111,12 +113,18 @@ def rental_approve(request):
     if approve:
         rental_order.status = 'charge'
         rental_order.save()
-        publish_confirmed_order(rental_order)
+        try:
+            publish_confirmed_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         rental_order.status = 'declined'
         rental_order.save()
         clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
-        publish_refuse_order(rental_order)
+        try:
+            publish_refuse_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     result = {
         'status': rental_order.get_status_display()
@@ -124,7 +132,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -198,7 +206,10 @@ def payment_coastal(request):
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), countdown=60 * 60)
-        publish_paid_order(rental_order)
+        try:
+            publish_paid_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
