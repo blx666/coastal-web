@@ -25,6 +25,7 @@ def book_rental(request):
         return CoastalJsonResponse(status=response.STATUS_405)
     if not is_confirmed_user(request.user):
         return CoastalJsonResponse(status=response.STATUS_1101)
+
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -36,7 +37,7 @@ def book_rental(request):
     rental_order = form.save(commit=False)
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
-        return CoastalJsonResponse(status=response.STATUS_400)
+        return CoastalJsonResponse(status=response.STATUS_1300)
     rental_order.owner = product.owner
 
     if product.is_no_one:
