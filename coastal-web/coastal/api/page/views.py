@@ -61,7 +61,6 @@ def home(request):
                 'product_id', flat=True)
 
         product_data['liked'] = product.id in liked_product_id_list
-
         product_data['image'] = product.main_image and product.main_image.image.url or ''
         if product.point:
             product_data.update({
