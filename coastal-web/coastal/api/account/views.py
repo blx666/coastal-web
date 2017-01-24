@@ -372,7 +372,7 @@ def my_account(request):
         Q(owner=user) | Q(guest=user), status__in=SaleOffer.END_STATUS_LIST, date_updated__lte=yesterday))
     orders = sorted(chain(rental_order_list + sale_offer_list),
                     key=lambda instance: instance.date_updated,
-                    reversed=True)
+                    reverse=True)
 
     data['orders'] = []
     for order in orders:
