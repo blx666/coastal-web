@@ -61,7 +61,7 @@ def home(request):
 
         product_data['liked'] = product.id in liked_product_id_list
         if product.images:
-            product_data['image'] = [i.image.url for i in product.images][0]
+            product_data['image'] = [i.image.url for i in product.images][-1]
         else:
             product_data['image'] = ""
         if product.point:
