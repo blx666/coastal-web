@@ -30,19 +30,19 @@ def home(request):
 
     paginator = Paginator(products, defs.PER_PAGE_ITEM)
     try:
-        page = paginator.page(page)
+        cur_page = paginator.page(page)
     except PageNotAnInteger:
-        page = paginator.page(1)
+        cur_page = paginator.page(1)
     except EmptyPage:
-        page = paginator.page(paginator.num_pages)
+        cur_page = paginator.page(paginator.num_pages)
     if int(page) >= paginator.num_pages:
         next_page = 0
     else:
         next_page = int(page) + 1
 
-    bind_product_main_image(page.object_list)
+    bind_product_main_image(cur_page.object_list)
     product_list = []
-    for product in page.object_list:
+    for product in cur_page.object_list:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price',
                                              'sale_price', 'city'])
