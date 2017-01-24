@@ -24,10 +24,10 @@ STATUS_CODE = {
     STATUS_1101: 'Please verify your profile info.',
 
     # 1200-1299 sns
-    STATUS_1200: 'Endpoint is disabled',
+    STATUS_1200: 'Endpoint is disabled.',
 
     # 1300-1399 Book Rental
-    STATUS_1300: 'Sorry, this time has been booked by others. Please select any other time',
+    STATUS_1300: 'Sorry, this time has been booked by others. Please select any other time.',
 }
 
 
