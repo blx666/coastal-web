@@ -369,7 +369,7 @@ def my_account(request):
     rental_order_list = list(RentalOrder.objects.filter(
         Q(owner=user) | Q(guest=user), status__in=RentalOrder.END_STATUS_LIST, date_updated__lte=yesterday))
     sale_offer_list = list(SaleOffer.objects.filter(
-        Q(owner=user) | Q(guest=user), status__in=SaleOffer.END_STATUS_LIST, date_updated_lte=yesterday))
+        Q(owner=user) | Q(guest=user), status__in=SaleOffer.END_STATUS_LIST, date_updated__lte=yesterday))
     orders = sorted(chain(rental_order_list + sale_offer_list),
                     key=lambda instance: instance.date_updated,
                     reversed=True)
