@@ -483,7 +483,7 @@ def my_order_dates(request):
 @login_required
 def my_orders(request):
     user = request.user
-    date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
+    date = datetime.strptime(request.GET.get('date'), '%Y-%m-%d')
     date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
     order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
     data = {
