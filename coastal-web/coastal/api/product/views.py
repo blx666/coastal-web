@@ -125,7 +125,7 @@ def product_list(request):
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency) + '/Day',
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
