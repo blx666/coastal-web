@@ -42,8 +42,8 @@ def create_dialogue(request):
 @login_required
 def dialogue_list(request):
     dialogues = Dialogue.objects.filter(Q(owner=request.user) | Q(guest=request.user)).order_by('-date_updated')
-    dialogues = dialogues.annotate(num_messages=Count('message')).filter(num_messages__gt=0)
-    unread_dialogues = dialogues.filter(message__receiver=request.user, message__read=False).annotate(num_messages=Count('message'))
+    dialogues = dialogues.annotate(num_all_messages=Count('message', distinct=True)).filter(num_all_messages__gt=0)
+    unread_dialogues = dialogues.filter(message__receiver=request.user, message__read=False).annotate(num_messages=Count('message', distinct=True))
     unread_dialogue_count_dict = {dialogue.id: dialogue.num_messages for dialogue in unread_dialogues}
     dialogues = dialogues[:100]
     dialogues_list = []
