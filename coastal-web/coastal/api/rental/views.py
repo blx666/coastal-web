@@ -232,33 +232,16 @@ def order_detail(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
     start_time = order.start_datetime
     end_time = order.end_datetime
-    if order.product.rental_unit == 'day':
-        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d, %Y')
-    else:
-        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p, %A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p, %A/ %B %d, %Y')
 
-    if order.product.rental_unit == 'day':
-        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
-        else:
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
-    if order.product.rental_unit == 'half-day':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
-    if order.product.rental_unit == 'hour':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
-    if time_info > 1:
-        title = 'Book %s %ss as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
-    else:
-        title = 'Book %s %s as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
+    time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
+    start_datetime = start_time.strftime(time_format)
+    end_datetime = end_time.strftime(time_format)
 
     result = {
-        'title': title,
+        'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
             'category': order.product.category_id,
             'rooms': order.product.rooms or 0,
