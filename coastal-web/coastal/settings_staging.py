@@ -67,6 +67,13 @@ LOGGING = {
     },
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}
+
 MEDIA_URL = 'http://service-test.itscoastal.com/media/'
 
 GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
