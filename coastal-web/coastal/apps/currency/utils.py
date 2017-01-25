@@ -8,7 +8,7 @@ def currencies():
         return currency_dict
 
     currency_dict = {c['code']: c for c in Currency.objects.values('code', 'symbol', 'rate', 'display')}
-    cache.set('currency_dict', currency_dict, 15 * 60)
+    cache.set('currency_dict', currency_dict, 60 * 60)
     return currency_dict
 
 

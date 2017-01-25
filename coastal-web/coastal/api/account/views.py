@@ -253,12 +253,12 @@ def my_activity(request):
             start_time = order.start_datetime
             end_time = order.end_datetime
 
-            if order.product.rental_unit == 'day':
+            if order.rental_unit == 'day':
                 date_format = '%A, %B, %d'
             else:
                 date_format = '%A, %B, %d, %l:%M %p'
-            start_time_display = start_time.strftime(date_format)
-            end_time_display = end_time.strftime(date_format)
+            start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+            end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 

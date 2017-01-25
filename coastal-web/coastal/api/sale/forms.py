@@ -9,10 +9,9 @@ class SaleOfferForm(forms.ModelForm):
         fields = ['product', 'conditions', 'price']
 
     def clean(self):
-
         product = self.cleaned_data.get('product')
-        if not product.for_sale:
-                raise forms.ValidationError('the product cannot be sold.')
+        if product and not product.for_sale:
+            raise forms.ValidationError('the product cannot be sold.')
 
 
 class SaleApproveForm(forms.Form):
