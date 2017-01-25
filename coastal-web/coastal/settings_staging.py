@@ -28,7 +28,21 @@ DATABASES = {
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
     'handlers': {
+        'console': {
+            'level': 'INFO',
+            'filters': ['require_debug_true'],
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
         'mail_admins': {
             'level': 'ERROR',
             'class': 'django.utils.log.AdminEmailHandler',
@@ -53,7 +67,7 @@ LOGGING = {
     },
 }
 
-MEDIA_URL = 'http://54.169.88.72/media/'
+MEDIA_URL = 'http://service-test.itscoastal.com/media/'
 
 GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
 
