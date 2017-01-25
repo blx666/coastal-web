@@ -79,7 +79,7 @@ def home(request):
 
 @cache_page(5 * 60)
 def images_360(request):
-    images_view = ProductImage.objects.filter(caption='360-view', product__status='published').order_by('-product__score')[0:30]
+    images_view = ProductImage.objects.filter(caption='360-view', product__status='published').order_by('-product__score')[0:90]
 
     image_list = []
     for image_360 in images_view:
@@ -104,4 +104,4 @@ def images_360(request):
         if i['product_id'] not in [p['product_id'] for p in result]:
             result.append(i)
 
-    return CoastalJsonResponse(result)
+    return CoastalJsonResponse(result[0:30])
