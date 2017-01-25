@@ -9,9 +9,9 @@ logger = logging.getLogger(__name__)
 
 # TODO update api_key
 if settings.DEBUG:
-    stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
+    stripe.api_key = 'sk_test_ukQxxa9ekp1PMxszgUuK3jep'
 else:
-    stripe.api_key = 'sk_test_G1qgKMtou6ZrZc5eKOiMroCa'
+    stripe.api_key = 'sk_live_pIV7YwtljsRrloOU7zenFn5n'
 
 
 def add_card(user, token):
