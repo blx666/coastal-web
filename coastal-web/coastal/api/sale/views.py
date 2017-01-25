@@ -59,7 +59,7 @@ def approve(request):
         message = 'Pity! Your offer has been declined.'
         product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
         extra_attr = {
-            'type': 'refuse_order',
+            'type': 'refuse_offer',
             'product_name': sale_offer.product.name,
             'product_image': product_image.image.url
         }
