@@ -44,18 +44,7 @@ def book_rental(request):
     if product.is_no_one:
         rental_order.status = 'request'
         try:
-            message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically.'
-            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'get_order',
-                'rental_order_id': rental_order.id,
-                'product_id': rental_order.product.id,
-                'for_rental': rental_order.product.for_rental,
-                'for_sale': rental_order.product.for_sale,
-                'product_name': rental_order.product.name,
-                'product_image': product_image.image.url
-            }
-            publish_get_order(rental_order, message, extra_attr)
+            publish_get_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
     else:
@@ -127,22 +116,7 @@ def rental_approve(request):
         rental_order.status = 'charge'
         rental_order.save()
         try:
-            guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
-                            ' or it will be cancelled automatically.'
-            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'confirmed_order',
-                'is_rental': True,
-                'rental_order_id': rental_order.id,
-                'product_name': rental_order.product.name,
-                'product_image': product_image.image.url,
-                'rental_order_status': rental_order.get_status_display(),
-                'total_price_display': rental_order.get_total_price_display(),
-
-            }
-            extra_attr.update(get_payment_info(rental_order, request.user))
-            del extra_attr['stripe']['card_list']
-            publish_confirmed_order(rental_order, guest_message, extra_attr)
+            publish_confirmed_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
     else:
@@ -150,14 +124,7 @@ def rental_approve(request):
         rental_order.save()
         clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
         try:
-            message = 'Pity! Your request has been declined.'
-            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'refuse_order',
-                'product_name': rental_order.product.name,
-                'product_image': product_image.image.url
-            }
-            publish_refuse_order(rental_order, message, extra_attr)
+            publish_refuse_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
 
@@ -201,7 +168,11 @@ def payment_stripe(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
+        try:
+            publish_paid_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -240,15 +211,9 @@ def payment_coastal(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
         try:
-            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'paid_order',
-                'product_name': rental_order.product.name,
-                'product_image': product_image.image.url
-            }
-            publish_paid_order(rental_order, extra_attr)
+            publish_paid_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
 
