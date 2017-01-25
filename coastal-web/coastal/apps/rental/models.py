@@ -1,3 +1,5 @@
+import math
+from django.utils.functional import cached_property
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 from coastal.apps.currency.utils import price_display
@@ -24,6 +26,7 @@ class RentalOrder(models.Model):
         ('check-out', 'In Transaction'),  # Guest has been checked out (auto set by system)
         ('finished', 'Finished'),
     )
+    END_STATUS_LIST = ['declined', 'invalid', 'finished']
     CHARGE_UNIT_CHOICES = (
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
@@ -55,6 +58,21 @@ class RentalOrder(models.Model):
 
     def get_total_price_display(self):
         return price_display(self.total_price, self.currency)
+
+    @cached_property
+    def time_length(self):
+        _unit_mapping = {
+            'day': 24,
+            'half-day': 6,
+            'hour': 1,
+        }
+        return math.ceil(
+            (self.end_datetime - self.start_datetime).total_seconds() / 3600 / _unit_mapping[self.rental_unit])
+
+    def get_time_length_display(self):
+        time_length = self.time_length
+        return (time_length > 1 and '%s %ss' or '%s %s') % (
+            time_length, self.get_rental_unit_display())
 
 
 class RentalOrderDiscount(models.Model):

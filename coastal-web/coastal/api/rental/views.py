@@ -17,6 +17,7 @@ from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
 from coastal.apps.product.models import ProductImage
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
 @login_required
@@ -25,6 +26,7 @@ def book_rental(request):
         return CoastalJsonResponse(status=response.STATUS_405)
     if not is_confirmed_user(request.user):
         return CoastalJsonResponse(status=response.STATUS_1101)
+
     data = request.POST.copy()
     if 'product_id' in data:
         data['product'] = data.get('product_id')
@@ -36,28 +38,29 @@ def book_rental(request):
     rental_order = form.save(commit=False)
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
-        return CoastalJsonResponse(status=response.STATUS_400)
+        return CoastalJsonResponse(status=response.STATUS_1300)
     rental_order.owner = product.owner
 
     if product.is_no_one:
         rental_order.status = 'request'
-        message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
-        extra_attr = {
-            'type': 'get_order',
-            'rental_order_id': rental_order.id,
-            'product_id': rental_order.product.id,
-            'product_name': rental_order.product.name,
-            'product_image': product_image.image.url
-        }
-        publish_get_order(rental_order, message, extra_attr)
+        try:
+            message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically.'
+            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+            extra_attr = {
+                'type': 'get_order',
+                'rental_order_id': rental_order.id,
+                'product_id': rental_order.product.id,
+                'product_name': rental_order.product.name,
+                'product_image': product_image.image.url
+            }
+            publish_get_order(rental_order, message, extra_attr)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         rental_order.status = 'charge'
-        # publish_confirmed_order(rental_order)
 
     rental_order.product = product
     rental_order.guest = request.user
-
 
     sub_total_price, total_price, discount_type, discount_rate = \
         calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
@@ -121,36 +124,41 @@ def rental_approve(request):
     if approve:
         rental_order.status = 'charge'
         rental_order.save()
-        guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
-                        ' or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
-        extra_attr = {
-            'type': 'confirmed_order',
-            'is_rental': True,
-            'rental_order_id': rental_order.id,
-            'product_name': rental_order.product.name,
-            'product_image': product_image.image.url,
-            'rental_order_status': rental_order.get_status_display(),
+        try:
+            guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
+                            ' or it will be cancelled automatically.'
+            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+            extra_attr = {
+                'type': 'confirmed_order',
+                'is_rental': True,
+                'rental_order_id': rental_order.id,
+                'product_name': rental_order.product.name,
+                'product_image': product_image.image.url,
+                'rental_order_status': rental_order.get_status_display(),
 
-        }
-        extra_attr.update(get_payment_info(rental_order, request.user))
-        del extra_attr['stripe']['card_list']
-        publish_confirmed_order(rental_order, guest_message, extra_attr)
-
+            }
+            extra_attr.update(get_payment_info(rental_order, request.user))
+            del extra_attr['stripe']['card_list']
+            publish_confirmed_order(rental_order, guest_message, extra_attr)
+            publish_confirmed_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         rental_order.status = 'declined'
         rental_order.save()
-        clean_rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
-
-        guest = rental_order.guest
-        message = '%s! Your request has been declined %s ' % (guest.get_full_name())
-        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
-        extra_attr = {
-            'type': 'refuse_order',
-            'product_name': rental_order.product.name,
-            'product_image': product_image.image.url
-        }
-        publish_refuse_order(rental_order, message, extra_attr)
+        clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
+        try:
+            guest = rental_order.guest
+            message = '%s! Your request has been declined %s ' % (guest.get_full_name())
+            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+            extra_attr = {
+                'type': 'refuse_order',
+                'product_name': rental_order.product.name,
+                'product_image': product_image.image.url
+            }
+            publish_refuse_order(rental_order, message, extra_attr)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     result = {
         'status': rental_order.get_status_display()
@@ -158,7 +166,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -232,13 +240,16 @@ def payment_coastal(request):
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), countdown=60 * 60)
-        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
-        extra_attr = {
-            'type': 'paid_order',
-            'product_name': rental_order.product.name,
-            'product_image': product_image.image.url
-        }
-        publish_paid_order(rental_order, extra_attr)
+        try:
+            product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+            extra_attr = {
+                'type': 'paid_order',
+                'product_name': rental_order.product.name,
+                'product_image': product_image.image.url
+            }
+            publish_paid_order(rental_order, extra_attr)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -258,11 +269,11 @@ def order_detail(request):
     start_time = order.start_datetime
     end_time = order.end_datetime
     if order.product.rental_unit == 'day':
-        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %dst,%Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %dst,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d, %Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d, %Y')
     else:
-        start_datetime = datetime.datetime.strftime(start_time, '%A, %B %dst %H,%Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A, %B %dst %H,%Y')
+        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p, %A/ %B %d, %Y')
+        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p, %A/ %B %d, %Y')
 
     if order.product.rental_unit == 'day':
         if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):

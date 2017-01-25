@@ -129,8 +129,8 @@ def publish_check_out_order(rental_order, message, extra_attr):
 # owner refuse order
 def publish_refuse_order(rental_order, message, extra_attr):
     guest = rental_order.guest
-    #message = '%s! Your request has been declined %s ' % (guest.get_full_name())
-    push_notification(guest, message, extra_attr)
+    message = 'Pity! Your request has been declined.'
+    push_notification(guest, message)
 
 
 def bind_token(uuid, token, user):

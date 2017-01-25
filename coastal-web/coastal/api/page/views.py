@@ -7,7 +7,7 @@ from django.views.decorators.cache import cache_page
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.promotion.models import HomeBanner
 from coastal.apps.product.models import Product, ProductImage
-from coastal.api.product.utils import bind_product_image
+from coastal.api.product.utils import bind_product_main_image
 from coastal.apps.account.models import FavoriteItem
 from coastal.api import defines as defs
 
@@ -26,22 +26,23 @@ def home(request):
         })
 
     # get recommended products
-    products = Product.objects.filter(status='published').order_by('-score')
-    bind_product_image(products)
-    item = defs.PER_PAGE_ITEM
-    paginator = Paginator(products, item)
+    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price')
+
+    paginator = Paginator(products, defs.PER_PAGE_ITEM)
     try:
-        products = paginator.page(page)
+        cur_page = paginator.page(page)
     except PageNotAnInteger:
-        products = paginator.page(1)
+        cur_page = paginator.page(1)
     except EmptyPage:
-        products = paginator.page(paginator.num_pages)
+        cur_page = paginator.page(paginator.num_pages)
     if int(page) >= paginator.num_pages:
         next_page = 0
     else:
         next_page = int(page) + 1
+
+    bind_product_main_image(cur_page.object_list)
     product_list = []
-    for product in products:
+    for product in cur_page.object_list:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price',
                                              'sale_price', 'city'])
@@ -60,10 +61,7 @@ def home(request):
                 'product_id', flat=True)
 
         product_data['liked'] = product.id in liked_product_id_list
-        if product.images:
-            product_data['image'] = [i.image.url for i in product.images][0]
-        else:
-            product_data['image'] = ""
+        product_data['image'] = product.main_image and product.main_image.image.url or ''
         if product.point:
             product_data.update({
                 "lon": product.point[0],
@@ -82,9 +80,10 @@ def home(request):
 @cache_page(5 * 60)
 def images_360(request):
     images_view = ProductImage.objects.filter(caption='360-view', product__status='published').order_by('-product__score')[0:30]
-    data = []
+
+    image_list = []
     for image_360 in images_view:
-        content = {
+        image_info = {
             'product_id': image_360.product_id,
             'for_rental': image_360.product.for_rental,
             'for_sale': image_360.product.for_sale,
@@ -98,11 +97,11 @@ def images_360(request):
             'rental_price_display': image_360.product.get_rental_price_display(),
             'sale_price_display': image_360.product.get_sale_price_display(),
         }
-        data.append(content)
-    content = []
+        image_list.append(image_info)
 
-    for i in data:
-        if i['product_id'] not in [p['product_id'] for p in content]:
-            content.append(i)
+    result = []
+    for i in image_list:
+        if i['product_id'] not in [p['product_id'] for p in result]:
+            result.append(i)
 
-    return CoastalJsonResponse(content)
+    return CoastalJsonResponse(result)

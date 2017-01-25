@@ -1,10 +1,12 @@
+from dateutil.rrule import rrule, DAILY
+from itertools import chain
+
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Q
-from dateutil.rrule import rrule, DAILY
 
 from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm, FacebookLoginForm
 from coastal.apps.account.utils import create_user
@@ -17,12 +19,8 @@ from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
-from datetime import datetime, timedelta, time
-from coastal.apps.product import defines as defs
-from coastal.api.product.utils import bind_product_image
+from coastal.api.product.utils import bind_product_image, get_products_by_id
 from coastal.apps.sns.utils import bind_token
-import time
-import math
 
 
 def register(request):
@@ -217,52 +215,53 @@ def validate_email(request):
 def my_activity(request):
     if request.method != 'GET':
         return CoastalJsonResponse(status=response.STATUS_405)
-    order_list = []
-    user = request.user
-    now = datetime.now()
-    start = now - timedelta(hours=23, minutes=59, seconds=59)
-    orders_notfinished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(rental_unit__in=['finished', 'declined', 'invalid']))
-    orders_finished = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(rental_unit__in=['finished', 'declined', 'invalid']).filter(date_created__gte=start))
-    sale_offer_not_finished = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).exclude(status__in=['finished', 'decline', 'invalid']))
-    sale_offer_finished = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).filter(status__in=['finished', 'decline', 'invalid']).filter(date_created__gte=start))
 
-    if orders_finished and orders_notfinished:
-        orders = orders_finished + orders_notfinished
-    elif orders_finished and not orders_notfinished:
-        orders = orders_finished
-    elif not orders_finished and orders_notfinished:
-        orders = orders_notfinished
-    else:
-        orders = []
-    if orders:
-        for order in orders:
+    result = {
+        'recently_views': [],
+        'orders': []
+    }
+    user = request.user
+
+    recently_viewed = user.recently_viewed.all()[0:20]
+    products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
+    for item in recently_viewed:
+        p = products[item.product_id]
+        result['recently_views'].append({
+            'id': p.id,
+            'name': p.name,
+            'image': p.main_image and p.main_image.image.url or '',
+            'status': p.status,
+        })
+
+    # now = datetime.now()
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
+    active_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(
+        status__in=RentalOrder.END_STATUS_LIST)
+    finished_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(
+        status__in=RentalOrder.END_STATUS_LIST, date_updated__gt=yesterday)
+    active_offers = SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).exclude(
+        status__in=SaleOffer.END_STATUS_LIST)
+    finished_offers = SaleOffer.objects.filter(Q(owner=user) | Q(guest=user)).filter(
+        status__in=SaleOffer.END_STATUS_LIST, date_updated__gt=yesterday)
+
+    orders = sorted(chain(active_orders, finished_orders, active_offers, finished_offers),
+                    key=lambda instance: instance.date_updated,
+                    reverse=True)
+
+    for order in orders:
+        if isinstance(order, RentalOrder):
             start_time = order.start_datetime
             end_time = order.end_datetime
+
             if order.product.rental_unit == 'day':
-                start_datetime = datetime.strftime(start_time, '%A, %B, %d')
-                end_datetime = datetime.strftime(end_time, '%A, %B, %d')
+                date_format = '%A, %B, %d'
             else:
-                start_datetime = datetime.strftime(start_time, '%A, %B, %d, %l:%M %p')
-                end_datetime = datetime.strftime(end_time, '%A, %B, %d, %l:%M %p')
-            if order.product.rental_unit == 'day':
-                if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-                    time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/(3600*24))+1
-                else:
-                    time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple()))/(3600*24))
-            if order.product.rental_unit == 'half-day':
-                time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/(3600*6))
-            if order.product.rental_unit == 'hour':
-                time_info = math.ceil((time.mktime(end_time.timetuple())-time.mktime(start_time.timetuple()))/3600)
-            if time_info > 1:
-                if order.guest_count:
-                    more_info = '%s people %s %ss' % (order.guest_count, time_info, order.product.rental_unit.title())
-                else:
-                    more_info = '%s %ss' % (time_info, order.product.rental_unit.title())
-            else:
-                if order.guest_count:
-                    more_info = '%s people %s %s' % (order.guest_count, time_info, order.product.rental_unit.title())
-                else:
-                    more_info = '%s %s' % (time_info, order.product.rental_unit.title())
+                date_format = '%A, %B, %d, %l:%M %p'
+            start_time_display = start_time.strftime(date_format)
+            end_time_display = end_time.strftime(date_format)
+
+            guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
+
             data = {
                 'id': order.id,
                 'owner': {
@@ -277,71 +276,41 @@ def my_activity(request):
                 },
                 'product': {
                     'id': order.product_id,
-                    'image': order.product.productimage_set.first() and order.product.productimage_set.first().image.url or '',
+                    'image': order.product.get_main_image(),
                     'name': order.product.name,
                 },
-                'start_date': start_datetime,
-                'end_date': end_datetime,
+                'start_date': start_time_display,
+                'end_date': end_time_display,
                 'total_price_display': order.get_total_price_display(),
-                'more_info': more_info,
+                'more_info': '%s %s' % (guest_count_display, order.get_time_length_display()),
                 'status': order.get_status_display(),
-                'type': 'rental',
+                'type': 'rental'
             }
-            order_list.append(data)
-    else:
-        order_list = []
-
-    if sale_offer_finished and sale_offer_not_finished:
-        sale_offers = sale_offer_finished + sale_offer_not_finished
-    elif sale_offer_finished and not sale_offer_not_finished:
-        sale_offers = sale_offer_finished
-    elif not sale_offer_finished and sale_offer_not_finished:
-        sale_offers = sale_offer_not_finished
-    else:
-        sale_offers = []
-    if sale_offers:
-        for sale_offer in sale_offers:
-            content = {
-                'id': sale_offer.id,
+        else:
+            data = {
+                'id': order.id,
                 'owner': {
-                    'id': sale_offer.owner_id,
-                    'image': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
-                    'name': sale_offer.guest.get_full_name(),
+                    'id': order.owner_id,
+                    'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
+                    'name': order.guest.get_full_name(),
                 },
                 'guest': {
-                    'id': sale_offer.guest_id,
-                    'image': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
-                    'name': sale_offer.guest.get_full_name(),
+                    'id': order.guest_id,
+                    'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
+                    'name': order.guest.get_full_name(),
                 },
                 'product': {
-                    'id': sale_offer.product_id,
-                    'image': sale_offer.product.productimage_set.first() and sale_offer.product.productimage_set.first().image.url or '',
-                    'name': sale_offer.product.name,
+                    'id': order.product_id,
+                    'image': order.product.get_main_image(),
+                    'name': order.product.name,
                 },
-                'total_price_display': sale_offer.get_price_display(),
-                'status': sale_offer.get_status_display(),
+                'total_price_display': order.get_price_display(),
+                'status': order.get_status_display(),
                 'type': 'sale',
             }
-            order_list.append(content)
 
-    if user.recently_viewed.all():
-        recently_views = user.recently_viewed.all()[0:20]
-        recently_view_list = []
-        for recently_view in recently_views:
-            data = {
-                'id': recently_view.product.id,
-                'name': recently_view.product.name,
-                'image': recently_view.product.productimage_set.first() and recently_view.product.productimage_set.first().image.url or ''
-            }
-            recently_view_list.append(data)
-        result = {
-            'recently_views': recently_view_list,
-            'order': order_list,
-        }
-    else:
-        result = {
-            'order': order_list,
-        }
+        result['orders'].append(data)
+
     return CoastalJsonResponse(result)
 
 
@@ -349,15 +318,14 @@ def my_activity(request):
 def my_account(request):
     user = request.user
 
-    data = {}
-    data['coastal_dollar'] = user.coastalbucket.balance if hasattr(user, 'coastalbucket') else 0
-
-    # userprofile
-    data['profile'] = {
-        'name': user.get_full_name(),
-        'email': user.email,
-        'email_confirmed': user.userprofile.email_confirmed,
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+    data = {
+        'coastal_dollar': user.coastalbucket.balance,
+        'profile': {
+            'name': user.get_full_name(),
+            'email': user.email,
+            'email_confirmed': user.userprofile.email_confirmed,
+            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        }
     }
 
     # my products
@@ -389,64 +357,64 @@ def my_account(request):
             'image': product.images[0].image.url if len(product.images) else '',
             'address': product.country + ',' + product.city,
             'type': product.get_product_type(),
+            'status': product.status,
         }
         favorite_group.append(data_favorite)
     data['favorites'] = favorite_group
 
     # my orders
-    order_group = []
-    order_rental_list = list(RentalOrder.objects.filter(Q(owner=user) | Q(guest=user),
-                                                        status__in=['finished', 'declined', 'invalid'])
-                             .order_by('date_created'))
-    order_sale_list = list(SaleOffer.objects.filter(Q(owner=user) | Q(guest=user),
-                                                    status__in=['finished', 'declined', 'invalid'])
-                           .order_by('date_created'))
-    order_list = order_rental_list + order_sale_list
-    if order_list:
-        for order in order_list:
-            if order.date_updated + timedelta(days=1) < timezone.now():
-                if isinstance(order, RentalOrder):
-                    start_time = order.start_datetime
-                    end_time = order.end_datetime
-                    if order.product.rental_unit == 'day':
-                        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-                            time_info = math.ceil(
-                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
-                        else:
-                            time_info = math.ceil(
-                                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
-                    if order.product.rental_unit == 'half-day':
-                        time_info = math.ceil(
-                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
-                    if order.product.rental_unit == 'hour':
-                        time_info = math.ceil(
-                            (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
-                    if time_info > 1:
-                        title_info = '%s %ss' % (time_info, order.product.rental_unit.title())
-                    else:
-                        title_info = '%s %s' % (time_info, order.product.rental_unit.title())
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
+    rental_order_list = list(RentalOrder.objects.filter(
+        Q(owner=user) | Q(guest=user), status__in=RentalOrder.END_STATUS_LIST, date_updated__lte=yesterday))
+    sale_offer_list = list(SaleOffer.objects.filter(
+        Q(owner=user) | Q(guest=user), status__in=SaleOffer.END_STATUS_LIST, date_updated__lte=yesterday))
+    orders = sorted(chain(rental_order_list + sale_offer_list),
+                    key=lambda instance: instance.date_updated,
+                    reverse=True)
 
-                data_order = {}
-                data_order['id'] = order.id
-                data_order['type'] = 'rental' if isinstance(order, RentalOrder) else 'sale'
-                image = order.product.productimage_set.all()
-                data_order['image'] = image[0].image.url if len(image) else ''
-                data_order['owner_id'] = order.owner_id
-                data_order['guest_id'] = order.guest_id
-                if request.user == order.owner:
-                    if order in order_rental_list:
-                        data_order['name'] = '%s booked %s at your %s at %s' % (order.guest.get_full_name(), title_info, order.product.category.name, order.product.city)
-                    else:
-                        data_order['name'] = '%s bought %s at %s' % (order.guest.get_full_name(), order.product.category.name, order.product.city)
-                else:
-                    if order in order_rental_list:
-                        data_order['name'] = 'I booked %s at %s\'s %s at %s' % (title_info, order.owner.get_full_name(), order.product.category.name, order.product.city)
-                    else:
-                        data_order['name'] = 'I bought %s\'s %s at %s' % (order.owner.get_full_name(), order.product.category.name, order.product.city)
-                order_group.append(data_order)
+    data['orders'] = []
+    for order in orders:
+        order_info = {
+            'id': order.id,
+            'type': 'rental' if isinstance(order, RentalOrder) else 'sale',
+            'image': order.product.get_main_image(),
+            'owner_id': order.owner_id,
+            'guest_id': order.guest_id,
+        }
 
-        data['orders'] = order_group
+        if isinstance(order, RentalOrder):
+            order_info['type'] = 'rental'
 
+            if order.owner == request.user:
+                order_info['name'] = '%s booked %s at your %s at %s' % (
+                    order.guest.get_full_name(),
+                    order.get_time_length_display(),
+                    order.product.category.name,
+                    order.product.city
+                )
+            else:
+                order_info['name'] = 'I booked %s at %s\'s %s at %s' % (
+                    order.get_time_length_display(),
+                    order.owner.get_full_name(),
+                    order.product.category.name,
+                    order.product.city
+                )
+        else:
+            order_info['type'] = 'sale'
+
+            if request.user == order.owner:
+                order_info['name'] = '%s bought %s at %s' % (
+                    order.guest.get_full_name(),
+                    order.product.category.name,
+                    order.product.city)
+            else:
+                order_info['name'] = 'I bought %s\'s %s at %s' % (
+                    order.owner.get_full_name(),
+                    order.product.category.name,
+                    order.product.city
+                )
+
+        data['orders'].append(order_info)
     return CoastalJsonResponse(data)
 
 
@@ -454,7 +422,7 @@ def my_account(request):
 def my_calendar(request):
     user = request.user
 
-    month = time.strptime(request.GET.get('month'), '%Y-%m')
+    month = timezone.datetime.strptime(request.GET.get('month'), '%Y-%m')
     order_list = user.owner_orders.all()
     data_result = []
     orders = {}
@@ -479,7 +447,7 @@ def my_calendar(request):
 
                     data_result.append(data)
                 orders[str(begin_time.day)] = order_result
-            begin_time = begin_time + timedelta(days=1)
+            begin_time = begin_time + timezone.timedelta(days=1)
 
     return CoastalJsonResponse(data_result)
 
@@ -488,15 +456,15 @@ def my_calendar(request):
 def my_order_dates(request):
     user = request.user
     now_year = timezone.now()
-    now_year = datetime(now_year.year, now_year.month, 1, tzinfo=now_year.tzinfo)
-    next_year = datetime(now_year.year + 1, now_year.month, 1, tzinfo=now_year.tzinfo)
+    now_year = timezone.datetime(now_year.year, now_year.month, 1, tzinfo=now_year.tzinfo)
+    next_year = timezone.datetime(now_year.year + 1, now_year.month, 1, tzinfo=now_year.tzinfo)
     order_list = user.owner_orders.filter(Q(end_datetime__gte=now_year) & Q(start_datetime__lt=next_year))
     date_list = []
     for order in order_list:
         begin_time, end_time = order.start_datetime, order.end_datetime
         for every_day in rrule(DAILY, dtstart=begin_time, until=end_time):
             if every_day >= now_year and every_day <  next_year:
-                format_day = datetime(every_day.year, every_day.month, every_day.day).strftime("%Y-%m-%d")
+                format_day = timezone.datetime(every_day.year, every_day.month, every_day.day).strftime("%Y-%m-%d")
                 if format_day not in date_list:
                     date_list.append(format_day)
 
@@ -505,23 +473,27 @@ def my_order_dates(request):
 
 @login_required
 def my_orders(request):
-    user = request.user
-    date = time.strptime(request.GET.get('date'), '%Y-%m-%d')
-    date = datetime(date.tm_year, date.tm_mon, date.tm_mday, tzinfo=timezone.now().tzinfo)
-    order_list = user.owner_orders.filter(Q(end_datetime__gte=date) & Q(start_datetime__lte=date))
+    if not request.GET.get('date'):
+        return CoastalJsonResponse({'date': 'The field is required.'}, status=response.STATUS_400)
+
+    date = timezone.datetime.strptime(request.GET.get('date'), '%Y-%m-%d')
+    start_time = timezone.make_aware(date)
+    end_time = timezone.make_aware(date + timezone.timedelta(days=1))
+    order_list = request.user.owner_orders.filter(Q(end_datetime__gte=start_time) & Q(start_datetime__lt=end_time))
     data = {
         'date': date.strftime('%Y-%m-%d'),
         'date_display': date.strftime('%B %d, %Y'),
+        'orders': [],
     }
-    orders = []
     for order in order_list:
-        orders.append({'id': order.id, 'guests': order.product.max_guests, 'product_name': order.product.name})
-    data['orders'] = orders
+        data['orders'].append({
+            'id': order.id,
+            'guests': order.guest_count,
+            'product_name': order.product.name,
+        })
     return CoastalJsonResponse(data)
 
 
 @login_required
 def stripe_info(request):
     return CoastalJsonResponse(get_stripe_info(request.user))
-
-

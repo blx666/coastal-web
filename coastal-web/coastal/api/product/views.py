@@ -77,12 +77,12 @@ def product_list(request):
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
                                     blackoutdate__end_date__gte=checkout_date).exclude(
-            rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+            rentaloutdate__start_date__lte=arrival_date, rentaloutdate__end_date__gte=checkout_date)
     elif checkout_date:
         arrival_date = datetime.now().replace(hour=0, minute=0, second=0)
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
                                     blackoutdate__end_date__gte=checkout_date).exclude(
-            rentaloutdate__start_datetime__lte=arrival_date, rentaloutdate__end_datetime__gte=checkout_date)
+            rentaloutdate__start_date__lte=arrival_date, rentaloutdate__end_date__gte=checkout_date)
     if max_coastline_distance and min_coastline_distance:
         products = products.filter(distance_from_coastal__gte=min_coastline_distance,
                                    distance_from_coastal__lte=max_coastline_distance)
@@ -125,7 +125,7 @@ def product_list(request):
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency) + '/Day',
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":

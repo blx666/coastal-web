@@ -16,6 +16,7 @@ class SaleOffer(models.Model):
         ('pay', 'In Transaction'),  # Pay owner
         ('finished', 'Finished'),
     )
+    END_STATUS_LIST = ['declined', 'invalid', 'finished']
     CONDITION_CHOICES = (
         ('1', 'Conditional financing'),
         ('2', '14-day escrow'),

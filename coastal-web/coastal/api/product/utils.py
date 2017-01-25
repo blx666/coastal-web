@@ -86,6 +86,18 @@ def bind_product_image(products):
         product.images = image_group.get(product.id, [])
 
 
+def bind_product_main_image(products):
+    product_images = ProductImage.objects.filter(product__in=products).exclude(caption=ProductImage.CAPTION_360)
+
+    images = {}
+    for image in product_images:
+        if image.product.id not in images:
+            images[image.product.id] = image
+
+    for product in products:
+        product.main_image = images.get(product.id)
+
+
 def count_product_view(product):
     product_view = ProductViewCount.objects.filter(product=product).update(count=F('count') + 1)
     if not product_view:
@@ -146,3 +158,9 @@ def format_date(value, default=None):
         return value.strftime('%m/%d/%Y')
     else:
         return default
+
+
+def get_products_by_id(product_ids):
+    products = Product.objects.filter(id__in=product_ids)
+    bind_product_main_image(products)
+    return {p.id: p for p in products}
