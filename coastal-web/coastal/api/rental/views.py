@@ -244,6 +244,8 @@ def order_detail(request):
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
             'category': order.product.category_id,
+            'for_rental': order.product.for_rental,
+            'for_sale': order.product.for_sale,
             'rooms': order.product.rooms or 0,
             'bathrooms': order.product.bathrooms or 0,
             'beds': order.product.beds or 0,
