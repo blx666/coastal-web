@@ -16,6 +16,7 @@ from coastal.apps.rental.utils import validate_rental_date, rental_out_date, cle
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
+from coastal.apps.product.models import ProductImage
 
 
 @login_required
@@ -40,7 +41,16 @@ def book_rental(request):
 
     if product.is_no_one:
         rental_order.status = 'request'
-        publish_get_order(rental_order)
+        message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically.'
+        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'get_order',
+            'rental_order_id': rental_order.id,
+            'product_id': rental_order.product.id,
+            'product_name': rental_order.product.name,
+            'product_image': product_image.image.url
+        }
+        publish_get_order(rental_order, message, extra_attr)
     else:
         rental_order.status = 'charge'
         # publish_confirmed_order(rental_order)
@@ -111,12 +121,36 @@ def rental_approve(request):
     if approve:
         rental_order.status = 'charge'
         rental_order.save()
-        publish_confirmed_order(rental_order)
+        guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
+                        ' or it will be cancelled automatically.'
+        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'confirmed_order',
+            'is_rental': True,
+            'rental_order_id': rental_order.id,
+            'product_name': rental_order.product.name,
+            'product_image': product_image.image.url,
+            'rental_order_status': rental_order.get_status_display(),
+
+        }
+        extra_attr.update(get_payment_info(rental_order, request.user))
+        del extra_attr['stripe']['card_list']
+        publish_confirmed_order(rental_order, guest_message, extra_attr)
+
     else:
         rental_order.status = 'declined'
         rental_order.save()
-        clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
-        publish_refuse_order(rental_order)
+        clean_rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
+
+        guest = rental_order.guest
+        message = '%s! Your request has been declined %s ' % (guest.get_full_name())
+        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'refuse_order',
+            'product_name': rental_order.product.name,
+            'product_image': product_image.image.url
+        }
+        publish_refuse_order(rental_order, message, extra_attr)
 
     result = {
         'status': rental_order.get_status_display()
@@ -198,7 +232,13 @@ def payment_coastal(request):
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), countdown=60 * 60)
-        publish_paid_order(rental_order)
+        product_image = ProductImage.objects.filter(product=rental_order.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'paid_order',
+            'product_name': rental_order.product.name,
+            'product_image': product_image.image.url
+        }
+        publish_paid_order(rental_order, extra_attr)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',

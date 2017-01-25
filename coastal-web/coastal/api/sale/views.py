@@ -12,6 +12,9 @@ from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
 from coastal.apps.payment.stripe import sale_charge as stripe_charge
 from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction
+from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order
+from coastal.apps.product.models import ProductImage
+from coastal.apps.payment.utils import get_payment_info
 
 
 @login_required
@@ -35,8 +38,32 @@ def approve(request):
 
     if approve:
         sale_offer.status = 'charge'
+        guest_message = 'Your offer has been confirmed, please pay for it in 24 hours,' \
+                        ' or it will be cancelled automatically.'
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'confirmed_order',
+            'is_rental': False,
+            'rental_order_id': sale_offer.id,
+            'product_name': sale_offer.product.name,
+            'product_image': product_image.image.url,
+            'rental_order_status': sale_offer.get_status_display(),
+
+        }
+        extra_attr.update(get_payment_info(sale_offer, request.user))
+        del extra_attr['stripe']['card_list']
+        publish_confirmed_order(sale_offer, guest_message, extra_attr)
     else:
         sale_offer.status = 'declined'
+        guest = sale_offer.guest
+        message = '%s! Your offer has been declined %s ' % (guest.get_full_name())
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'refuse_order',
+            'product_name': sale_offer.product.name,
+            'product_image': product_image.image.url
+        }
+        publish_refuse_order(sale_offer, message, extra_attr)
     sale_offer.save()
 
     result = {
@@ -95,7 +122,23 @@ def make_offer(request):
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
     sale_offer = form.save(commit=False)
-    sale_offer.status = 'request'
+
+    if product.is_no_one:
+        sale_offer.status = 'request'
+        message = 'You have received an offer on your listing! You must confirm in 24 hours, or it will be cancelled automatically.'
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        extra_attr = {
+            'type': 'get_order',
+            'rental_order_id': sale_offer.id,
+            'product_id': sale_offer.product.id,
+            'product_name': sale_offer.product.name,
+            'product_image': product_image.image.url
+        }
+        publish_get_order(sale_offer, message, extra_attr)
+    else:
+        sale_offer.status = 'charge'
+
+    #sale_offer.status = 'request'
     sale_offer.owner = product.owner
     sale_offer.guest = request.user
     sale_offer.currency = product.currency

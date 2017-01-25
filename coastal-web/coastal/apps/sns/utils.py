@@ -72,65 +72,65 @@ def publish_message(content, dialogue_id, receiver_obj, sender_name):
 
 
 # place an order
-def publish_get_order(rental_order):
+def publish_get_order(rental_order, message, extra_attr):
     owner = rental_order.owner
-    message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically'
-    push_notification(owner, message)
+    #message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically'
+    push_notification(owner, message, extra_attr)
 
 
 # after 24 hours order is invalid
-def publish_unconfirmed_order(rental_order):
+def publish_unconfirmed_order(rental_order, message, extra_attr):
     owner = rental_order.owner
     guest = rental_order.guest
-    message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
-    push_notification(owner, message)
-    push_notification(guest, message)
+    #message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
+    push_notification(owner, message, extra_attr)
+    push_notification(guest, message, extra_attr)
 
 
 # owner confirmed order
-def publish_confirmed_order(rental_order):
+def publish_confirmed_order(rental_order, guest_message, extra_attr):
     guest = rental_order.guest
-    guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
-                    ' or it will be cancelled automatically.'
-    push_notification(guest, guest_message)
+    #guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
+    #                ' or it will be cancelled automatically.'
+    push_notification(guest, guest_message, extra_attr)
 
 
 # after 24 hours paid order is invalid
-def publish_unpay_order(rental_order):
+def publish_unpay_order(rental_order, message, extra_attr):
     owner = rental_order.owner
     guest = rental_order.guest
-    message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
-              'the payment in 24 hours.'
-    push_notification(owner, message)
-    push_notification(guest, message)
+    #message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
+    #          'the payment in 24 hours.'
+    push_notification(owner, message, extra_attr)
+    push_notification(guest, message, extra_attr)
 
 
 # guest successfully pay
-def publish_paid_order(rental_order):
+def publish_paid_order(rental_order, extra_attr):
     owner = rental_order.owner
     host_message = 'The request becomes in transaction. We hope you enjoy using Coastal!'
-    push_notification(owner, host_message)
+    push_notification(owner, host_message, extra_attr)
 
 
 # guest check in more than 24 hours
-def publish_check_in_order(rental_order):
+def publish_check_in_order(rental_order, message, extra_attr):
     owner = rental_order.owner
-    message = 'Congratulations! You have earned %s ' % (rental_order.coastal_dollar)
-    push_notification(owner, message)
+    #message = 'Congratulations! You have earned %s ' % (rental_order.coastal_dollar)
+    push_notification(owner, message, extra_attr)
 
 
 # guest check out
-def publish_check_out_order(rental_order):
+def publish_check_out_order(rental_order, message, extra_attr):
     guest = rental_order.guest
-    message = 'Please check-out your rental.'
-    push_notification(guest, message)
+    #message = 'Please check-out your rental.'
+    push_notification(guest, message, extra_attr)
 
 
 # owner refuse order
-def publish_refuse_order(rental_order):
+def publish_refuse_order(rental_order, message, extra_attr):
     guest = rental_order.guest
-    message = '%s! Your request has been declined %s ' % (guest.get_full_name())
-    push_notification(guest, message)
+    #message = '%s! Your request has been declined %s ' % (guest.get_full_name())
+    push_notification(guest, message, extra_attr)
 
 
 def bind_token(uuid, token, user):
