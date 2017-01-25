@@ -192,7 +192,7 @@ def payment_coastal(request):
     if sale_offer.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
 
-    sale_offer.currency = sale_detail.product.currency
+    sale_offer.currency = sale_offer.product.currency
     sale_offer.currency_rate = get_exchange_rate(sale_offer.currency)
     sale_offer.price_usd = math.ceil(sale_offer.price / sale_offer.currency_rate)
     sale_offer.save()
