@@ -16,6 +16,7 @@ from coastal.apps.rental.utils import validate_rental_date, rental_out_date, cle
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
+from coastal.apps.product.models import ProductImage
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
@@ -167,7 +168,11 @@ def payment_stripe(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
+        try:
+            publish_paid_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -206,7 +211,7 @@ def payment_coastal(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
         try:
             publish_paid_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
@@ -227,33 +232,16 @@ def order_detail(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
     start_time = order.start_datetime
     end_time = order.end_datetime
-    if order.product.rental_unit == 'day':
-        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d, %Y')
-    else:
-        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p, %A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p, %A/ %B %d, %Y')
 
-    if order.product.rental_unit == 'day':
-        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
-        else:
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
-    if order.product.rental_unit == 'half-day':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
-    if order.product.rental_unit == 'hour':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
-    if time_info > 1:
-        title = 'Book %s %ss as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
-    else:
-        title = 'Book %s %s as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
+    time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
+    start_datetime = start_time.strftime(time_format)
+    end_datetime = end_time.strftime(time_format)
 
     result = {
-        'title': title,
+        'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
             'category': order.product.category_id,
             'rooms': order.product.rooms or 0,
