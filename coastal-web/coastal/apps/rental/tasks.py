@@ -21,7 +21,7 @@ def expire_order_request(order_id):
         # TODO: send notification
         try:
             message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order')[0:1].first()
+            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
             extra_attr = {
                 'type': 'unconfirmed_order',
                 'product_name': order.product.name,
@@ -49,7 +49,7 @@ def expire_order_charge(order_id):
         try:
             message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
                       'the payment in 24 hours.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order')[0:1].first()
+            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
             extra_attr = {
                 'type': 'unpay_order',
                 'product_name': order.product.name,
@@ -93,7 +93,7 @@ def pay_owner(order_id):
 
         try:
             message = 'Congratulations! You have earned %s ' % (order.coastal_dollar)
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order')[0:1].first()
+            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
             extra_attr = {
                 'type': 'check_in_order',
                 'product_name': order.product.name,
@@ -119,7 +119,7 @@ def check_out(order_id):
 
         try:
             message = 'Please check-out your rental.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order')[0:1].first()
+            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
             extra_attr = {
                 'type': 'check_out_order',
                 'product_name': order.product.name,

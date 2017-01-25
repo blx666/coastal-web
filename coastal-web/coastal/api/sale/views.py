@@ -40,14 +40,15 @@ def approve(request):
         sale_offer.status = 'charge'
         guest_message = 'Your offer has been confirmed, please pay for it in 24 hours,' \
                         ' or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
         extra_attr = {
-            'type': 'confirmed_order',
+            'type': 'confirmed_offer',
             'is_rental': False,
             'rental_order_id': sale_offer.id,
             'product_name': sale_offer.product.name,
             'product_image': product_image.image.url,
             'rental_order_status': sale_offer.get_status_display(),
+            'total_price_display': sale_offer.get_total_price_display(),
 
         }
         extra_attr.update(get_payment_info(sale_offer, request.user))
@@ -55,9 +56,8 @@ def approve(request):
         publish_confirmed_order(sale_offer, guest_message, extra_attr)
     else:
         sale_offer.status = 'declined'
-        guest = sale_offer.guest
-        message = '%s! Your offer has been declined %s ' % (guest.get_full_name())
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        message = 'Pity! Your offer has been declined.'
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
         extra_attr = {
             'type': 'refuse_order',
             'product_name': sale_offer.product.name,
@@ -126,13 +126,15 @@ def make_offer(request):
     if product.is_no_one:
         sale_offer.status = 'request'
         message = 'You have received an offer on your listing! You must confirm in 24 hours, or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order')[0:1].first()
+        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
         extra_attr = {
-            'type': 'get_order',
+            'type': 'get_offer',
             'rental_order_id': sale_offer.id,
             'product_id': sale_offer.product.id,
             'product_name': sale_offer.product.name,
-            'product_image': product_image.image.url
+            'product_image': product_image.image.url,
+            'for_rental': sale_offer.product.for_rental,
+            'for_sale': sale_offer.product.for_sale,
         }
         publish_get_order(sale_offer, message, extra_attr)
     else:
