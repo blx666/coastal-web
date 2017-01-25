@@ -4,8 +4,10 @@ from coastal.apps.account.models import UserProfile
 
 
 class RegistrationForm(forms.ModelForm):
-    email = forms.EmailField(required=True)
-    password = forms.CharField(required=True, min_length=6)
+    email = forms.EmailField()
+    password = forms.CharField(min_length=6)
+    uuid = forms.CharField(required=False)
+    token = forms.CharField(required=False)
 
     def clean_email(self):
         email = self.cleaned_data['email']
@@ -19,8 +21,7 @@ class RegistrationForm(forms.ModelForm):
 
 
 class UserProfileForm(forms.ModelForm):
-    first_name = forms.CharField(max_length=128, required=False)
-    last_name = forms.CharField(max_length=128, required=False)
+    name = forms.CharField(max_length=128, required=False)
     is_agent = forms.CharField(required=False)
 
     def clean_is_agent(self):
@@ -38,4 +39,17 @@ class UserProfileForm(forms.ModelForm):
 
 class CheckEmailForm(forms.Form):
     email = forms.EmailField(required=True)
+
+
+class FacebookLoginForm(forms.Form):
+    userid = forms.CharField()
+    email = forms.EmailField()
+    name = forms.CharField(max_length=128)
+    token = forms.CharField(required=False)
+    uuid = forms.CharField(required=False)
+
+
+
+
+
 

@@ -27,6 +27,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+SITE_DOMAIN = '127.0.0.1:8000'
 
 # Application definition
 
@@ -44,6 +45,12 @@ INSTALLED_APPS = [
     'coastal.apps.rental',
     'coastal.apps.promotion',
     'coastal.apps.currency',
+    'coastal.apps.message',
+    'coastal.apps.review',
+    'coastal.apps.sns',
+    'coastal.apps.sale',
+    'coastal.apps.support',
+    'coastal.apps.coastline',
 ]
 
 MIDDLEWARE = [
@@ -107,6 +114,35 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# Logging
+# https://docs.djangoproject.com/en/1.10/topics/logging/
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(BASE_DIR, "coastal.log"),
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'coastal': {
+            'handlers': ['file', 'mail_admins'],
+            'level': 'DEBUG',
+        },
+    },
+}
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
@@ -127,6 +163,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "coastal/static"),
+]
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
@@ -134,27 +174,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 # cronjob
 CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
+    ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate'),
 ]
 
-# email conf
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# Email
+# https://docs.djangoproject.com/en/1.10/topics/email/
 # EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
-EMAIL_HOST_USER = '2421133939@qq.com'
-EMAIL_HOST_PASSWORD = '********'
-
-EMAIL_USE_TLS = False
-
-SUBSCRIBE_EMAIL = '2421133939@qq.com'
-# DEFAULT_FROM_EMAIL = "aragoncs@brilliantearth.com"
-
-# site DOMAIN
-SITE_DOMAIN='192.168.2.52:8000'
-
-PER_PAGE_ITEM = 20
-
-LON = -115.6360776
-LAT = 35.4340958
-DISTANCE = 35
+DEFAULT_FROM_EMAIL = "donotreply@coastal.com"

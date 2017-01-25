@@ -1,8 +1,10 @@
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.core.cache import cache
 from django.utils.functional import cached_property
 from treebeard.mp_tree import MP_Node
 
+from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
 
@@ -118,6 +120,7 @@ class Product(models.Model):
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
+    timezone = models.CharField(max_length=100, blank=True, default='')
 
     # basic info
     max_guests = models.PositiveSmallIntegerField(blank=True, null=True)
@@ -133,8 +136,10 @@ class Product(models.Model):
     cabins = models.PositiveSmallIntegerField(blank=True, null=True)
     year = models.PositiveSmallIntegerField(blank=True, null=True)
     speed = models.PositiveSmallIntegerField(blank=True, null=True)
+    rank = models.PositiveSmallIntegerField(blank=True, null=True, default=0)
 
     currency = models.CharField(max_length=3, default='USD', blank=True)
+    distance_from_coastal = models.FloatField(max_length=32, blank=True, null=True, editable=False)
 
     # rental info
     rental_price = models.FloatField(help_text='here is the price per day', null=True, blank=True)
@@ -152,7 +157,7 @@ class Product(models.Model):
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
-    amenities = models.ManyToManyField('Amenity')
+    amenities = models.ManyToManyField('Amenity', blank=True)
     desc_about_it = models.TextField(null=True, blank=True)
     desc_guest_access = models.TextField(null=True, blank=True)
     desc_interaction = models.TextField(null=True, blank=True)
@@ -168,7 +173,7 @@ class Product(models.Model):
     @cached_property
     def short_desc(self):
         if self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
-            short_desc = 'Entire %s with %s Rooms' % (self.category.name, self.rooms)
+            short_desc = 'Entire %s with %s rooms' % (self.category.name, self.rooms)
         elif self.category_id == defs.CATEGORY_ROOM:
             short_desc = 'Private Room'
         elif self.category_id in (defs.CATEGORY_YACHT, defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_JET):
@@ -184,6 +189,9 @@ class Product(models.Model):
         self.status = 'published'
 
     def validate_publish_data(self):
+        if not self.productimage_set:
+            return False
+
         if not (self.for_sale or self.for_rental):
             return False
 
@@ -216,6 +224,63 @@ class Product(models.Model):
     def cancel(self):
         self.status = 'cancelled'
 
+    @property
+    def is_no_one(self):
+        return self.rental_type == 'no-one'
+
+    def get_price(self, unit):
+        unit_mapping = {
+            'day': 24,
+            'half-day': 6,
+            'hour': 1
+        }
+        return unit_mapping[unit] / unit_mapping[self.rental_unit] * self.rental_price
+
+    def get_rental_price_display(self):
+        return price_display(self.rental_price, self.currency)
+
+    def get_sale_price_display(self):
+        return price_display(self.sale_price, self.currency)
+
+    def get_product_type(self):
+        if self.for_rental and self.for_sale:
+            return 'both'
+        if self.for_sale:
+            return 'sale'
+        return 'rental'
+
+    def _product_images(self):
+        cache_key = 'product_images|%s' % self.id
+        image_info = cache.get(cache_key)
+        if image_info is not None:
+            return image_info
+
+        image_info = {
+            'images': [],
+            'images_360': []
+        }
+
+        images = self.productimage_set.exclude(caption=ProductImage.CAPTION_360)
+        for img in images:
+            image_info['images'].append({
+                'image_id': img.id,
+                'url': img.image.url
+            })
+
+        images_360 = self.productimage_set.filter(caption=ProductImage.CAPTION_360)
+        for img in images_360:
+            image_info['images_360'].append({
+                'image_id': img.id,
+                'url': img.image.url
+            })
+
+        cache.set(cache_key, image_info, 60)
+        return image_info
+
+    def get_main_image(self):
+        image_info = self._product_images()
+        return image_info['images'] and image_info['images'][0]['url'] or ''
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
@@ -243,11 +308,8 @@ class ProductImage(models.Model):
     caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
-
-class RentalBlackOutDate(models.Model):
-    product = models.ForeignKey(Product)
-    start_date = models.DateField()
-    end_date = models.DateField()
+    class Meta:
+        ordering = ['display_order', '-date_created']
 
 
 class ProductViewCount(models.Model):

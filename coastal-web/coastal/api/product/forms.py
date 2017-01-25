@@ -87,37 +87,43 @@ class ProductAddForm(forms.ModelForm):
                 raise forms.ValidationError('lon or lat is invalid.')
 
     def clean_black_out_dates(self):
-        black_out_dates = self.cleaned_data.get('black_out_dates')
+        black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
         if black_out_dates:
             try:
                 black_out_dates = json.loads(black_out_dates)
             except:
                 raise forms.ValidationError('the black_out_days is invalid.')
             date_list = []
+            timedelta = datetime.timedelta(hours=23,minutes=59,seconds=59)
             for day in black_out_dates:
                 if len(day) != 2:
                     raise forms.ValidationError('the black_out_days list is invalid.')
                 try:
-                    first_date = datetime.datetime.strptime(day[0], '%Y-%m-%d').date()
-                    second_date = datetime.datetime.strptime(day[1], '%Y-%m-%d').date()
+                    first_date = datetime.datetime.strptime(day[0], '%Y-%m-%d')
+                    second_date = datetime.datetime.strptime(day[1], '%Y-%m-%d')
                 except:
                     raise forms.ValidationError('the black_out_days is invalid.')
                 if first_date < second_date:
-                    date_list.append([first_date, second_date])
+                    date_list.append([first_date, second_date + timedelta])
                 else:
-                    date_list.append([second_date, first_date])
+                    date_list.append([second_date, first_date + timedelta])
             return date_list
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status']
+        exclude = ['owner', 'score', 'status', 'timezone']
 
 
 class ProductUpdateForm(ProductAddForm):
+    ACTION_CHOICES = (
+        ('', '-----'),
+        ('publish', 'publish'),
+        ('cancel', 'cancel'),
+    )
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
     max_guests = forms.IntegerField(required=False)
-    action = forms.CharField(required=False)
+    action = forms.ChoiceField(required=False, choices=ACTION_CHOICES)
 
     def clean(self):
         for key in self.cleaned_data.copy():
@@ -128,7 +134,7 @@ class ProductUpdateForm(ProductAddForm):
 
     class Meta:
         model = Product
-        exclude = ['owner', 'score', 'status', 'category']
+        exclude = ['owner', 'score', 'status', 'category', 'timezone']
 
 
 class ProductListFilterForm(forms.Form):
@@ -136,13 +142,15 @@ class ProductListFilterForm(forms.Form):
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
     guests = forms.IntegerField(required=False)
-    arrival_date = forms.DateField(required=False)
-    checkout_date = forms.DateField(required=False)
+    arrival_date = forms.DateTimeField(required=False)
+    checkout_date = forms.DateTimeField(required=False)
     min_price = forms.DecimalField(required=False)
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
-    category = forms.IntegerField(required=False)
+    category = forms.CharField(required=False)
     purchase_or_rent = forms.CharField(required=False)
+    min_coastline_distance = forms.IntegerField(required=False)
+    max_coastline_distance = forms.IntegerField(required=False)
 
     def clean(self):
         cleaned_data = super(ProductListFilterForm, self).clean()
@@ -150,10 +158,10 @@ class ProductListFilterForm(forms.Form):
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
 
-
-class RentalDateForm(forms.Form):
-    arrival_date = forms.DateTimeField()
-    checkout_date = forms.DateTimeField()
+    def clean_category(self):
+        category = self.cleaned_data.get('category')
+        if category:
+            return category.split(',')
 
 
 class DiscountCalculatorFrom(forms.Form):

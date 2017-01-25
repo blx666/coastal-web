@@ -6,6 +6,8 @@ class Currency(models.Model):
     code = models.CharField(max_length=3)
     symbol = models.CharField(max_length=3)
     rate = models.FloatField(help_text='here is the rate base on dollar')
+    display = models.CharField(max_length=3)
+    update_rate_time = models.DateTimeField()
 
     def __str__(self):
         return self.code
