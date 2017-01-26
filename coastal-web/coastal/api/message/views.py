@@ -24,15 +24,34 @@ def create_dialogue(request):
     form = DialogueForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
-    product_id = form.cleaned_data['product_id']
-    product = Product.objects.filter(id=product_id).first()
 
-    if not product:
-        return CoastalJsonResponse(status=response.STATUS_404)
+    if form.cleaned_data['is_owner']:
+        if request.POST.get('rental_order_id'):
+            try:
+                order = RentalOrder.objects.get(request.POST['rental_order_id'])
+            except RentalOrder.DoesNotExist:
+                return CoastalJsonResponse({'rental_order_id': 'The order does not exist.'},
+                                           status=response.STATUS_400)
+            owner, guest, product = order.owner, order.guest, order.product
+        elif request.POST.get('sale_offer_id'):
+            try:
+                offer = RentalOrder.objects.get(request.POST['sale_offer_id'])
+            except RentalOrder.DoesNotExist:
+                return CoastalJsonResponse({'sale_offer_id': 'The sale offer does not exist.'},
+                                           status=response.STATUS_400)
+            owner, guest, product = offer.owner, offer.guest, offer.product
+        else:
+            return CoastalJsonResponse(status=response.STATUS_400)
+    else:
+        product_id = form.cleaned_data['product_id']
+        product = Product.objects.filter(id=product_id).first()
+        if not product:
+            return CoastalJsonResponse(status=response.STATUS_404)
+        owner, guest = product.owner, request.user
 
-    order = RentalOrder.objects.filter(owner=product.owner, guest=request.user,
+    order = RentalOrder.objects.filter(owner=owner, guest=guest,
                                        product=product).first()
-    dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=product.owner, guest=request.user,
+    dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=owner, guest=guest,
                                                                        product=product, defaults={'order': order, 'is_deleted': False})
     result = {
         'dialogue_id': dialogue.id,
