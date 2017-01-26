@@ -1,7 +1,8 @@
 from celery import shared_task
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.rental.utils import clean_rental_out_date
-from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_check_in_order, publish_check_out_order
+from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_paid_owner_order, \
+    publish_check_out_order
 from coastal.apps.product.models import ProductImage
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
@@ -92,15 +93,7 @@ def pay_owner(order_id):
         order.save()
 
         try:
-            message = 'Congratulations! You have earned %s ' % (order.coastal_dollar)
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'check_in_order',
-                'product_name': order.product.name,
-                'product_image': product_image.image.url
-            }
-
-            publish_check_in_order(order, message, extra_attr)
+            publish_paid_owner_order(order)
         except (NoEndpoint, DisabledEndpoint):
             pass
 
@@ -118,15 +111,6 @@ def check_out(order_id):
         order.save()
 
         try:
-            message = 'Please check-out your rental.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'check_out_order',
-                'product_name': order.product.name,
-                'product_image': product_image.image.url,
-                'product_id': order.product.id,
-                'rental_order_id': order_id,
-            }
-            publish_check_out_order(order, message, extra_attr)
+            publish_check_out_order(order)
         except (NoEndpoint, DisabledEndpoint):
             pass

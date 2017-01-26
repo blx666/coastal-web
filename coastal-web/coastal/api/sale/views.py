@@ -3,18 +3,16 @@ import math
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
 from coastal.api.core import response
-from coastal.apps.sale.models import SaleOffer, SaleApproveEvent, SalePaymentEvent
+from coastal.apps.sale.models import SaleOffer, SaleApproveEvent
 from coastal.apps.payment.utils import sale_payment_info
-from coastal.apps.currency.models import Currency
-from coastal.apps.account.utils import is_confirmed_user
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
 from coastal.apps.payment.stripe import sale_charge as stripe_charge
 from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction
-from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order
-from coastal.apps.product.models import ProductImage
-from coastal.apps.payment.utils import get_payment_info
+from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, publish_refuse_offer, \
+    publish_paid_owner_offer
+from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
 
 
 @login_required
@@ -32,38 +30,17 @@ def approve(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
-    approve = form.cleaned_data.get('approve')
+    _approve = form.cleaned_data.get('approve')
     note = form.cleaned_data.get('note')
-    SaleApproveEvent.objects.create(sale_offer=sale_offer, approve=approve, notes=note)
+    SaleApproveEvent.objects.create(sale_offer=sale_offer, approve=_approve, notes=note)
 
-    if approve:
+    if _approve:
         sale_offer.status = 'charge'
-        guest_message = 'Your offer has been confirmed, please pay for it in 24 hours,' \
-                        ' or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
-        extra_attr = {
-            'type': 'confirmed_offer',
-            'is_rental': False,
-            'rental_order_id': sale_offer.id,
-            'product_name': sale_offer.product.name,
-            'product_image': product_image.image.url,
-            'rental_order_status': sale_offer.get_status_display(),
-            'total_price_display': sale_offer.get_total_price_display(),
-
-        }
-        extra_attr.update(get_payment_info(sale_offer, request.user))
-        del extra_attr['stripe']['card_list']
-        publish_confirmed_order(sale_offer, guest_message, extra_attr)
+        publish_confirmed_offer(sale_offer)
+        expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
     else:
         sale_offer.status = 'declined'
-        message = 'Pity! Your offer has been declined.'
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
-        extra_attr = {
-            'type': 'refuse_offer',
-            'product_name': sale_offer.product.name,
-            'product_image': product_image.image.url
-        }
-        publish_refuse_order(sale_offer, message, extra_attr)
+        publish_refuse_offer(sale_offer)
     sale_offer.save()
 
     result = {
@@ -123,24 +100,9 @@ def make_offer(request):
     product = form.cleaned_data.get('product')
     sale_offer = form.save(commit=False)
 
-    if product.is_no_one:
-        sale_offer.status = 'request'
-        message = 'You have received an offer on your listing! You must confirm in 24 hours, or it will be cancelled automatically.'
-        product_image = ProductImage.objects.filter(product=sale_offer.product).order_by('display_order').first()
-        extra_attr = {
-            'type': 'get_offer',
-            'rental_order_id': sale_offer.id,
-            'product_id': sale_offer.product.id,
-            'product_name': sale_offer.product.name,
-            'product_image': product_image.image.url,
-            'for_rental': sale_offer.product.for_rental,
-            'for_sale': sale_offer.product.for_sale,
-        }
-        publish_get_order(sale_offer, message, extra_attr)
-    else:
-        sale_offer.status = 'charge'
+    publish_new_offer(sale_offer)
 
-    #sale_offer.status = 'request'
+    sale_offer.status = 'request'
     sale_offer.owner = product.owner
     sale_offer.guest = request.user
     sale_offer.currency = product.currency
@@ -148,12 +110,15 @@ def make_offer(request):
     sale_offer.price_usd = math.ceil(sale_offer.price / sale_offer.currency_rate)
     sale_offer.timezone = product.timezone
     sale_offer.save()
-    sale_offer.number = str(100000+sale_offer.id)
+    sale_offer.number = 'SO%s' % (100000 + sale_offer.id)
     sale_offer.save()
     result = {
         "sale_offer_id": sale_offer.id,
         "status": sale_offer.get_status_display(),
     }
+
+    expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+
     return CoastalJsonResponse(result)
 
 
@@ -212,6 +177,8 @@ def payment_stripe(request):
         sale_offer.status = 'finished'
         sale_offer.save()
 
+        publish_paid_owner_offer(sale_offer)
+
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
         "status": sale_offer.get_status_display(),
@@ -255,6 +222,8 @@ def payment_coastal(request):
         )
         sale_offer.status = 'finished'
         sale_offer.save()
+
+        publish_paid_owner_offer(sale_offer)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
