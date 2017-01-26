@@ -100,8 +100,6 @@ def make_offer(request):
     product = form.cleaned_data.get('product')
     sale_offer = form.save(commit=False)
 
-    publish_new_offer(sale_offer)
-
     sale_offer.status = 'request'
     sale_offer.owner = product.owner
     sale_offer.guest = request.user
@@ -112,12 +110,14 @@ def make_offer(request):
     sale_offer.save()
     sale_offer.number = 'SO%s' % (100000 + sale_offer.id)
     sale_offer.save()
+
     result = {
         "sale_offer_id": sale_offer.id,
         "status": sale_offer.get_status_display(),
     }
 
     expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+    publish_new_offer(sale_offer)
 
     return CoastalJsonResponse(result)
 
