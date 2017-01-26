@@ -1,6 +1,6 @@
 import math
-import time
 import datetime
+from django.utils import timezone
 from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, ApproveEvent
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
@@ -16,7 +16,6 @@ from coastal.apps.rental.utils import validate_rental_date, rental_out_date, cle
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
-from coastal.apps.product.models import ProductImage
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
@@ -237,8 +236,8 @@ def order_detail(request):
     end_time = order.end_datetime
 
     time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
-    start_datetime = start_time.strftime(time_format)
-    end_datetime = end_time.strftime(time_format)
+    start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
+    end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
 
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
