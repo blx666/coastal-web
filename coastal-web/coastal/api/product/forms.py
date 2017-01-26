@@ -178,9 +178,8 @@ class ProductListFilterForm(forms.Form):
 
     def clean(self):
         purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
-        if purchase_or_rent:
-            self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
-            self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
+        self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
+        self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
 
 
 class DiscountCalculatorFrom(forms.Form):
