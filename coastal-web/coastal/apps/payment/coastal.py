@@ -36,7 +36,7 @@ def sale_charge(sale_order, user):
         order_number=sale_order.number
     )
 
-    user.coastalbucket.balance -= rental_order.price_usd
+    user.coastalbucket.balance -= sale_order.price_usd
     user.coastalbucket.save()
 
     SalePaymentEvent.objects.create(

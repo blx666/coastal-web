@@ -54,21 +54,25 @@ def product_list(request):
     for_rental = form.cleaned_data['for_rental']
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
     min_coastline_distance = form.cleaned_data['min_coastline_distance']
-    if not (lon and lat and distance):
-        return recommend_product_list(request)
-    target = Point(lon, lat)
-    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)), status='published')
+
+    products = Product.objects.filter(status='published')
+
+    if lon and lat:
+        products = Product.objects.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
+
     if for_sale and for_rental:
         products = products.filter(for_rental=True) | products.filter(for_sale=True)
     elif for_rental:
         products = products.filter(for_rental=True)
     elif for_sale:
         products = products.filter(for_sale=True)
+
     if category:
         products = products.filter(category_id__in=category)
+
     if min_price:
         products = products.filter(rental_price__gte=min_price)
     if max_price:
@@ -83,6 +87,7 @@ def product_list(request):
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
                                     blackoutdate__end_date__gte=checkout_date).exclude(
             rentaloutdate__start_date__lte=arrival_date, rentaloutdate__end_date__gte=checkout_date)
+
     if max_coastline_distance and min_coastline_distance:
         products = products.filter(distance_from_coastal__gte=min_coastline_distance,
                                    distance_from_coastal__lte=max_coastline_distance)
@@ -90,8 +95,10 @@ def product_list(request):
         products = products.filter(distance_from_coastal__gte=min_coastline_distance)
     elif max_coastline_distance:
         products = products.filter(distance_from_coastal__lte=max_coastline_distance)
+
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
+
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
