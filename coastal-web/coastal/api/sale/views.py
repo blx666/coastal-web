@@ -15,6 +15,7 @@ from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order
 from coastal.apps.product.models import ProductImage
 from coastal.apps.payment.utils import get_payment_info
+from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge, check_in
 
 
 @login_required
@@ -154,6 +155,14 @@ def make_offer(request):
         "sale_offer_id": sale_offer.id,
         "status": sale_offer.get_status_display(),
     }
+
+    if sale_offer.status == 'charge':
+        result.update(get_payment_info(sale_offer, request.user))
+        expire_offer_charge.apply_async((sale_offer.id,), countdown=60 * 60)
+
+    if sale_offer.status == 'request':
+        expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+
     return CoastalJsonResponse(result)
 
 
@@ -211,6 +220,7 @@ def payment_stripe(request):
         )
         sale_offer.status = 'finished'
         sale_offer.save()
+        check_in.apply_async((sale_offer.id,), eta=sale_offer.start_datetime)
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -255,7 +265,7 @@ def payment_coastal(request):
         )
         sale_offer.status = 'finished'
         sale_offer.save()
-
+        check_in.apply_async((sale_offer.id,), eta=sale_offer.start_datetime)
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
         "status": sale_offer.get_status_display(),
