@@ -142,7 +142,7 @@ class ProductListFilterForm(forms.Form):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
-    guests = forms.IntegerField(required=False)
+    guests = forms.CharField(required=False)
     arrival_date = forms.DateTimeField(required=False)
     checkout_date = forms.DateTimeField(required=False)
     min_price = forms.DecimalField(required=False)
