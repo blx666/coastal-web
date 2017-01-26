@@ -6,7 +6,7 @@ from boto3.session import Session
 from botocore.client import ClientError
 
 from django.conf import settings
-from coastal.apps.payment.utils import get_payment_info
+from coastal.apps.payment.utils import get_payment_info, sale_payment_info
 from coastal.apps.sns.models import Token
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
@@ -220,7 +220,7 @@ def publish_confirmed_offer(sale_offer):
         'total_price_display': sale_offer.get_price_display(),
 
     }
-    extra_attr.update(get_payment_info(sale_offer, guest))
+    extra_attr.update(sale_payment_info(sale_offer, guest))
     push_notification(guest, guest_message, extra_attr)
 
 
