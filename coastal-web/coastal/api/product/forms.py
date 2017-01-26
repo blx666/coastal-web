@@ -142,7 +142,7 @@ class ProductListFilterForm(forms.Form):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
-    guests = forms.IntegerField(required=False)
+    guests = forms.CharField(required=False)
     arrival_date = forms.DateTimeField(required=False)
     checkout_date = forms.DateTimeField(required=False)
     min_price = forms.DecimalField(required=False)
@@ -158,21 +158,18 @@ class ProductListFilterForm(forms.Form):
         if category:
             return category.split(',')
 
-    def clean_arrival_date(self):
-        date = self.cleaned_data.get('arrival_date')
-        if date:
-            return timezone.make_aware(date)
-
-    def clean_checkout_date(self):
-        date = self.cleaned_data.get('checkout_date')
-        if date:
-            return timezone.make_aware(date)
+    def clean_guests(self):
+        guests = self.cleaned_data.get('guests')
+        if guests and guests.endswith('+'):
+            try:
+                return int(guests[:-1]) + 1
+            except ValueError:
+                return ''
 
     def clean(self):
-        cleaned_data = super(ProductListFilterForm, self).clean()
-        purchase_or_rent = cleaned_data['purchase_or_rent']
-        self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
-        self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
+        purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
+        self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
+        self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
 
 
 class DiscountCalculatorFrom(forms.Form):

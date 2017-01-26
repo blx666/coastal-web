@@ -58,16 +58,14 @@ def product_list(request):
     products = Product.objects.filter(status='published')
 
     if lon and lat:
-        products = Product.objects.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
+        products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
 
-    if for_sale and for_rental:
-        products = products.filter(for_rental=True) | products.filter(for_sale=True)
-    elif for_rental:
+    if for_rental and not for_sale:
         products = products.filter(for_rental=True)
-    elif for_sale:
+    elif for_sale and not for_rental:
         products = products.filter(for_sale=True)
 
     if category:
