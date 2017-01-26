@@ -53,7 +53,7 @@ def push_notification(receiver, content, extra_attr=None):
 
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
-            raise DisabledEndpoint
+            continue
 
         res = aws.publish(
             Message=json.dumps(result_message),
