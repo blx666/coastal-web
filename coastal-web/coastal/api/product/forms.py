@@ -158,6 +158,14 @@ class ProductListFilterForm(forms.Form):
         if category:
             return category.split(',')
 
+    def clean_guests(self):
+        guests = self.cleaned_data.get('guests')
+        if guests.endswith('+'):
+            try:
+                return int(guests[:-1]) + 1
+            except ValueError:
+                return ''
+
     def clean_arrival_date(self):
         date = self.cleaned_data.get('arrival_date')
         if date:
@@ -169,10 +177,10 @@ class ProductListFilterForm(forms.Form):
             return timezone.make_aware(date)
 
     def clean(self):
-        cleaned_data = super(ProductListFilterForm, self).clean()
-        purchase_or_rent = cleaned_data['purchase_or_rent']
-        self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
-        self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
+        purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
+        if purchase_or_rent:
+            self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
+            self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
 
 
 class DiscountCalculatorFrom(forms.Form):
