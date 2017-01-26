@@ -12,6 +12,7 @@ from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, publish_refuse_offer, \
     publish_paid_owner_offer
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
 
 
@@ -36,8 +37,12 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-        publish_confirmed_offer(sale_offer)
+
         expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+        try:
+            publish_confirmed_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         sale_offer.status = 'declined'
         publish_refuse_offer(sale_offer)
@@ -61,7 +66,6 @@ def sale_detail(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    user = sale_offer.guest
     result = {
         'owner': {
             'id': sale_offer.owner_id,
@@ -69,9 +73,15 @@ def sale_detail(request):
             'name': sale_offer.owner.get_full_name() or '',
         },
         'guest': {
-            'id ': sale_offer.guest_id,
+            'id': sale_offer.guest_id,
             'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
             'name': sale_offer.owner.get_full_name() or ''
+        },
+        'product': {
+            'id': sale_offer.product.id,
+            'name': sale_offer.product.name,
+            'for_rental': sale_offer.product.for_rental,
+            'for_sale': sale_offer.product.for_sale,
         },
         'sale_price': sale_offer.product.sale_price,
         'sale_price_display': sale_offer.product.get_sale_price_display(),
@@ -80,7 +90,7 @@ def sale_detail(request):
         'conditions': sale_offer.get_condition_list(),
         'status': sale_offer.get_status_display(),
     }
-    result.update(sale_payment_info(sale_offer, user))
+    result.update(sale_payment_info(sale_offer, sale_offer.guest))
     return CoastalJsonResponse(result)
 
 
@@ -100,8 +110,6 @@ def make_offer(request):
     product = form.cleaned_data.get('product')
     sale_offer = form.save(commit=False)
 
-    publish_new_offer(sale_offer)
-
     sale_offer.status = 'request'
     sale_offer.owner = product.owner
     sale_offer.guest = request.user
@@ -112,12 +120,17 @@ def make_offer(request):
     sale_offer.save()
     sale_offer.number = 'SO%s' % (100000 + sale_offer.id)
     sale_offer.save()
+
     result = {
         "sale_offer_id": sale_offer.id,
         "status": sale_offer.get_status_display(),
     }
 
     expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+    try:
+        publish_new_offer(sale_offer)
+    except (NoEndpoint, DisabledEndpoint):
+        pass
 
     return CoastalJsonResponse(result)
 
@@ -177,7 +190,10 @@ def payment_stripe(request):
         sale_offer.status = 'finished'
         sale_offer.save()
 
-        publish_paid_owner_offer(sale_offer)
+        try:
+            publish_paid_owner_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -223,7 +239,10 @@ def payment_coastal(request):
         sale_offer.status = 'finished'
         sale_offer.save()
 
-        publish_paid_owner_offer(sale_offer)
+        try:
+            publish_paid_owner_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',

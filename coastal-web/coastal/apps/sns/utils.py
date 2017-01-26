@@ -89,9 +89,15 @@ def publish_get_order(rental_order):
 
 
 # after 24 hours order is invalid
-def publish_unconfirmed_order(rental_order, message, extra_attr):
+def publish_unconfirmed_order(rental_order):
     owner = rental_order.owner
     guest = rental_order.guest
+    message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
+    extra_attr = {
+        'type': 'unconfirmed_order',
+        'product_name': rental_order.product.name,
+        'product_image': rental_order.product.get_main_image(),
+    }
     push_notification(owner, message, extra_attr)
     push_notification(guest, message, extra_attr)
 
@@ -117,9 +123,16 @@ def publish_confirmed_order(rental_order):
 
 
 # after 24 hours paid order is invalid
-def publish_unpay_order(rental_order, message, extra_attr):
+def publish_unpay_order(rental_order):
     owner = rental_order.owner
     guest = rental_order.guest
+    message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
+              'the payment in 24 hours.'
+    extra_attr = {
+        'type': 'unpay_order',
+        'product_name': rental_order.product.name,
+        'product_image': rental_order.product.get_main_image()
+    }
     push_notification(owner, message, extra_attr)
     push_notification(guest, message, extra_attr)
 

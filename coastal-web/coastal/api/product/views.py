@@ -57,6 +57,7 @@ def product_list(request):
 
     if not (lon and lat and distance):
         return recommend_product_list(request)
+
     target = Point(lon, lat)
     products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)), status='published')
 
