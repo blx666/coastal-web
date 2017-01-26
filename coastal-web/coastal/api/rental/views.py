@@ -68,7 +68,7 @@ def book_rental(request):
     rental_order.save()
     rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
     # TODO: move generate order number into save function
-    rental_order.number = str(100000+rental_order.id)
+    rental_order.number = 'RO%s' % (100000 + rental_order.id)
     rental_order.save()
 
     if discount_type and discount_rate:
