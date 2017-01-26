@@ -63,10 +63,10 @@ def product_list(request):
     if guests:
         products = products.filter(max_guests__gte=guests)
 
-    if for_rental:
-        products = products.filter(for_sale=False)
-    if for_sale:
-        products = products.filter(for_rental=False)
+    if for_rental and not for_sale:
+        products = products.filter(for_rental=True)
+    elif for_sale and not for_rental:
+        products = products.filter(for_sale=True)
 
     if category:
         products = products.filter(category_id__in=category)
