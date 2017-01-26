@@ -74,9 +74,15 @@ def sale_detail(request):
             'name': sale_offer.owner.get_full_name() or '',
         },
         'guest': {
-            'id ': sale_offer.guest_id,
+            'id': sale_offer.guest_id,
             'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
             'name': sale_offer.owner.get_full_name() or ''
+        },
+        'product': {
+            'id': sale_offer.product.id,
+            'name': sale_offer.product.name,
+            'for_rental': sale_offer.product.for_rental,
+            'for_sale': sale_offer.product.for_sale,
         },
         'sale_price': sale_offer.product.sale_price,
         'sale_price_display': sale_offer.product.get_sale_price_display(),
