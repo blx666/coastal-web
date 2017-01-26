@@ -3,7 +3,6 @@ from coastal.apps.rental.models import RentalOrder
 from coastal.apps.rental.utils import clean_rental_out_date
 from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_paid_owner_order, \
     publish_check_out_order
-from coastal.apps.product.models import ProductImage
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
@@ -19,17 +18,8 @@ def expire_order_request(order_id):
         order.status = 'invalid'
         order.save()
         clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
-        # TODO: send notification
         try:
-            message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'unconfirmed_order',
-                'product_name': order.product.name,
-                'product_image': product_image.image.url
-            }
-
-            publish_unconfirmed_order(order, message, extra_attr)
+            publish_unconfirmed_order(order)
         except (NoEndpoint, DisabledEndpoint):
             pass
 
@@ -46,18 +36,8 @@ def expire_order_charge(order_id):
         order.status = 'invalid'
         order.save()
         clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
-        # TODO: send notification
         try:
-            message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
-                      'the payment in 24 hours.'
-            product_image = ProductImage.objects.filter(product=order.product).order_by('display_order').first()
-            extra_attr = {
-                'type': 'unpay_order',
-                'product_name': order.product.name,
-                'product_image': product_image.image.url
-            }
-
-            publish_unpay_order(order, message, extra_attr)
+            publish_unpay_order(order)
         except (NoEndpoint, DisabledEndpoint):
             pass
 

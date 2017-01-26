@@ -12,6 +12,7 @@ from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, publish_refuse_offer, \
     publish_paid_owner_offer
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
 
 
@@ -36,8 +37,12 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-        publish_confirmed_offer(sale_offer)
+
         expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+        try:
+            publish_confirmed_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
     else:
         sale_offer.status = 'declined'
         publish_refuse_offer(sale_offer)
@@ -117,7 +122,10 @@ def make_offer(request):
     }
 
     expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
-    publish_new_offer(sale_offer)
+    try:
+        publish_new_offer(sale_offer)
+    except (NoEndpoint, DisabledEndpoint):
+        pass
 
     return CoastalJsonResponse(result)
 
@@ -177,7 +185,10 @@ def payment_stripe(request):
         sale_offer.status = 'finished'
         sale_offer.save()
 
-        publish_paid_owner_offer(sale_offer)
+        try:
+            publish_paid_owner_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -223,7 +234,10 @@ def payment_coastal(request):
         sale_offer.status = 'finished'
         sale_offer.save()
 
-        publish_paid_owner_offer(sale_offer)
+        try:
+            publish_paid_owner_offer(sale_offer)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
