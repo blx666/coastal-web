@@ -66,7 +66,6 @@ def sale_detail(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    user = sale_offer.guest
     result = {
         'owner': {
             'id': sale_offer.owner_id,
@@ -91,7 +90,7 @@ def sale_detail(request):
         'conditions': sale_offer.get_condition_list(),
         'status': sale_offer.get_status_display(),
     }
-    result.update(sale_payment_info(sale_offer, user))
+    result.update(sale_payment_info(sale_offer, sale_offer.guest))
     return CoastalJsonResponse(result)
 
 
