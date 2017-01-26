@@ -292,7 +292,7 @@ def my_activity(request):
                 'owner': {
                     'id': order.owner_id,
                     'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
+                    'name': order.owner.get_full_name(),
                 },
                 'guest': {
                     'id': order.guest_id,
