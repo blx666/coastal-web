@@ -137,14 +137,28 @@ def publish_paid_order(rental_order):
 
 
 # guest check in more than 24 hours
-def publish_check_in_order(rental_order, message, extra_attr):
+def publish_paid_owner_order(rental_order):
     owner = rental_order.owner
+    message = 'Congratulations! You have earned %s ' % rental_order.coastal_dollar
+    extra_attr = {
+        'type': 'check_in_order',
+        'product_name': rental_order.product.name,
+        'product_image': rental_order.product.get_main_image()
+    }
     push_notification(owner, message, extra_attr)
 
 
 # guest check out
-def publish_check_out_order(rental_order, message, extra_attr):
+def publish_check_out_order(rental_order):
     guest = rental_order.guest
+    message = 'Please check-out your rental.'
+    extra_attr = {
+        'type': 'check_out_order',
+        'product_name': rental_order.product.name,
+        'product_image': rental_order.product.get_main_image(),
+        'product_id': rental_order.product.id,
+        'rental_order_id': rental_order.id,
+    }
     push_notification(guest, message, extra_attr)
 
 
@@ -158,6 +172,97 @@ def publish_refuse_order(rental_order):
         'product_image': rental_order.product.get_main_image(),
     }
     push_notification(guest, message, extra_attr)
+
+
+# make an offer
+def publish_new_offer(sale_offer):
+    owner = sale_offer.owner
+    message = 'You have received an offer on your listing! You must confirm in 24 hours, or it will be cancelled automatically.'
+    product = sale_offer.product
+    extra_attr = {
+        'type': 'get_offer',
+        'rental_order_id': sale_offer.id,
+        'product_id': product.id,
+        'product_name': product.name,
+        'product_image': product.get_main_image(),
+        'for_rental': product.for_rental,
+        'for_sale': product.for_sale,
+    }
+    push_notification(owner, message, extra_attr)
+
+
+# owner confirmed order
+def publish_confirmed_offer(sale_offer):
+    guest = sale_offer.guest
+    guest_message = 'Your offer has been confirmed, please pay for it in 24 hours,' \
+                    ' or it will be cancelled automatically.'
+    product = sale_offer.product
+    extra_attr = {
+        'type': 'confirmed_offer',
+        'is_rental': False,
+        'rental_order_id': sale_offer.id,
+        'product_name': product.name,
+        'product_image': product.get_main_image(),
+        'rental_order_status': sale_offer.get_status_display(),
+        'total_price_display': sale_offer.get_price_display(),
+
+    }
+    extra_attr.update(get_payment_info(sale_offer, guest))
+    push_notification(guest, guest_message, extra_attr)
+
+
+# owner refuse order
+def publish_refuse_offer(sale_offer):
+    guest = sale_offer.guest
+    message = 'Pity! Your request has been declined.'
+    extra_attr = {
+        'type': 'refuse_order',
+        'product_name': sale_offer.product.name,
+        'product_image': sale_offer.product.get_main_image(),
+    }
+    push_notification(guest, message, extra_attr)
+
+
+# after 24 hours offer is invalid
+def publish_unconfirmed_offer(sale_offer):
+    owner = sale_offer.owner
+    guest = sale_offer.guest
+    message = 'The offer has been cancelled, for the host didn\'t confirm in 24 hours.'
+    extra_attr = {
+        'type': 'unconfirmed_offer',
+        'product_name': sale_offer.product.name,
+        'product_image': sale_offer.product.get_main_image(),
+    }
+    push_notification(owner, message, extra_attr)
+    push_notification(guest, message, extra_attr)
+
+
+# after 24 hours paid order is invalid
+def publish_unpay_offer(sale_offer):
+    owner = sale_offer.owner
+    guest = sale_offer.guest
+    message = 'Coastal has cancelled the offer for you, for the guest hasn\'t finished ' \
+              'the payment in 24 hours.'
+    extra_attr = {
+        'type': 'unpay_offer',
+        'product_name': sale_offer.product.name,
+        'product_image': sale_offer.product.get_main_image()
+    }
+    push_notification(owner, message, extra_attr)
+    push_notification(guest, message, extra_attr)
+
+
+# guest check in more than 24 hours
+def publish_paid_owner_offer(sale_offer):
+    owner = sale_offer.owner
+    message = 'Congratulations! You sold your listing %s, and you have earned %s ' % (
+        sale_offer.product.name, sale_offer.coastal_dollar)
+    extra_attr = {
+        'type': 'check_in_offer',
+        'product_name': sale_offer.product.name,
+        'coastal_dollar': sale_offer.coastal_dollar
+    }
+    push_notification(owner, message, extra_attr)
 
 
 def bind_token(uuid, token, user):
