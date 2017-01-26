@@ -58,7 +58,7 @@ def product_list(request):
     products = Product.objects.filter(status='published')
 
     if lon and lat:
-        products = Product.objects.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
+        products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
