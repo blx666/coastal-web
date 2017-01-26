@@ -224,7 +224,6 @@ def payment_coastal(request):
 
 @login_required
 def order_detail(request):
-
     try:
         order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
