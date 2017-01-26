@@ -2,8 +2,9 @@ import json
 import datetime
 
 from django import forms
-from coastal.apps.product.models import ProductImage, Product, Amenity
 from django.contrib.gis.geos import Point
+from django.utils import timezone
+from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
 
 
@@ -152,16 +153,26 @@ class ProductListFilterForm(forms.Form):
     min_coastline_distance = forms.IntegerField(required=False)
     max_coastline_distance = forms.IntegerField(required=False)
 
+    def clean_category(self):
+        category = self.cleaned_data.get('category')
+        if category:
+            return category.split(',')
+
+    def clean_arrival_date(self):
+        date = self.cleaned_data.get('arrival_date')
+        if date:
+            return timezone.make_aware(date)
+
+    def clean_checkout_date(self):
+        date = self.cleaned_data.get('checkout_date')
+        if date:
+            return timezone.make_aware(date)
+
     def clean(self):
         cleaned_data = super(ProductListFilterForm, self).clean()
         purchase_or_rent = cleaned_data['purchase_or_rent']
         self.cleaned_data['for_rental'] = purchase_or_rent in ('rent', 'both')
         self.cleaned_data['for_sale'] = purchase_or_rent in ('sale', 'both')
-
-    def clean_category(self):
-        category = self.cleaned_data.get('category')
-        if category:
-            return category.split(',')
 
 
 class DiscountCalculatorFrom(forms.Form):
