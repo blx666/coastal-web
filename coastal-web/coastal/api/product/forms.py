@@ -166,16 +166,6 @@ class ProductListFilterForm(forms.Form):
             except ValueError:
                 return ''
 
-    def clean_arrival_date(self):
-        date = self.cleaned_data.get('arrival_date')
-        if date:
-            return timezone.make_aware(date)
-
-    def clean_checkout_date(self):
-        date = self.cleaned_data.get('checkout_date')
-        if date:
-            return timezone.make_aware(date)
-
     def clean(self):
         purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
         self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
