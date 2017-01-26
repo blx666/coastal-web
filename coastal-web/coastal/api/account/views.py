@@ -463,7 +463,7 @@ def my_order_dates(request):
     for order in order_list:
         begin_time, end_time = order.start_datetime, order.end_datetime
         for every_day in rrule(DAILY, dtstart=begin_time, until=end_time):
-            if every_day >= now_year and every_day <  next_year:
+            if every_day >= now_year and every_day < next_year:
                 format_day = timezone.datetime(every_day.year, every_day.month, every_day.day).strftime("%Y-%m-%d")
                 if format_day not in date_list:
                     date_list.append(format_day)
