@@ -160,7 +160,7 @@ class ProductListFilterForm(forms.Form):
 
     def clean_guests(self):
         guests = self.cleaned_data.get('guests')
-        if guests.endswith('+'):
+        if guests and guests.endswith('+'):
             try:
                 return int(guests[:-1]) + 1
             except ValueError:
