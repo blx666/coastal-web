@@ -273,7 +273,18 @@ def publish_paid_owner_offer(sale_offer):
     extra_attr = {
         'type': 'check_in_offer',
         'product_name': sale_offer.product.name,
-        'coastal_dollar': sale_offer.coastal_dollar
+        'coastal_dollar': sale_offer.coastal_dollar,
+        'product': {
+            'id': sale_offer.product.id,
+            'name': sale_offer.product.name,
+            'for_rental': sale_offer.product.for_rental,
+            'for_sale': sale_offer.product.for_sale,
+        },
+        'guest': {
+            'id': sale_offer.guest.id,
+            'name': sale_offer.guest.get_full_name(),
+            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or ''
+        }
     }
     push_notification(owner, message, extra_attr)
 
