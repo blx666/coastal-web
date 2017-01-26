@@ -55,11 +55,10 @@ def product_list(request):
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
     min_coastline_distance = form.cleaned_data['min_coastline_distance']
 
-    if not (lon and lat and distance):
-        return recommend_product_list(request)
+    products = Product.objects.filter(status='published')
 
-    target = Point(lon, lat)
-    products = Product.objects.filter(point__distance_lte=(target, D(mi=distance)), status='published')
+    if lon and lat:
+        products = Product.objects.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
         products = products.filter(max_guests__gte=guests)
