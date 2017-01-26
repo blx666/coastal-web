@@ -18,12 +18,17 @@ def home(request):
     home_banners = HomeBanner.objects.order_by('display_order')
     home_banners_list = []
     for banner in home_banners:
-        home_banners_list.append({
+        banner_dict = {
             'city_name': banner.city_name,
             'image': banner.image.url,
-            'lon': banner.point[0],
-            'lat': banner.point[1],
-        })
+        }
+        if banner.point:
+            banner_dict.update({
+                'lon': banner.point[0],
+                'lat': banner.point[1],
+            })
+
+        home_banners_list.append(banner_dict)
 
     # get recommended products
     products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price')
