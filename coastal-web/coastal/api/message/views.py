@@ -20,6 +20,7 @@ from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 def create_dialogue(request):
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
+
     form = DialogueForm(request.POST)
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)

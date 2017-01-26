@@ -26,7 +26,9 @@ def exchange_rate():
         response = urllib.request.urlopen('http://api.fixer.io/latest?base=USD')
         rates = json.loads(response.read().decode('utf-8'))
     except:
+        # TODO: add log
         return
+
     all_currency = Currency.objects.all()
     for currency in all_currency:
         if currency.code in rates['rates']:

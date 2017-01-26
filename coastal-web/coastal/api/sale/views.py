@@ -75,7 +75,7 @@ def sale_detail(request):
         'guest': {
             'id': sale_offer.guest_id,
             'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
-            'name': sale_offer.owner.get_full_name() or ''
+            'name': sale_offer.guest.get_full_name() or ''
         },
         'product': {
             'id': sale_offer.product.id,

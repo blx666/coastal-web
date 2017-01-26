@@ -8,7 +8,7 @@ from botocore.client import ClientError
 from django.conf import settings
 from coastal.apps.payment.utils import get_payment_info, sale_payment_info
 from coastal.apps.sns.models import Token
-from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+from coastal.apps.sns.exceptions import NoEndpoint
 
 logger = logging.getLogger(__name__)
 
