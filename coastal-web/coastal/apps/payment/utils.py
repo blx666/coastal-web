@@ -16,6 +16,8 @@ def get_payment_info(rental_order, user):
 
     stripe_amount = get_stripe_amount(rental_order.total_price)  # add the stripe process fee
     payment_info['stripe'] = {
+        'total_price': rental_order.total_price,
+        'total_price_display': rental_order.get_total_price_display(),
         'updated_amount': stripe_amount,
         'updated_amount_display': price_display(stripe_amount, rental_order.product.currency),
     }
