@@ -317,4 +317,4 @@ def bind_token(uuid, token, user):
 
 # TODO
 def unbind_token(token, user):
-    pass
+    Token.objects.filter(token=token, user=user).delete()
