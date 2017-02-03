@@ -20,7 +20,7 @@ from coastal.apps.rental.models import RentalOrder
 from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id
-from coastal.apps.sns.utils import bind_token
+from coastal.apps.sns.utils import bind_token, unbind_token
 
 
 def register(request):
@@ -176,6 +176,7 @@ def my_profile(request):
 
 @login_required
 def logout(request):
+    unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
 
