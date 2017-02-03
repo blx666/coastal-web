@@ -28,14 +28,14 @@ def create_dialogue(request):
     if form.cleaned_data['is_owner']:
         if request.POST.get('rental_order_id'):
             try:
-                order = RentalOrder.objects.get(request.POST['rental_order_id'])
+                order = RentalOrder.objects.get(id=request.POST['rental_order_id'])
             except RentalOrder.DoesNotExist:
                 return CoastalJsonResponse({'rental_order_id': 'The order does not exist.'},
                                            status=response.STATUS_400)
             owner, guest, product = order.owner, order.guest, order.product
         elif request.POST.get('sale_offer_id'):
             try:
-                offer = RentalOrder.objects.get(request.POST['sale_offer_id'])
+                offer = RentalOrder.objects.get(id=request.POST['sale_offer_id'])
             except RentalOrder.DoesNotExist:
                 return CoastalJsonResponse({'sale_offer_id': 'The sale offer does not exist.'},
                                            status=response.STATUS_400)
