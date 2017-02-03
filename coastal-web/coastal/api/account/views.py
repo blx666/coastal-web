@@ -298,7 +298,7 @@ def my_activity(request):
                 'guest': {
                     'id': order.guest_id,
                     'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or order.guest.emial,
+                    'name': order.guest.get_full_name() or order.guest.email,
                 },
                 'product': {
                     'id': order.product_id,
