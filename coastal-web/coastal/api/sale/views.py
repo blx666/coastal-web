@@ -37,7 +37,7 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-
+        sale_offer.save()
         expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
         try:
             publish_confirmed_offer(sale_offer)

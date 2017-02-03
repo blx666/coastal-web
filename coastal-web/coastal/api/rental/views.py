@@ -42,6 +42,7 @@ def book_rental(request):
 
     if product.is_no_one:
         rental_order.status = 'request'
+        rental_order.save()
         try:
             publish_get_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
