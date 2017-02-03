@@ -48,11 +48,7 @@ class SaleOffer(models.Model):
         return price_display(self.price, self.product.currency)
 
     def get_condition_list(self):
-        conditions_list = []
-        conditions = self.conditions.split(',')
-        for i in conditions:
-            conditions_list.append(self.CONDITION_CHOICES[int(i)-1][1])
-        return conditions_list
+        return [dict(self.CONDITION_CHOICES).get(c, '') for c in self.conditions.split(',')]
 
 
 class SaleApproveEvent(models.Model):

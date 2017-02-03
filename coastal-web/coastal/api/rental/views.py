@@ -1,6 +1,6 @@
 import math
-import time
 import datetime
+from django.utils import timezone
 from coastal.apps.rental.models import RentalOrder, RentalOrderDiscount, ApproveEvent
 from coastal.api.rental.forms import RentalBookForm, RentalApproveForm
 from coastal.api.core import response
@@ -67,7 +67,7 @@ def book_rental(request):
     rental_order.save()
     rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
     # TODO: move generate order number into save function
-    rental_order.number = str(100000+rental_order.id)
+    rental_order.number = 'RO%s' % (100000 + rental_order.id)
     rental_order.save()
 
     if discount_type and discount_rate:
@@ -167,7 +167,11 @@ def payment_stripe(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
+        try:
+            publish_paid_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
 
     return CoastalJsonResponse({
         "payment": success and 'success' or 'failed',
@@ -206,7 +210,7 @@ def payment_coastal(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), countdown=60 * 60)
+        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
         try:
             publish_paid_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
@@ -220,42 +224,26 @@ def payment_coastal(request):
 
 @login_required
 def order_detail(request):
-
     try:
         order = RentalOrder.objects.get(id=request.GET.get('rental_order_id'))
     except RentalOrder.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
     start_time = order.start_datetime
     end_time = order.end_datetime
-    if order.product.rental_unit == 'day':
-        start_datetime = datetime.datetime.strftime(start_time, '%A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%A/ %B %d, %Y')
-    else:
-        start_datetime = datetime.datetime.strftime(start_time, '%l:%M %p, %A/ %B %d, %Y')
-        end_datetime = datetime.datetime.strftime(end_time, '%l:%M %p, %A/ %B %d, %Y')
 
-    if order.product.rental_unit == 'day':
-        if order.product.category_id in (defs.CATEGORY_BOAT_SLIP, defs.CATEGORY_YACHT):
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24)) + 1
-        else:
-            time_info = math.ceil(
-                (time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 24))
-    if order.product.rental_unit == 'half-day':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / (3600 * 6))
-    if order.product.rental_unit == 'hour':
-        time_info = math.ceil((time.mktime(end_time.timetuple()) - time.mktime(start_time.timetuple())) / 3600)
-    if time_info > 1:
-        title = 'Book %s %ss as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
-    else:
-        title = 'Book %s %s as %s' % (time_info, order.product.rental_unit.title(), order.product.city.title())
+    time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
+    start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
+    end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
 
     result = {
-        'title': title,
+        'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
             'category': order.product.category_id,
+            'for_rental': order.product.for_rental,
+            'for_sale': order.product.for_sale,
             'rooms': order.product.rooms or 0,
             'bathrooms': order.product.bathrooms or 0,
             'beds': order.product.beds or 0,
