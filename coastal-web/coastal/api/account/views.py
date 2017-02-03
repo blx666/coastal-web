@@ -268,12 +268,12 @@ def my_activity(request):
                 'owner': {
                     'id': order.owner_id,
                     'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name(),
+                    'name': order.owner.get_full_name() or order.owner.email,
                 },
                 'guest': {
                     'id': order.guest_id,
                     'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
+                    'name': order.guest.get_full_name() or order.guest.email,
                 },
                 'product': {
                     'id': order.product_id,
@@ -293,12 +293,12 @@ def my_activity(request):
                 'owner': {
                     'id': order.owner_id,
                     'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name(),
+                    'name': order.owner.get_full_name() or order.owner.email,
                 },
                 'guest': {
                     'id': order.guest_id,
                     'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
+                    'name': order.guest.get_full_name() or order.guest.email,
                 },
                 'product': {
                     'id': order.product_id,

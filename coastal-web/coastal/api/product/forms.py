@@ -3,7 +3,6 @@ import datetime
 
 from django import forms
 from django.contrib.gis.geos import Point
-from django.utils import timezone
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
 
