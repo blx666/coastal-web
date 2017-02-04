@@ -166,7 +166,7 @@ class ProductListFilterForm(forms.Form):
                 return ''
 
     def clean(self):
-        purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
+        purchase_or_rent = self.cleaned_data.get('purchase_or_buy')
         self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
         self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
 
