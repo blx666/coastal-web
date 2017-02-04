@@ -223,10 +223,15 @@ def my_activity(request):
     }
     user = request.user
 
-    recently_viewed = user.recently_viewed.all()[0:20]
-    products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
+    recently_viewed_all = user.recently_viewed.order_by('-date_created')
+    recently_viewed = []
+    for i in recently_viewed_all:
+        if i.product.id not in recently_viewed:
+            recently_viewed.append(i.product_id)
+    recently_viewed = recently_viewed[0:20]
+    products = get_products_by_id(recently_viewed)
     for item in recently_viewed:
-        p = products[item.product_id]
+        p = products[item]
         result['recently_views'].append({
             'id': p.id,
             'name': p.name,
