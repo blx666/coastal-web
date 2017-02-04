@@ -14,6 +14,7 @@ from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, p
     publish_paid_owner_offer
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
+from coastal.api.product.utils import get_email_cipher
 
 
 @login_required
@@ -71,12 +72,12 @@ def sale_detail(request):
         'owner': {
             'id': sale_offer.owner_id,
             'photo': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
-            'name': sale_offer.owner.get_full_name() or sale_offer.owner.email,
+            'name': sale_offer.owner.get_full_name() or get_email_cipher(sale_offer.owner.email),
         },
         'guest': {
             'id': sale_offer.guest_id,
             'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
-            'name': sale_offer.guest.get_full_name() or sale_offer.guest.email,
+            'name': sale_offer.guest.get_full_name() or get_email_cipher(sale_offer.guest.email),
         },
         'product': {
             'id': sale_offer.product.id,

@@ -8,7 +8,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.payment.utils import get_payment_info
 from coastal.apps.payment.stripe import charge as stripe_charge
 from coastal.apps.payment.coastal import charge as coastal_charge
-from coastal.api.product.utils import calc_price
+from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user
@@ -258,12 +258,12 @@ def order_detail(request):
         'owner': {
             'id': order.owner.id,
             'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-            'name': order.owner.get_full_name() or order.owner.email,
+            'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
         },
         'guest': {
             'id': order.guest.id,
             'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-            'name': order.guest.get_full_name() or order.guest.email,
+            'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
         },
         'guests': order.guest_count,
         'start_date': start_datetime,
