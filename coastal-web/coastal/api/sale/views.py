@@ -50,6 +50,7 @@ def approve(request):
 
     result = {
         'status': sale_offer.get_status_display(),
+        'sale_offer_id': sale_offer.id,
     }
     result.update(sale_payment_info(sale_offer, request.user))
     return CoastalJsonResponse(result)

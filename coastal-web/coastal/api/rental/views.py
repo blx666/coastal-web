@@ -128,7 +128,8 @@ def rental_approve(request):
             pass
 
     result = {
-        'status': rental_order.get_status_display()
+        'status': rental_order.get_status_display(),
+        'rental_order_id': rental_order.id,
     }
 
     if rental_order.status == 'charge':
@@ -257,12 +258,12 @@ def order_detail(request):
         'owner': {
             'id': order.owner.id,
             'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-            'name': order.owner.get_full_name(),
+            'name': order.owner.get_full_name() or order.owner.email,
         },
         'guest': {
             'id': order.guest.id,
             'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-            'name': order.guest.get_full_name()
+            'name': order.guest.get_full_name() or order.guest.email,
         },
         'guests': order.guest_count,
         'start_date': start_datetime,

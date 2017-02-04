@@ -263,17 +263,29 @@ def my_activity(request):
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
+            email_owner_list = order.owner.email.split('@')
+            if len(email_owner_list[0]) > 3:
+                email_owner = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
+            else:
+                email_owner = '%s***@%s' % (email_owner_list[0], email_owner_list[1])
+
+            email_guest_list = order.guest.email.split('@')
+            if len(email_guest_list[0]) > 3:
+                email_guest = '%s***@%s' % (email_guest_list[0][0:3], email_guest_list[1])
+            else:
+                email_guest = '%s***@%s' % (email_guest_list[0], email_guest_list[1])
+
             data = {
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
                     'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or order.owner.email,
+                    'name': order.owner.get_full_name() or email_owner,
                 },
                 'guest': {
                     'id': order.guest_id,
                     'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or order.guest.email,
+                    'name': order.guest.get_full_name() or email_guest,
                 },
                 'product': {
                     'id': order.product_id,
@@ -288,17 +300,29 @@ def my_activity(request):
                 'type': 'rental'
             }
         else:
+            email_owner_list = order.owner.email.split('@')
+            if len(email_owner_list[0]) > 3:
+                email_owner = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
+            else:
+                email_owner = '%s***@%s' % (email_owner_list[0], email_owner_list[1])
+
+            email_guest_list = order.guest.email.split('@')
+            if len(email_guest_list[0]) > 3:
+                email_guest = '%s***@%s' % (email_guest_list[0][0:3], email_guest_list[1])
+            else:
+                email_guest = '%s***@%s' % (email_guest_list[0], email_guest_list[1])
+
             data = {
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
                     'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or order.owner.email,
+                    'name': order.owner.get_full_name() or email_owner,
                 },
                 'guest': {
                     'id': order.guest_id,
                     'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or order.guest.email,
+                    'name': order.guest.get_full_name() or email_guest,
                 },
                 'product': {
                     'id': order.product_id,
