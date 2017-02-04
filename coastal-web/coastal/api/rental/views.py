@@ -42,10 +42,6 @@ def book_rental(request):
 
     if product.is_no_one:
         rental_order.status = 'request'
-        try:
-            publish_get_order(rental_order)
-        except (NoEndpoint, DisabledEndpoint):
-            pass
     else:
         rental_order.status = 'charge'
 
@@ -82,6 +78,10 @@ def book_rental(request):
         expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
 
     if rental_order.status == 'request':
+        try:
+            publish_get_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
         expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
