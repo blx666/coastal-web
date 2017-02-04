@@ -195,7 +195,7 @@ def publish_new_offer(sale_offer):
     product = sale_offer.product
     extra_attr = {
         'type': 'get_offer',
-        'rental_order_id': sale_offer.id,
+        'sale_offer_id': sale_offer.id,
         'product_id': product.id,
         'product_name': product.name,
         'product_image': product.get_main_image(),
