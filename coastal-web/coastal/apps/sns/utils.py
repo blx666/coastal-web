@@ -214,11 +214,11 @@ def publish_confirmed_offer(sale_offer):
     extra_attr = {
         'type': 'confirmed_offer',
         'is_rental': False,
-        'rental_order_id': sale_offer.id,
+        'sale_offer_id': sale_offer.id,
         'product_id': product.id,
         'product_name': product.name,
         'product_image': product.get_main_image(),
-        'rental_order_status': sale_offer.get_status_display(),
+        'sale_offer_status': sale_offer.get_status_display(),
         'total_price_display': sale_offer.get_price_display(),
 
     }
