@@ -61,11 +61,6 @@ def book_rental(request):
         rental_order.end_datetime -= datetime.timedelta(hours=11, minutes=59, seconds=59)
 
     rental_order.save()
-    if rental_order.status == 'request':
-        try:
-            publish_get_order(rental_order)
-        except (NoEndpoint, DisabledEndpoint):
-            pass
     rental_out_date(rental_order.product, rental_order.start_datetime, rental_order.end_datetime)
     # TODO: move generate order number into save function
     rental_order.number = 'RO%s' % (100000 + rental_order.id)
