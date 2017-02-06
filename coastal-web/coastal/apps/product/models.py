@@ -153,6 +153,7 @@ class Product(models.Model):
 
     # sale info
     sale_price = models.FloatField(default=0, null=True, blank=True)
+    sale_usd_price = models.FloatField('Sale USD Price', default=0, null=True, blank=True)
 
     # description
     name = models.CharField(max_length=255, null=True, blank=True)

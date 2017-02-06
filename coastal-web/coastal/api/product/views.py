@@ -63,18 +63,18 @@ def product_list(request):
     if guests:
         products = products.filter(max_guests__gte=guests)
 
+    if category:
+        products = products.filter(category_id__in=category)
+
     if for_rental and not for_sale:
         products = products.filter(for_rental=True)
     elif for_sale and not for_rental:
         products = products.filter(for_sale=True)
 
-    if category:
-        products = products.filter(category_id__in=category)
-
     if min_price:
-        products = products.filter(rental_price__gte=min_price)
+        products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
     if max_price:
-        products = products.filter(rental_price__lte=max_price)
+        products = products.filter(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
