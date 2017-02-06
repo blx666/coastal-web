@@ -11,6 +11,7 @@ from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
 from datetime import timedelta
+from django.contrib.gis.db.models.functions import Distance
 
 from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -96,6 +97,9 @@ def product_list(request):
 
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
+
+    point = Point(lon, lat, srid=4326)
+    products = products.order_by(Distance('point', point), '-score', '-rental_price')
 
     bind_product_image(products)
     page = request.GET.get('page', 1)
