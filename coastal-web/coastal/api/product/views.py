@@ -170,7 +170,10 @@ def product_detail(request, pid):
             user = request.user
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
                 'product_id', flat=True)
-            RecentlyViewed.objects.create(user=user, product=product)
+            if RecentlyViewed.objects.filter(user=user, product=product):
+                RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
+            else:
+                RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     data['max_guests'] = product.max_guests or 0
@@ -864,7 +867,10 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_404)
 
     if request.POST.get('reported') == '1':
-        Report.objects.create(product=product, user=request.user)
+        if Report.objects.filter(product=product, user=request.user):
+            Report.objects.filter(product=product, user=request.user).update(status=0, datetime=datetime.now())
+        else:
+            Report.objects.create(product=product, user=request.user, status=0, datetime=datetime.now())
     return CoastalJsonResponse()
 
 
