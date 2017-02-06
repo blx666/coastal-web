@@ -168,9 +168,6 @@ def get_products_by_id(product_ids):
 
 def get_email_cipher(email):
     email_owner_list = email.split('@')
-    if len(email_owner_list[0]) > 3:
-        email_cipher = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
-    else:
-        email_cipher = '%s***@%s' % (email_owner_list[0], email_owner_list[1])
+    email_cipher = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
 
     return email_cipher
