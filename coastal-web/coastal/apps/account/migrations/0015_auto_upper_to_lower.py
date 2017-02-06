@@ -9,12 +9,13 @@ def alter_username_lower(apps, schema_editor):
     User = apps.get_model("auth", "User")
     user_list = User.objects.all()
     for user in user_list:
-        is_exist = User.objects.filter(username=user.username.lower())
-        if is_exist:
-            user.delete()
-        else:
-            user.username = user.username.lower()
-            user.save()
+        if user.username != user.username.lower():
+            is_exist = User.objects.filter(username=user.username.lower())
+            if is_exist:
+                user.delete()
+            else:
+                user.username = user.username.lower()
+                user.save()
 
 
 class Migration(migrations.Migration):
