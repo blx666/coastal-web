@@ -40,7 +40,7 @@ def sale_charge(sale_order, user):
     user.coastalbucket.save()
 
     SalePaymentEvent.objects.create(
-        order=sale_order,
+        sale_offer=sale_order,
         payment_type='coastal',
         amount=sale_order.price_usd,
         currency='USD',
