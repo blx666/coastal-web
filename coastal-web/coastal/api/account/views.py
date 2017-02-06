@@ -222,7 +222,7 @@ def my_activity(request):
         'orders': []
     }
     user = request.user
-    recently_viewed = user.recently_viewed.all().order_by('-date_created')[0:20]
+    recently_viewed = user.recently_viewed.order_by('-date_created')[0:20]
     products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
     for item in recently_viewed:
         p = products[item.product_id]
