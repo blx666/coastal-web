@@ -173,7 +173,8 @@ def product_detail(request, pid):
             RecentlyViewed.objects.create(user=user, product=product)
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
-    data['max_guests'] = product.max_guests or 0
+    if product.max_guests:
+        data['max_guests'] = product.max_guests
 
     if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT):
         data['room'] = product.rooms or 0

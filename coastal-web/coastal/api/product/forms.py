@@ -164,6 +164,8 @@ class ProductListFilterForm(forms.Form):
                 return int(guests[:-1]) + 1
             except ValueError:
                 return ''
+        else:
+            return guests
 
     def clean(self):
         purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
