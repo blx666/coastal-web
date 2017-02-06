@@ -121,7 +121,7 @@ def check_email(request):
     form = CheckEmailForm(request.POST)
     if form.is_valid():
         return CoastalJsonResponse({
-            'exists': User.objects.filter(email=form.cleaned_data['email']).exists()
+            'exists': User.objects.filter(username=form.cleaned_data['email'].lower()).exists()
         })
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 

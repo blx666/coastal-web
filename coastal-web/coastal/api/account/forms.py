@@ -10,8 +10,8 @@ class RegistrationForm(forms.ModelForm):
     token = forms.CharField(required=False)
 
     def clean_email(self):
-        email = self.cleaned_data['email']
-        if User.objects.filter(email=email).exists():
+        email = self.cleaned_data['email'].lower()
+        if User.objects.filter(username=email).exists():
             raise forms.ValidationError('The user have already been used for register')
         return email
 
