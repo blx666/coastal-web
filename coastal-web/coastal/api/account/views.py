@@ -19,7 +19,7 @@ from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
-from coastal.api.product.utils import bind_product_image, get_products_by_id
+from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
 
 
@@ -121,7 +121,7 @@ def check_email(request):
     form = CheckEmailForm(request.POST)
     if form.is_valid():
         return CoastalJsonResponse({
-            'exists': User.objects.filter(email=form.cleaned_data['email']).exists()
+            'exists': User.objects.filter(username=form.cleaned_data['email'].lower()).exists()
         })
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
@@ -197,16 +197,16 @@ def validate_email(request):
         user.userprofile.save()
     validate_instance = ValidateEmail()
     validate_instance.save(user=user)
-    subject = 'user validate email'
+    subject = 'Email Verification'
     message = '''Hi %s,
 
-                To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
-                http://%s/account/confirm-email/?token=%s
-                The link will be invalid 24 hours later. Please resend if this happens.
+  To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
+http://%s/account/confirm-email/?token=%s
+The link will be invalid 24 hours later. Please resend if this happens.
 
-                Thanks,
-                The Coastal Team
-                ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
+Thanks,
+The Coastal Team
+''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
@@ -222,8 +222,7 @@ def my_activity(request):
         'orders': []
     }
     user = request.user
-
-    recently_viewed = user.recently_viewed.all()[0:20]
+    recently_viewed = user.recently_viewed.order_by('-date_created')[0:20]
     products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
     for item in recently_viewed:
         p = products[item.product_id]
@@ -263,29 +262,17 @@ def my_activity(request):
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
-            email_owner_list = order.owner.email.split('@')
-            if len(email_owner_list[0]) > 3:
-                email_owner = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
-            else:
-                email_owner = '%s***@%s' % (email_owner_list[0], email_owner_list[1])
-
-            email_guest_list = order.guest.email.split('@')
-            if len(email_guest_list[0]) > 3:
-                email_guest = '%s***@%s' % (email_guest_list[0][0:3], email_guest_list[1])
-            else:
-                email_guest = '%s***@%s' % (email_guest_list[0], email_guest_list[1])
-
             data = {
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
                     'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or email_owner,
+                    'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
                 },
                 'guest': {
                     'id': order.guest_id,
                     'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or email_guest,
+                    'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
                 },
                 'product': {
                     'id': order.product_id,
@@ -300,29 +287,17 @@ def my_activity(request):
                 'type': 'rental'
             }
         else:
-            email_owner_list = order.owner.email.split('@')
-            if len(email_owner_list[0]) > 3:
-                email_owner = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
-            else:
-                email_owner = '%s***@%s' % (email_owner_list[0], email_owner_list[1])
-
-            email_guest_list = order.guest.email.split('@')
-            if len(email_guest_list[0]) > 3:
-                email_guest = '%s***@%s' % (email_guest_list[0][0:3], email_guest_list[1])
-            else:
-                email_guest = '%s***@%s' % (email_guest_list[0], email_guest_list[1])
-
             data = {
                 'id': order.id,
                 'owner': {
                     'id': order.owner_id,
                     'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or email_owner,
+                    'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
                 },
                 'guest': {
                     'id': order.guest_id,
                     'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or email_guest,
+                    'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
                 },
                 'product': {
                     'id': order.product_id,
