@@ -478,8 +478,9 @@ def currency_list(request):
 
 def black_out_date(pid, form):
     date_list = form.cleaned_data.get('black_out_dates')
-    if date_list:
+    if 'black_out_dates' in form.cleaned_data:
         BlackOutDate.objects.filter(product_id=pid).delete()
+    if date_list:
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
