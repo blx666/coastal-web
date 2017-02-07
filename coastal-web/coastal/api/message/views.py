@@ -75,8 +75,8 @@ def dialogue_list(request):
         unread_message_number = unread_dialogue_count_dict.get(dialogue.id, 0)
         contact_dict = {
             'user_id': contact.id,
-            'name': contact.get_full_name() or contact.email,
-            'photo': contact.userprofile.photo and contact.userprofile.photo.url or '',
+            'name': contact.basic_info()['name'],
+            'photo': contact.basic_info()['photo'],
         }
         product_dict = {
             'product_id': product.id,

@@ -1,9 +1,36 @@
-from django.contrib.gis.db import models
-from django.contrib.auth.models import User
-from django.utils import timezone
-from coastal.apps.product.models import Product
-import hashlib
 import datetime
+import hashlib
+from django.contrib.auth.models import User
+from django.contrib.gis.db import models
+from django.core.cache import cache
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+
+from coastal.apps.account.utils import secure_email
+from coastal.apps.product.models import Product
+
+
+def basic_info(self, prefix=''):
+    info = cache.get('user_basic_info|%s' % self.id)
+    if info is None:
+        info = {
+            'id': self.id,
+            'name': self.first_name or secure_email(self.email),
+            'photo': self.userprofile.photo and self.userprofile.photo.url or '',
+        }
+
+        cache.set('user_basic_info|%s' % self.id, info, 5 * 60)
+
+    if prefix:
+        return {'%s%s' % (prefix, k): v for k, v in info.items()}
+    return info
+User.basic_info = basic_info
+
+
+@receiver(post_save, sender=User)
+def clear_user_cache(sender, **kwargs):
+    cache.delete('user_basic_info|%s' % kwargs['instance'].id)
 
 
 class UserProfile(models.Model):
@@ -30,6 +57,11 @@ class UserProfile(models.Model):
     @property
     def has_agency_info(self):
         return self.is_agent is not None
+
+
+@receiver(post_save, sender=UserProfile)
+def clear_user_profile_cache(sender, **kwargs):
+    cache.delete('user_basic_info|%s' % kwargs['instance'].user.id)
 
 
 class Favorites(models.Model):

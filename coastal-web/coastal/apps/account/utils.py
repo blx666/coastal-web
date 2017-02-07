@@ -1,3 +1,4 @@
+import re
 from django.contrib.auth.models import User
 from coastal.apps.account.models import UserProfile, CoastalBucket
 
@@ -17,3 +18,8 @@ def is_confirmed_user(user):
     if user.userprofile.email_confirmed != 'confirmed':
         return False
     return True
+
+
+def secure_email(email):
+    pattern = re.compile('^(.{1,3}).*@(.*)$')
+    return '***@'.join(pattern.match(email).groups())

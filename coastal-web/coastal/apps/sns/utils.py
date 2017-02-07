@@ -282,11 +282,7 @@ def publish_paid_owner_offer(sale_offer):
             'for_rental': sale_offer.product.for_rental,
             'for_sale': sale_offer.product.for_sale,
         },
-        'guest': {
-            'id': sale_offer.guest.id,
-            'name': sale_offer.guest.get_full_name(),
-            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or ''
-        }
+        'guest': sale_offer.guest.basic_info(),
     }
     push_notification(owner, message, extra_attr)
 
