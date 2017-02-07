@@ -171,6 +171,10 @@ class ProductListFilterForm(forms.Form):
         purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
         self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
         self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
+        if self.cleaned_data['for_sale']:
+            self.cleaned_data['price_field'] = 'sale_usd_price'
+        else:
+            self.cleaned_data['price_field'] = 'rental_usd_price'
 
 
 class DiscountCalculatorFrom(forms.Form):

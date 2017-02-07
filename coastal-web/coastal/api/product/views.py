@@ -65,18 +65,18 @@ def product_list(request):
     if guests:
         products = products.filter(max_guests__gte=guests)
 
+    if category:
+        products = products.filter(category_id__in=category)
+
     if for_rental and not for_sale:
         products = products.filter(for_rental=True)
     elif for_sale and not for_rental:
         products = products.filter(for_sale=True)
 
-    if category:
-        products = products.filter(category_id__in=category)
-
     if min_price:
-        products = products.filter(rental_price__gte=min_price)
+        products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
     if max_price:
-        products = products.filter(rental_price__lte=max_price)
+        products = products.filter(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
@@ -176,7 +176,10 @@ def product_detail(request, pid):
             user = request.user
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
                 'product_id', flat=True)
-            RecentlyViewed.objects.create(user=user, product=product)
+            if RecentlyViewed.objects.filter(user=user, product=product):
+                RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
+            else:
+                RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
@@ -872,7 +875,10 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_404)
 
     if request.POST.get('reported') == '1':
-        Report.objects.create(product=product, user=request.user)
+        if Report.objects.filter(product=product, user=request.user):
+            Report.objects.filter(product=product, user=request.user).update(status=0, datetime=datetime.now())
+        else:
+            Report.objects.create(product=product, user=request.user, status=0, datetime=datetime.now())
     return CoastalJsonResponse()
 
 
