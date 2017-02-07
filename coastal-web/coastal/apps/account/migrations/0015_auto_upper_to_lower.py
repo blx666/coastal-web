@@ -12,7 +12,7 @@ def alter_username_lower(apps, schema_editor):
         if user.username != user.username.lower():
             is_exist = User.objects.filter(username=user.username.lower())
             if is_exist:
-                user.delete()
+                print('current user %s already exist lower format' % user.username)
             else:
                 user.username = user.username.lower()
                 user.save()
