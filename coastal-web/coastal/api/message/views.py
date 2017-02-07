@@ -50,7 +50,7 @@ def create_dialogue(request):
         owner, guest = product.owner, request.user
 
     order = RentalOrder.objects.filter(owner=owner, guest=guest,
-                                       product=product).first()
+                                       product=product).last()
     dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=owner, guest=guest,
                                                                        product=product, defaults={'order': order, 'is_deleted': False})
     result = {
