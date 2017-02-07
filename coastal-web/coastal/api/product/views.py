@@ -59,6 +59,7 @@ def product_list(request):
     products = Product.objects.filter(status='published')
 
     if lon and lat:
+        point = Point(lon, lat, srid=4326)
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
@@ -98,9 +99,10 @@ def product_list(request):
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
 
-    point = Point(lon, lat, srid=4326)
-    products = products.order_by(Distance('point', point), '-score', '-rental_price')
-
+    if point:
+        products = products.order_by(Distance('point', point), '-score', '-rental_price')
+    else:
+        products = products.order_by('-score', '-rental_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
