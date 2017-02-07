@@ -6,12 +6,12 @@ from django.core.cache import cache
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-
-from coastal.apps.account.utils import secure_email
 from coastal.apps.product.models import Product
 
 
 def basic_info(self, prefix=''):
+    from coastal.apps.account.utils import secure_email
+
     info = cache.get('user_basic_info|%s' % self.id)
     if info is None:
         info = {
