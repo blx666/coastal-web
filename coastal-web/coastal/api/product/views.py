@@ -10,6 +10,9 @@ from django.views.decorators.cache import cache_page
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
+from datetime import timedelta
+from django.contrib.gis.db.models.functions import Distance
+
 
 from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -57,6 +60,7 @@ def product_list(request):
     products = Product.objects.filter(status='published')
 
     if lon and lat:
+        point = Point(lon, lat, srid=4326)
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
 
     if guests:
@@ -96,6 +100,10 @@ def product_list(request):
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
 
+    if point:
+        products = products.order_by(Distance('point', point), '-score', '-rental_price')
+    else:
+        products = products.order_by('-score', '-rental_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
@@ -175,7 +183,8 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
-    data['max_guests'] = product.max_guests or 0
+    if product.max_guests:
+        data['max_guests'] = product.max_guests
 
     if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT):
         data['room'] = product.rooms or 0
@@ -469,8 +478,9 @@ def currency_list(request):
 
 def black_out_date(pid, form):
     date_list = form.cleaned_data.get('black_out_dates')
-    if date_list:
+    if 'black_out_dates' in form.cleaned_data:
         BlackOutDate.objects.filter(product_id=pid).delete()
+    if date_list:
         for black_date in date_list:
             BlackOutDate.objects.create(product_id=pid, start_date=black_date[0], end_date=black_date[1])
 
