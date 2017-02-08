@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.gis.geos import Point
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
+from django.contrib.admin.widgets import AdminTimeWidget
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -21,6 +22,8 @@ class ProductAddForm(forms.ModelForm):
     black_out_dates = forms.CharField(required=False)
     for_sale = forms.CharField(required=False)
     for_rental = forms.CharField(required=False)
+    exp_start_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
+    exp_end_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
