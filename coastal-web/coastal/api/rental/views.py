@@ -255,16 +255,8 @@ def order_detail(request):
                 'name': '%s Rules' % order.product.category.name
             },
         },
-        'owner': {
-            'id': order.owner.id,
-            'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-            'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
-        },
-        'guest': {
-            'id': order.guest.id,
-            'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-            'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
-        },
+        'owner': order.owner.basic_info(),
+        'guest': order.guest.basic_info(),
         'guests': order.guest_count,
         'start_date': start_datetime,
         'end_date': end_datetime,

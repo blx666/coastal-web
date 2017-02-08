@@ -5,7 +5,6 @@ from django import forms
 from django.contrib.gis.geos import Point
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
-from django.contrib.admin.widgets import AdminTimeWidget
 
 
 class ImageUploadForm(forms.ModelForm):

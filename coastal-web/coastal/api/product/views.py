@@ -10,8 +10,10 @@ from django.views.decorators.cache import cache_page
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
+<<<<<<< HEAD
 from datetime import timedelta
 from django.contrib.gis.db.models.functions import Distance
+
 
 from coastal.api import defines as defs
 from coastal.api.product.forms import ImageUploadForm, ProductAddForm, ProductUpdateForm, ProductListFilterForm, \
@@ -24,8 +26,8 @@ from coastal.api.core.decorators import login_required
 from coastal.api.rental.forms import RentalBookForm
 
 from coastal.apps.account.models import FavoriteItem, Favorites, RecentlyViewed
+from coastal.apps.account.utils import secure_email
 from coastal.apps.currency.models import Currency
-from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as product_defs
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.rental.models import BlackOutDate, RentalOrder, RentalOutDate
@@ -227,14 +229,10 @@ def product_detail(request, pid):
         data['name'] = product.name
     else:
         data['name'] = 'Your Listing Name'
-    if product.owner.userprofile.photo:
-        photo = product.owner.userprofile.photo.url
-    else:
-        photo = ""
     data['owner'] = {
         'user_id': product.owner_id,
-        'name': product.owner.get_full_name() or product.owner.email,
-        'photo': photo,
+        'name': product.owner.basic_info()['name'],
+        'photo': product.owner.basic_info()['photo'],
     }
     reviews = Review.objects.filter(product=product).order_by('-date_created')
     last_review = reviews.first()
@@ -247,13 +245,11 @@ def product_detail(request, pid):
         start_time = last_review.order.start_datetime
         end_time = last_review.order.end_datetime
         data['reviews']['latest_review'] = {
-            "reviewer_id": last_review.owner_id,
-            "reviewer_name": last_review.owner.get_full_name(),
-            "reviewer_photo": last_review.owner.userprofile.photo.url or '',
             "stayed_range": '%s - %s' % (datetime.strftime(start_time, '%Y/%m/%d'), datetime.strftime(end_time, '%Y/%m/%d')),
             "score": last_review.score,
             "content": last_review.content
         }
+        data['reviews']['latest_review'].update(last_review.owner.basic_info(prefix='reviewer_'))
     data['extra_info'] = {
         'rules': {
             'name': '%s Rules' % product.category.name,
@@ -672,12 +668,6 @@ def product_review(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
     reviews = Review.objects.filter(product=product)
-    user = product.owner
-    owner = {
-        'id': user.id,
-        'name': user.get_full_name(),
-        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
-    }
     product_dict = {
         'id': product_id,
         'name': product.name,
@@ -688,17 +678,15 @@ def product_review(request):
     if reviews:
         for review in reviews:
             review_dict = {
-                'guest_id': review.owner_id,
-                'guest_name': review.owner.get_full_name(),
-                'guest_photo': review.owner.userprofile.photo and review.owner.userprofile.photo.url or '',
                 'date': format_date(review.date_created) or '',
                 'score': review.score,
                 'content': review.content
             }
+            review_dict.update(review.owner.basic_info(prefix='guest_'))
             reviews_list.append(review_dict)
 
     result = {
-        'owner': owner,
+        'owner': product.owner.basic_info(),
         'product': product_dict,
         'review_count': review_count['id__count'],
         'reviews': reviews_list
@@ -796,22 +784,19 @@ def product_owner(request):
 
     owner = {
         'id': user.id,
-        'name': user.get_full_name(),
-        'email': user.email,
-        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
+        'name': user.first_name,
+        'email': secure_email(user.email),
+        'photo': user.basic_info()['photo'],
     }
     if reviews:
         latest_review = {
-            'guest_id': reviews[0].owner_id,
-            'guest_name': reviews[0].owner.get_full_name(),
-            'guest_photo': reviews[0].owner.userprofile.photo and reviews[0].owner.userprofile.photo.url or '',
             'date': format_date(reviews[0].date_created),
             'score': reviews[0].score,
             'content': reviews[0].content
         }
+        latest_review.update(reviews[0].owner.basic_info(prefix='guest_'))
     else:
-        latest_review = {
-        }
+        latest_review = {}
 
     products = {
         'spaces': spaces_list,
@@ -829,33 +814,27 @@ def product_owner(request):
 
 
 def product_owner_reviews(request):
-    owner_id = request.GET.get('owner_id')
     try:
-        user = User.objects.get(id=owner_id)
+        user = User.objects.get(id=request.GET.get('owner_id'))
     except User.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
     reviews = Review.objects.filter(order__owner=user)
     review_avg_score = reviews.aggregate(Avg('score'), Count('id'))
     reviews_list = []
     for review in reviews:
-        reviews_list.append({
-            'guest_id': review.owner_id,
-            'guest_name': review.owner.get_full_name(),
-            'guest_photo': review.owner.userprofile.photo and review.owner.userprofile.photo.url or '',
+        review_info = {
             'date': format_date(review.date_created),
             'score': review.score,
             'content': review.content
-        })
-    owner = {
-        'id': user.id,
-        'name': user.get_full_name(),
-        'photo': user.userprofile.photo and user.userprofile.photo.url or ''
-    }
+        }
+        review_info.update(review.owner.basic_info(prefix='guest_'))
+        reviews_list.append(review_info)
 
     result = {
-        'owner': owner,
+        'owner': user.basic_info(),
         'review_count': review_avg_score['id__count'],
         'reviews': reviews_list,
     }

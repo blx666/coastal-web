@@ -50,7 +50,7 @@ def create_dialogue(request):
         owner, guest = product.owner, request.user
 
     order = RentalOrder.objects.filter(owner=owner, guest=guest,
-                                       product=product).first()
+                                       product=product).last()
     dialogue, _ = Dialogue.objects.get_all_queryset().update_or_create(owner=owner, guest=guest,
                                                                        product=product, defaults={'order': order, 'is_deleted': False})
     result = {
@@ -75,8 +75,8 @@ def dialogue_list(request):
         unread_message_number = unread_dialogue_count_dict.get(dialogue.id, 0)
         contact_dict = {
             'user_id': contact.id,
-            'name': contact.get_full_name() or contact.email,
-            'photo': contact.userprofile.photo and contact.userprofile.photo.url or '',
+            'name': contact.basic_info()['name'],
+            'photo': contact.basic_info()['photo'],
         }
         product_dict = {
             'product_id': product.id,
