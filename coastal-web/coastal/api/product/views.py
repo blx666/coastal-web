@@ -10,7 +10,6 @@ from django.views.decorators.cache import cache_page
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
-<<<<<<< HEAD
 from datetime import timedelta
 from django.contrib.gis.db.models.functions import Distance
 
