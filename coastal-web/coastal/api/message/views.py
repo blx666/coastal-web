@@ -155,6 +155,7 @@ def send_message(request):
 
     result = {
         'message_id': message.id,
+        'date_created': message.date_created.strftime('%Y-%m-%d %H:%M:%S'),
     }
 
     return CoastalJsonResponse(result)
