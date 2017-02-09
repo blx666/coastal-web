@@ -312,7 +312,8 @@ def product_detail(request, pid):
         content['image'] = p.main_image and p.main_image.image.url or ''
 
         similar_product_dict.append(content)
-    data['similar_products'] = similar_product_dict
+    if product.category_id != product_defs.CATEGORY_EXPERIENCE:
+        data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
 
 
