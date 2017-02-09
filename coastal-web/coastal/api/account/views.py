@@ -1,5 +1,6 @@
 from dateutil.rrule import rrule, DAILY
 from itertools import chain
+import logging
 
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
@@ -22,6 +23,8 @@ from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
 
+logger = logging.getLogger(__name__)
+
 
 def register(request):
     if request.method != 'POST':
@@ -33,6 +36,8 @@ def register(request):
 
     cleaned_data = register_form.cleaned_data
     user = create_user(cleaned_data['email'], cleaned_data['password'])
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 (cleaned_data['email'], cleaned_data['token'], cleaned_data['uuid'], ))
 
     auth_login(request, user)
     if cleaned_data['uuid'] and cleaned_data['token']:
@@ -58,6 +63,8 @@ def facebook_login(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s, User name is %s, User client is Facebook' %
+                 (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
         auth_login(request, user)
@@ -81,6 +88,7 @@ def facebook_login(request):
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
     }
+
     return CoastalJsonResponse(data)
 
 
@@ -89,6 +97,8 @@ def login(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid'))
     if user:
         auth_login(request, user)
 
@@ -154,6 +164,7 @@ def update_profile(request):
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
+            'purpose': user.userprofile.purpose,
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -170,12 +181,14 @@ def my_profile(request):
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
+        'purpose': user.userprofile.purpose
     }
     return CoastalJsonResponse(data)
 
 
 @login_required
 def logout(request):
+    logger.debug('Logout user is %s, unbind token is %s %' % (request.user, request.POST.get('token')))
     unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
@@ -309,6 +322,7 @@ def my_account(request):
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'photo': user.basic_info()['photo'],
+            'purpose': user.userprofile.purpose,
         }
     }
 
