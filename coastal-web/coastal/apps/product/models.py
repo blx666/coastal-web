@@ -98,6 +98,11 @@ class Product(models.Model):
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
     )
+    EXPERIENCE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('week', 'Week'),
+        ('hour', 'Hour'),
+    )
     ALLOW_RENTAL_CHOICES = (
         ('meet-cr', 'Guests who meet Coastal\'s requirements'),
         ('no-one', 'No one. I will read and approve every request within 24 hours'),
@@ -155,6 +160,12 @@ class Product(models.Model):
     sale_price = models.FloatField(default=0, null=True, blank=True)
     sale_usd_price = models.FloatField('Sale USD Price', default=0, null=True, blank=True)
 
+    # experience info
+    exp_time_unit = models.CharField(max_length=32, choices=EXPERIENCE_UNIT_CHOICES, blank=True)
+    exp_time_length = models.PositiveSmallIntegerField(blank=True, null=True)
+    exp_start_time = models.TimeField(blank=True, null=True)
+    exp_end_time = models.TimeField(blank=True, null=True)
+
     # description
     name = models.CharField(max_length=255, null=True, blank=True)
     description = models.TextField(null=True, blank=True)
@@ -193,7 +204,7 @@ class Product(models.Model):
         if not self.productimage_set:
             return False
 
-        if not (self.for_sale or self.for_rental):
+        if not (self.for_sale or self.for_rental) and self.category_id != defs.CATEGORY_EXPERIENCE:
             return False
 
         if self.for_rental:
@@ -206,6 +217,9 @@ class Product(models.Model):
 
         if self.category_id == defs.CATEGORY_JET:
             if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year):
+                return False
+        elif self.category_id == defs.CATEGORY_EXPERIENCE:
+            if not (self.exp_start_time and self.exp_end_time and self.exp_time_length and self.exp_time_unit):
                 return False
         elif self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
             if not (self.rooms and self.sleeps and self.beds and self.bathrooms):

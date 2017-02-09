@@ -68,16 +68,8 @@ def sale_detail(request):
         return CoastalJsonResponse(status=response.STATUS_404)
 
     result = {
-        'owner': {
-            'id': sale_offer.owner_id,
-            'photo': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
-            'name': sale_offer.owner.get_full_name() or get_email_cipher(sale_offer.owner.email),
-        },
-        'guest': {
-            'id': sale_offer.guest_id,
-            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
-            'name': sale_offer.guest.get_full_name() or get_email_cipher(sale_offer.guest.email),
-        },
+        'owner': sale_offer.owner.basic_info(),
+        'guest': sale_offer.guest.basic_info(),
         'product': {
             'id': sale_offer.product.id,
             'name': sale_offer.product.name,

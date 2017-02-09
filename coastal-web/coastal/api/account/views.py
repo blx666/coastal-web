@@ -45,7 +45,7 @@ def register(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -82,7 +82,7 @@ def facebook_login(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -107,7 +107,7 @@ def login(request):
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
     else:
         data = {
@@ -156,7 +156,7 @@ def update_profile(request):
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -172,7 +172,7 @@ def my_profile(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -267,16 +267,8 @@ def my_activity(request):
 
             data = {
                 'id': order.id,
-                'owner': {
-                    'id': order.owner_id,
-                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
-                },
-                'guest': {
-                    'id': order.guest_id,
-                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
-                },
+                'owner': order.owner.basic_info(),
+                'guest': order.guest.basic_info(),
                 'product': {
                     'id': order.product_id,
                     'image': order.product.get_main_image(),
@@ -292,16 +284,8 @@ def my_activity(request):
         else:
             data = {
                 'id': order.id,
-                'owner': {
-                    'id': order.owner_id,
-                    'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name() or get_email_cipher(order.owner.email),
-                },
-                'guest': {
-                    'id': order.guest_id,
-                    'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name() or get_email_cipher(order.guest.email),
-                },
+                'owner': order.owner.basic_info(),
+                'guest': order.guest.basic_info(),
                 'product': {
                     'id': order.product_id,
                     'image': order.product.get_main_image(),
@@ -327,7 +311,7 @@ def my_account(request):
             'name': user.get_full_name(),
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
     }
 
@@ -390,7 +374,7 @@ def my_account(request):
 
             if order.owner == request.user:
                 order_info['name'] = '%s booked %s at your %s at %s' % (
-                    order.guest.get_full_name(),
+                    order.guest.basic_info()['name'],
                     order.get_time_length_display(),
                     order.product.category.name,
                     order.product.city
@@ -398,7 +382,7 @@ def my_account(request):
             else:
                 order_info['name'] = 'I booked %s at %s\'s %s at %s' % (
                     order.get_time_length_display(),
-                    order.owner.get_full_name(),
+                    order.owner.basic_info()['name'],
                     order.product.category.name,
                     order.product.city
                 )
@@ -407,12 +391,12 @@ def my_account(request):
 
             if request.user == order.owner:
                 order_info['name'] = '%s bought %s at %s' % (
-                    order.guest.get_full_name(),
+                    order.guest.basic_info()['name'],
                     order.product.category.name,
                     order.product.city)
             else:
                 order_info['name'] = 'I bought %s\'s %s at %s' % (
-                    order.owner.get_full_name(),
+                    order.owner.basic_info()['name'],
                     order.product.category.name,
                     order.product.city
                 )
