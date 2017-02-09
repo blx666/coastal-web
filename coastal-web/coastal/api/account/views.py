@@ -142,8 +142,8 @@ def update_profile(request):
         for key in form.data:
             if key == 'name':
                 name_list = form.cleaned_data['name'].split()
-                setattr(user, 'first_name', name_list.pop())
-                setattr(user, 'last_name', ' '.join(name_list))
+                setattr(user, 'last_name', name_list.pop())
+                setattr(user, 'first_name', ' '.join(name_list))
             else:
                 if key in form.cleaned_data:
                     setattr(user.userprofile, key, form.cleaned_data[key])
