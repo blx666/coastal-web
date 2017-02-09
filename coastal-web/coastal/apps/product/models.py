@@ -204,7 +204,7 @@ class Product(models.Model):
         if not self.productimage_set:
             return False
 
-        if not (self.for_sale or self.for_rental):
+        if not (self.for_sale or self.for_rental) and self.category_id != defs.CATEGORY_EXPERIENCE:
             return False
 
         if self.for_rental:
