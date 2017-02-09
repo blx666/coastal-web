@@ -61,6 +61,9 @@ def facebook_login(request):
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
         auth_login(request, user)
+        name_list = form.cleaned_data['name'].split()
+        User.objects.update_or_create(username=form.cleaned_data['userid'], defaults={'email': form.cleaned_data['email'],
+                                      'first_name': name_list.pop(), 'last_name': ' '.join(name_list)})
     else:
         name_list = form.cleaned_data['name'].split()
         user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
