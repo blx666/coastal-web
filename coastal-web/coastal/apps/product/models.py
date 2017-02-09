@@ -254,8 +254,20 @@ class Product(models.Model):
     def get_rental_price_display(self):
         return price_display(self.rental_price, self.currency)
 
+    def new_rental_unit(self):
+        if self.category_id == defs.CATEGORY_EXPERIENCE:
+            return 'Person (%s)' % self.get_exp_time_display()
+        return self.get_rental_unit_display()
+
     def get_sale_price_display(self):
         return price_display(self.sale_price, self.currency)
+
+    def get_exp_time_display(self):
+        return '%s %s%s' % (
+            self.exp_time_length,
+            self.get_exp_time_unit_display(),
+            self.exp_time_length > 1 and 's' or ''
+        )
 
     def get_product_type(self):
         if self.for_rental and self.for_sale:

@@ -58,13 +58,10 @@ def home(request):
             'length': product.length or 0,
             'beds': product.beds or 0,
             "category": product.category_id,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         })
-        if product.category_id == product_defs.CATEGORY_EXPERIENCE:
-            product_data['rental_price_display'] = price_display(product.rental_price, product.currency)\
-                + ('/Person (%d %ss)' % (product.exp_time_length, product.get_exp_time_unit_display()))
         liked_product_id_list = []
         if request.user.is_authenticated:
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(

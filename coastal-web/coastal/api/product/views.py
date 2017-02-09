@@ -128,8 +128,7 @@ def product_list(request):
                                          fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length'])
             product_data.update({
                 'rental_price': product.rental_price,
-                'rental_price_display': price_display(product.rental_price, product.currency) + '/Person (%d %ss)' %
-                (product.exp_time_length,product.get_exp_time_unit_display()),
+                'rental_price_display': price_display(product.rental_price, product.currency) + '/' + product.new_rental_unit(),
         })
         elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
