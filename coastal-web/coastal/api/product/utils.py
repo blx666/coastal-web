@@ -25,7 +25,7 @@ def get_similar_products(product):
         if product.rental_price:
             price = product.rental_price
             if similar_distance_product:
-                price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
+                price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price').exclude(id__in=similar_distance_product.values_list('id', flat=True))
             else:
                 price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
             product_index = list(price_order).index(product)
@@ -38,7 +38,7 @@ def get_similar_products(product):
         else:
             price = product.sale_price
             if similar_distance_product:
-                price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+                price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price').exclude(id__in=similar_distance_product.values_list('id', flat=True))
             else:
                 price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
             product_index = list(price_order).index(product)
