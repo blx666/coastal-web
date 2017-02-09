@@ -118,7 +118,7 @@ class ProductAddForm(forms.ModelForm):
             try:
                 return int(max_guests[:-1])
             except ValueError:
-                return ''
+                raise forms.ValidationError('The max_guests value is invalid.')
 
     class Meta:
         model = Product

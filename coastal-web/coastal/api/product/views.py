@@ -208,8 +208,8 @@ def product_detail(request, pid):
     if product.get_amenities_display():
         data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
-    if product.get_rental_unit_display():
-        data['rental_unit'] = product.get_rental_unit_display()
+    if product.new_rental_unit():
+        data['rental_unit'] = product.new_rental_unit()
     else:
         data['rental_unit'] = 'Day'
     if product.description:
@@ -221,11 +221,7 @@ def product_detail(request, pid):
     else:
         data['rental_price'] = 0
     data['liked'] = product.id in liked_product_id_list
-    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
-        data['rental_price_display'] = price_display(product.rental_price, product.currency)\
-                + ('/Person (%d %ss)' % (product.exp_time_length, product.get_exp_time_unit_display()))
-    else:
-        data['rental_price_display'] = product.get_rental_price_display()
+    data['rental_price_display'] = product.get_rental_price_display()
     data['sale_price_display'] = product.get_sale_price_display()
     images = []
     views = []
