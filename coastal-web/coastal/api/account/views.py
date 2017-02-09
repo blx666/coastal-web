@@ -36,6 +36,8 @@ def register(request):
 
     cleaned_data = register_form.cleaned_data
     user = create_user(cleaned_data['email'], cleaned_data['password'])
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 (cleaned_data['email'], cleaned_data['token'], cleaned_data['uuid'], ))
 
     auth_login(request, user)
     if cleaned_data['uuid'] and cleaned_data['token']:
@@ -186,8 +188,7 @@ def my_profile(request):
 
 @login_required
 def logout(request):
-    logger.debug('Logout  user is %s, User token is %s, User client is %s' %
-                 (request.user, request.user.tokens.token if hasattr(request.user.tokens, 'token') else '', request.user.userprofile.client))
+    logger.debug('Logout user is %s, unbind token is %s %' % (request.user, request.POST.get('token')))
     unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
