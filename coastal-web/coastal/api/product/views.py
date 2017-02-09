@@ -123,7 +123,15 @@ def product_list(request):
     data = []
 
     for product in products:
-        if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
+        if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length'])
+            product_data.update({
+                'rental_price': product.rental_price,
+                'rental_price_display': price_display(product.rental_price, product.currency) + '/Person (%d %ss)' %
+                (product.exp_time_length,product.get_exp_time_unit_display()),
+        })
+        elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
                                                  'max_guests'])
@@ -181,8 +189,10 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
-
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length', 'category', 'exp_start_time', 'exp_end_time', 'currency', 'city'])
+    else:
+        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
         data['max_guests'] = product.max_guests
 
@@ -212,7 +222,11 @@ def product_detail(request, pid):
     else:
         data['rental_price'] = 0
     data['liked'] = product.id in liked_product_id_list
-    data['rental_price_display'] = product.get_rental_price_display()
+    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+        data['rental_price_display'] = price_display(product.rental_price, product.currency)\
+                + ('/Person (%d %ss)' % (product.exp_time_length, product.get_exp_time_unit_display()))
+    else:
+        data['rental_price_display'] = product.get_rental_price_display()
     data['sale_price_display'] = product.get_sale_price_display()
     images = []
     views = []
