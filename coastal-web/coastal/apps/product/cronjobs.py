@@ -41,4 +41,5 @@ def exchange_rate():
     for product in products:
         currency_rate = get_exchange_rate(product.currency)
         product.rental_usd_price = math.ceil(product.rental_price / currency_rate)
+        product.sale_usd_price = math.ceil(product.sale_price / currency_rate)
         product.save()

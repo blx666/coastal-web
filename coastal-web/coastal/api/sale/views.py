@@ -14,6 +14,7 @@ from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, p
     publish_paid_owner_offer
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
+from coastal.api.product.utils import get_email_cipher
 
 
 @login_required
@@ -37,7 +38,6 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-
         expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
         try:
             publish_confirmed_offer(sale_offer)
@@ -50,6 +50,7 @@ def approve(request):
 
     result = {
         'status': sale_offer.get_status_display(),
+        'sale_offer_id': sale_offer.id,
     }
     result.update(sale_payment_info(sale_offer, request.user))
     return CoastalJsonResponse(result)
@@ -67,16 +68,8 @@ def sale_detail(request):
         return CoastalJsonResponse(status=response.STATUS_404)
 
     result = {
-        'owner': {
-            'id': sale_offer.owner_id,
-            'photo': sale_offer.owner.userprofile.photo and sale_offer.owner.userprofile.photo.url or '',
-            'name': sale_offer.owner.get_full_name() or '',
-        },
-        'guest': {
-            'id': sale_offer.guest_id,
-            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or '',
-            'name': sale_offer.guest.get_full_name() or ''
-        },
+        'owner': sale_offer.owner.basic_info(),
+        'guest': sale_offer.guest.basic_info(),
         'product': {
             'id': sale_offer.product.id,
             'name': sale_offer.product.name,

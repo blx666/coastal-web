@@ -112,6 +112,7 @@ def publish_confirmed_order(rental_order):
         'type': 'confirmed_order',
         'is_rental': True,
         'rental_order_id': rental_order.id,
+        'product_id': product.id,
         'product_name': product.product.name,
         'product_image': product.get_main_image(),
         'rental_order_status': rental_order.get_status_display(),
@@ -194,7 +195,7 @@ def publish_new_offer(sale_offer):
     product = sale_offer.product
     extra_attr = {
         'type': 'get_offer',
-        'rental_order_id': sale_offer.id,
+        'sale_offer_id': sale_offer.id,
         'product_id': product.id,
         'product_name': product.name,
         'product_image': product.get_main_image(),
@@ -213,10 +214,11 @@ def publish_confirmed_offer(sale_offer):
     extra_attr = {
         'type': 'confirmed_offer',
         'is_rental': False,
-        'rental_order_id': sale_offer.id,
+        'sale_offer_id': sale_offer.id,
+        'product_id': product.id,
         'product_name': product.name,
         'product_image': product.get_main_image(),
-        'rental_order_status': sale_offer.get_status_display(),
+        'sale_offer_status': sale_offer.get_status_display(),
         'total_price_display': sale_offer.get_price_display(),
 
     }
@@ -280,11 +282,7 @@ def publish_paid_owner_offer(sale_offer):
             'for_rental': sale_offer.product.for_rental,
             'for_sale': sale_offer.product.for_sale,
         },
-        'guest': {
-            'id': sale_offer.guest.id,
-            'name': sale_offer.guest.get_full_name(),
-            'photo': sale_offer.guest.userprofile.photo and sale_offer.guest.userprofile.photo.url or ''
-        }
+        'guest': sale_offer.guest.basic_info(),
     }
     push_notification(owner, message, extra_attr)
 

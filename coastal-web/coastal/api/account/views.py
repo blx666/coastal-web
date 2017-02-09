@@ -19,7 +19,7 @@ from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
-from coastal.api.product.utils import bind_product_image, get_products_by_id
+from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
 
 
@@ -45,7 +45,7 @@ def register(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -65,7 +65,7 @@ def facebook_login(request):
         name_list = form.cleaned_data['name'].split()
         user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
-        UserProfile.objects.create(user=user, email_confirmed='confirmed')
+        UserProfile.objects.create(user=user, email_confirmed='confirmed', client='facebook')
         CoastalBucket.objects.create(user=user)
         auth_login(request, user)
 
@@ -79,7 +79,7 @@ def facebook_login(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -104,7 +104,7 @@ def login(request):
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
     else:
         data = {
@@ -121,7 +121,7 @@ def check_email(request):
     form = CheckEmailForm(request.POST)
     if form.is_valid():
         return CoastalJsonResponse({
-            'exists': User.objects.filter(email=form.cleaned_data['email']).exists()
+            'exists': User.objects.filter(username=form.cleaned_data['email'].lower()).exists()
         })
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
@@ -139,8 +139,8 @@ def update_profile(request):
         for key in form.data:
             if key == 'name':
                 name_list = form.cleaned_data['name'].split()
-                setattr(user, 'first_name', name_list.pop())
-                setattr(user, 'last_name', ' '.join(name_list))
+                setattr(user, 'last_name', name_list.pop())
+                setattr(user, 'first_name', ' '.join(name_list))
             else:
                 if key in form.cleaned_data:
                     setattr(user.userprofile, key, form.cleaned_data[key])
@@ -153,7 +153,7 @@ def update_profile(request):
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -169,7 +169,7 @@ def my_profile(request):
         'email': user.email,
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
-        'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+        'photo': user.basic_info()['photo'],
     }
     return CoastalJsonResponse(data)
 
@@ -197,16 +197,16 @@ def validate_email(request):
         user.userprofile.save()
     validate_instance = ValidateEmail()
     validate_instance.save(user=user)
-    subject = 'user validate email'
+    subject = 'Email Verification'
     message = '''Hi %s,
 
-                To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
-                http://%s/account/confirm-email/?token=%s
-                The link will be invalid 24 hours later. Please resend if this happens.
+  To complete the process of publishing and transaction on Coastal, you must confirm your email address below:
+http://%s/account/confirm-email/?token=%s
+The link will be invalid 24 hours later. Please resend if this happens.
 
-                Thanks,
-                The Coastal Team
-                ''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
+Thanks,
+The Coastal Team
+''' % (user.email, settings.SITE_DOMAIN, validate_instance.token)
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email], connection=None, html_message=None)
     data = {'email_confirmed': user.userprofile.email_confirmed}
     return CoastalJsonResponse(data)
@@ -222,8 +222,7 @@ def my_activity(request):
         'orders': []
     }
     user = request.user
-
-    recently_viewed = user.recently_viewed.all()[0:20]
+    recently_viewed = user.recently_viewed.order_by('-date_created')[0:20]
     products = get_products_by_id(recently_viewed.values_list('product_id', flat=True))
     for item in recently_viewed:
         p = products[item.product_id]
@@ -265,16 +264,8 @@ def my_activity(request):
 
             data = {
                 'id': order.id,
-                'owner': {
-                    'id': order.owner_id,
-                    'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name(),
-                },
-                'guest': {
-                    'id': order.guest_id,
-                    'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
-                },
+                'owner': order.owner.basic_info(),
+                'guest': order.guest.basic_info(),
                 'product': {
                     'id': order.product_id,
                     'image': order.product.get_main_image(),
@@ -290,16 +281,8 @@ def my_activity(request):
         else:
             data = {
                 'id': order.id,
-                'owner': {
-                    'id': order.owner_id,
-                    'image': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-                    'name': order.owner.get_full_name(),
-                },
-                'guest': {
-                    'id': order.guest_id,
-                    'image': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-                    'name': order.guest.get_full_name(),
-                },
+                'owner': order.owner.basic_info(),
+                'guest': order.guest.basic_info(),
                 'product': {
                     'id': order.product_id,
                     'image': order.product.get_main_image(),
@@ -325,7 +308,7 @@ def my_account(request):
             'name': user.get_full_name(),
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
-            'photo': user.userprofile.photo.url if user.userprofile.photo else '',
+            'photo': user.basic_info()['photo'],
         }
     }
 
@@ -388,7 +371,7 @@ def my_account(request):
 
             if order.owner == request.user:
                 order_info['name'] = '%s booked %s at your %s at %s' % (
-                    order.guest.get_full_name(),
+                    order.guest.basic_info()['name'],
                     order.get_time_length_display(),
                     order.product.category.name,
                     order.product.city
@@ -396,7 +379,7 @@ def my_account(request):
             else:
                 order_info['name'] = 'I booked %s at %s\'s %s at %s' % (
                     order.get_time_length_display(),
-                    order.owner.get_full_name(),
+                    order.owner.basic_info()['name'],
                     order.product.category.name,
                     order.product.city
                 )
@@ -405,12 +388,12 @@ def my_account(request):
 
             if request.user == order.owner:
                 order_info['name'] = '%s bought %s at %s' % (
-                    order.guest.get_full_name(),
+                    order.guest.basic_info()['name'],
                     order.product.category.name,
                     order.product.city)
             else:
                 order_info['name'] = 'I bought %s\'s %s at %s' % (
-                    order.owner.get_full_name(),
+                    order.owner.basic_info()['name'],
                     order.product.category.name,
                     order.product.city
                 )

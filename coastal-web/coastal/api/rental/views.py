@@ -8,7 +8,7 @@ from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.payment.utils import get_payment_info
 from coastal.apps.payment.stripe import charge as stripe_charge
 from coastal.apps.payment.coastal import charge as coastal_charge
-from coastal.api.product.utils import calc_price
+from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user
@@ -42,10 +42,6 @@ def book_rental(request):
 
     if product.is_no_one:
         rental_order.status = 'request'
-        try:
-            publish_get_order(rental_order)
-        except (NoEndpoint, DisabledEndpoint):
-            pass
     else:
         rental_order.status = 'charge'
 
@@ -82,6 +78,10 @@ def book_rental(request):
         expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
 
     if rental_order.status == 'request':
+        try:
+            publish_get_order(rental_order)
+        except (NoEndpoint, DisabledEndpoint):
+            pass
         expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     return CoastalJsonResponse(result)
@@ -128,7 +128,8 @@ def rental_approve(request):
             pass
 
     result = {
-        'status': rental_order.get_status_display()
+        'status': rental_order.get_status_display(),
+        'rental_order_id': rental_order.id,
     }
 
     if rental_order.status == 'charge':
@@ -254,16 +255,8 @@ def order_detail(request):
                 'name': '%s Rules' % order.product.category.name
             },
         },
-        'owner': {
-            'id': order.owner.id,
-            'photo': order.owner.userprofile.photo and order.owner.userprofile.photo.url or '',
-            'name': order.owner.get_full_name(),
-        },
-        'guest': {
-            'id': order.guest.id,
-            'photo': order.guest.userprofile.photo and order.guest.userprofile.photo.url or '',
-            'name': order.guest.get_full_name()
-        },
+        'owner': order.owner.basic_info(),
+        'guest': order.guest.basic_info(),
         'guests': order.guest_count,
         'start_date': start_datetime,
         'end_date': end_datetime,

@@ -3,7 +3,6 @@ import datetime
 
 from django import forms
 from django.contrib.gis.geos import Point
-from django.utils import timezone
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
 
@@ -22,6 +21,8 @@ class ProductAddForm(forms.ModelForm):
     black_out_dates = forms.CharField(required=False)
     for_sale = forms.CharField(required=False)
     for_rental = forms.CharField(required=False)
+    exp_start_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
+    exp_end_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
@@ -149,7 +150,7 @@ class ProductListFilterForm(forms.Form):
     max_price = forms.DecimalField(required=False)
     sort = forms.CharField(required=False)
     category = forms.CharField(required=False)
-    purchase_or_rent = forms.CharField(required=False)
+    purchase_or_buy = forms.CharField(required=False)
     min_coastline_distance = forms.IntegerField(required=False)
     max_coastline_distance = forms.IntegerField(required=False)
 
@@ -165,11 +166,17 @@ class ProductListFilterForm(forms.Form):
                 return int(guests[:-1]) + 1
             except ValueError:
                 return ''
+        else:
+            return guests
 
     def clean(self):
-        purchase_or_rent = self.cleaned_data.get('purchase_or_rent')
-        self.cleaned_data['for_rental'] = purchase_or_rent == 'rent'
-        self.cleaned_data['for_sale'] = purchase_or_rent == 'sale'
+        purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
+        self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
+        self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
+        if self.cleaned_data['for_sale']:
+            self.cleaned_data['price_field'] = 'sale_usd_price'
+        else:
+            self.cleaned_data['price_field'] = 'rental_usd_price'
 
 
 class DiscountCalculatorFrom(forms.Form):

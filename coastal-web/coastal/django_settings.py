@@ -119,6 +119,11 @@ AUTH_PASSWORD_VALIDATORS = [
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'formatters': {
+        'simple': {
+            'format': '%(levelname)s %(asctime)s %(message)s'
+        }
+    },
     'handlers': {
         'mail_admins': {
             'level': 'ERROR',
@@ -128,6 +133,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, "coastal.log"),
+            'formatter': 'simple',
         },
     },
     'loggers': {
@@ -184,4 +190,4 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
-DEFAULT_FROM_EMAIL = "donotreply@coastal.com"
+DEFAULT_FROM_EMAIL = "donotreply@itscoastal.com"
