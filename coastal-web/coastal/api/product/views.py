@@ -123,7 +123,14 @@ def product_list(request):
     data = []
 
     for product in products:
-        if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
+        if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length'])
+            product_data.update({
+                'rental_price': product.rental_price,
+                'rental_price_display': price_display(product.rental_price, product.currency) + '/' + product.new_rental_unit(),
+        })
+        elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
                                                  'max_guests'])
@@ -181,8 +188,10 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
-
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length', 'category', 'exp_start_time', 'exp_end_time', 'currency', 'city'])
+    else:
+        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
         data['max_guests'] = product.max_guests
 
@@ -199,8 +208,8 @@ def product_detail(request, pid):
     if product.get_amenities_display():
         data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
-    if product.get_rental_unit_display():
-        data['rental_unit'] = product.get_rental_unit_display()
+    if product.new_rental_unit():
+        data['rental_unit'] = product.new_rental_unit()
     else:
         data['rental_unit'] = 'Day'
     if product.description:
@@ -294,7 +303,7 @@ def product_detail(request, pid):
         content['rooms'] = p.rooms or 0
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
-        content['rental_unit'] = p.rental_unit
+        content['rental_unit'] = p.new_rental_unit()
         content['image'] = p.main_image and p.main_image.image.url or ''
 
         similar_product_dict.append(content)

@@ -10,6 +10,8 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_main_image
 from coastal.apps.account.models import FavoriteItem
 from coastal.api import defines as defs
+from coastal.apps.product import defines as product_defs
+from coastal.apps.currency.utils import price_display
 
 
 def home(request):
@@ -56,7 +58,7 @@ def home(request):
             'length': product.length or 0,
             'beds': product.beds or 0,
             "category": product.category_id,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         })
