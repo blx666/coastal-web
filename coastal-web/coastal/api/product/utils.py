@@ -24,7 +24,10 @@ def get_similar_products(product):
     if product.status == 'published' and (product.rental_price or product.sale_price):
         if product.rental_price:
             price = product.rental_price
-            price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
+            if similar_distance_product:
+                price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price').exclude(id__in=similar_distance_product.values_list('id', flat=True))
+            else:
+                price_order = Product.objects.filter(status='published', rental_price__gt=0).order_by('rental_price')
             product_index = list(price_order).index(product)
             if product_index >= 8:
                 price_order_product = price_order[product_index - 8: product_index + 8]
@@ -32,13 +35,12 @@ def get_similar_products(product):
                 price_order_product = price_order[0:product_index + 8]
             similar_price_product = sorted(price_order_product,
                                            key=lambda price_order_product: abs(price_order_product.rental_price - price))
-            similar_price_product = list(similar_price_product)
-
-            similar_price_product.reverse()
-            similar_price_product.remove(product)
         else:
             price = product.sale_price
-            price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
+            if similar_distance_product:
+                price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price').exclude(id__in=similar_distance_product.values_list('id', flat=True))
+            else:
+                price_order = Product.objects.filter(status='published', sale_price__gt=0).order_by('sale_price')
             product_index = list(price_order).index(product)
             if product_index >= 8:
                 price_order_product = price_order[product_index - 8: product_index + 8]
@@ -46,18 +48,15 @@ def get_similar_products(product):
                 price_order_product = price_order[0:product_index + 8]
             similar_price_product = sorted(price_order_product,
                                            key=lambda price_order_product: abs(price_order_product.sale_price - price))
-            similar_price_product = list(similar_price_product)
+        similar_price_product = list(similar_price_product)
 
-            similar_price_product.reverse()
-            similar_price_product.remove(product)
+        similar_price_product.reverse()
+        similar_price_product.remove(product)
+        similar_price_product = similar_price_product[0:8]
     else:
         similar_price_product = []
 
-    for similar_price in similar_price_product:
-        if similar_price in similar_distance_product:
-            similar_price_product.remove(similar_price)
-    similar_product = similar_distance_product
-    similar_product = similar_product[0:20]
+    similar_product = list(similar_distance_product) + similar_price_product
     pis = ProductImage.objects.filter(product__in=similar_product)
     for product in similar_product:
         product.images = []
