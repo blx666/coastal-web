@@ -61,6 +61,8 @@ def facebook_login(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s, User name is %s, User client is Facebook' %
+                 (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
         auth_login(request, user)
@@ -84,8 +86,7 @@ def facebook_login(request):
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
     }
-    logger.info('Logging  user is %s, User token is %s, User client is %s' % (user,
-                user.tokens.token if hasattr(user.tokens, 'token') else '', user.userprofile.client))
+
     return CoastalJsonResponse(data)
 
 
@@ -94,6 +95,8 @@ def login(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid'))
     if user:
         auth_login(request, user)
 
@@ -111,9 +114,6 @@ def login(request):
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
         }
-
-        logger.info('Logging user is %s, User token is %s, User client is %s' %
-                    (user, user.tokens.token if hasattr(user.tokens, 'token') else None, user.userprofile.client))
     else:
         data = {
             "logged": request.user.is_authenticated(),
@@ -186,8 +186,8 @@ def my_profile(request):
 
 @login_required
 def logout(request):
-    logger.info('Logout  user is %s, User token is %s, User client is %s' % (request.user,
-                request.user.tokens.token if hasattr(request.user.tokens, 'token') else '', request.user.userprofile.client))
+    logger.debug('Logout  user is %s, User token is %s, User client is %s' %
+                 (request.user, request.user.tokens.token if hasattr(request.user.tokens, 'token') else '', request.user.userprofile.client))
     unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
