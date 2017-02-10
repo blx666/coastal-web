@@ -119,7 +119,8 @@ class ProductAddForm(forms.ModelForm):
                 return int(max_guests[:-1])
             except ValueError:
                 raise forms.ValidationError('The max_guests value is invalid.')
-        return  max_guests
+        return max_guests
+
     class Meta:
         model = Product
         exclude = ['owner', 'score', 'status', 'timezone']
