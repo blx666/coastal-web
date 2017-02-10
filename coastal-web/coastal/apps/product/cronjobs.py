@@ -40,6 +40,8 @@ def exchange_rate():
     products = Product.objects.all()
     for product in products:
         currency_rate = get_exchange_rate(product.currency)
-        product.rental_usd_price = math.ceil(product.get_price('day') / currency_rate)
-        product.sale_usd_price = math.ceil(product.sale_price / currency_rate)
+        if product.rental_price and product.rental_unit:
+            product.rental_usd_price = math.ceil(product.get_price('day') / currency_rate)
+        if product.sale_price:
+            product.sale_usd_price = math.ceil(product.sale_price / currency_rate)
         product.save()
