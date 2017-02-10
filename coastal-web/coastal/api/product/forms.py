@@ -21,8 +21,8 @@ class ProductAddForm(forms.ModelForm):
     black_out_dates = forms.CharField(required=False)
     for_sale = forms.CharField(required=False)
     for_rental = forms.CharField(required=False)
-    exp_start_time = forms.TimeField(input_formats=['%I:%M %p'])
-    exp_end_time = forms.TimeField(input_formats=['%I:%M %p'])
+    exp_start_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
+    exp_end_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
     max_guests = forms.CharField(required=False)
 
     def clean_currency(self):
