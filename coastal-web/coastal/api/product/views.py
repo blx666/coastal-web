@@ -189,7 +189,9 @@ def product_detail(request, pid):
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
     if product.category_id == product_defs.CATEGORY_EXPERIENCE:
-        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length', 'category', 'exp_start_time', 'exp_end_time', 'currency', 'city'])
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length', 'category', 'currency', 'city'])
+        data['exp_start_time'] = product.exp_start_time.strftime('%I:%M %p') or ''
+        data['exp_end_time'] = product.exp_end_time.strftime('%I:%M %p') or ''
     else:
         data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
@@ -926,7 +928,7 @@ def all_detail(request):
         'for_sale': product.for_sale,
         'rental_price': product.rental_price or 0,
         'rental_price_display': product.get_rental_price_display(),
-        'rental_unit': product.get_rental_unit_display(),
+        'rental_unit': product.new_rental_unit(),
         'currency': product.currency,
         'sale_price': product.sale_price or 0,
         'sale_price_display': product.get_sale_price_display(),
@@ -944,6 +946,10 @@ def all_detail(request):
         'desc_interaction': product.desc_interaction or '',
         'desc_getting_around': product.desc_getting_around or '',
         'desc_other_to_note': product.desc_other_to_note or '',
+        'exp_time_unit ': product.get_exp_time_unit_display() or '',
+        'exp_time_length': product.exp_time_length or 0,
+        'exp_start_time': product.exp_start_time.strftime('%I:%M %p') or '',
+        'exp_end_time': product.exp_end_time.strftime('%I:%M %p') or '',
     }
     result.update(discount)
     return CoastalJsonResponse(result)
