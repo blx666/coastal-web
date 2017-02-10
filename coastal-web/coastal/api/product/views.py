@@ -243,6 +243,7 @@ def product_detail(request, pid):
         'user_id': product.owner_id,
         'name': product.owner.basic_info()['name'],
         'photo': product.owner.basic_info()['photo'],
+        'purpose': product.owner.userprofile.purpose,
     }
     reviews = Review.objects.filter(product=product).order_by('-date_created')
     last_review = reviews.first()
@@ -797,6 +798,7 @@ def product_owner(request):
         'name': user.first_name,
         'email': secure_email(user.email),
         'photo': user.basic_info()['photo'],
+        'purpose': user.userprofile.purpose,
     }
     if reviews:
         latest_review = {

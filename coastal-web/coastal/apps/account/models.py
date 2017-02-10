@@ -53,6 +53,7 @@ class UserProfile(models.Model):
     email_confirmed = models.CharField(max_length=32, choices=state, blank=True, default='unconfirmed')
     stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
     client = models.CharField(max_length=20, default='', blank=True, choices=CLIENT_CHOICES)
+    purpose = models.TextField(default='')
 
     @property
     def has_agency_info(self):
