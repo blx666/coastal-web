@@ -98,7 +98,7 @@ def login(request):
 
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
     logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
-                 (request.POST.get('username'), request.POST.get('token', None), request.POST.get('uuid', None)))
+                 (request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid')))
     if user:
         auth_login(request, user)
 
@@ -188,7 +188,7 @@ def my_profile(request):
 
 @login_required
 def logout(request):
-    logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token', None)))
+    logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
     unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
