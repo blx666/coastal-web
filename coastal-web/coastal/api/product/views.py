@@ -381,8 +381,8 @@ def calc_total_price(request):
     end_datetime = form.cleaned_data['end_datetime']
     rental_unit = form.cleaned_data['rental_unit']
     product = form.cleaned_data['product']
-    guest_count = form.cleaned_data['guest_count']
-    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime, guest_count)[1]
+
+    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime)[1]
     data = [{
         'amount': total_amount,
         'currency': product.currency,
