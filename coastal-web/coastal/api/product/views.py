@@ -189,9 +189,10 @@ def product_detail(request, pid):
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
     if product.category_id == product_defs.CATEGORY_EXPERIENCE:
-        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length', 'category', 'currency', 'city'])
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
         data['exp_start_time'] = product.exp_start_time.strftime('%I:%M %p') or ''
         data['exp_end_time'] = product.exp_end_time.strftime('%I:%M %p') or ''
+        data['exp_time_unit'] = product.get_exp_time_unit_display()
     else:
         data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
@@ -380,8 +381,8 @@ def calc_total_price(request):
     end_datetime = form.cleaned_data['end_datetime']
     rental_unit = form.cleaned_data['rental_unit']
     product = form.cleaned_data['product']
-
-    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime)[1]
+    guest_count = form.cleaned_data['guest_count']
+    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime, guest_count)[1]
     data = [{
         'amount': total_amount,
         'currency': product.currency,
@@ -950,8 +951,8 @@ def all_detail(request):
         'desc_other_to_note': product.desc_other_to_note or '',
         'exp_time_unit ': product.get_exp_time_unit_display() or '',
         'exp_time_length': product.exp_time_length or 0,
-        'exp_start_time': product.exp_start_time.strftime('%I:%M %p') or '',
-        'exp_end_time': product.exp_end_time.strftime('%I:%M %p') or '',
+        'exp_start_time': product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
+        'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
     }
     result.update(discount)
     return CoastalJsonResponse(result)
