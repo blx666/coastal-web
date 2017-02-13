@@ -54,6 +54,7 @@ class UserProfile(models.Model):
     stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
     client = models.CharField(max_length=20, default='', blank=True, choices=CLIENT_CHOICES)
     invite_code = models.CharField(max_length=32, blank=True)
+    purpose = models.TextField(default='')
 
     @property
     def has_agency_info(self):

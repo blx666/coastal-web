@@ -23,6 +23,7 @@ class ProductAddForm(forms.ModelForm):
     for_rental = forms.CharField(required=False)
     exp_start_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
     exp_end_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
+    max_guests = forms.CharField(required=False)
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
@@ -111,6 +112,15 @@ class ProductAddForm(forms.ModelForm):
                     date_list.append([second_date, first_date + timedelta])
             return date_list
 
+    def clean_max_guests(self):
+        max_guests = self.cleaned_data['max_guests']
+        if max_guests and max_guests.endswith('+'):
+            try:
+                return int(max_guests[:-1])
+            except ValueError:
+                raise forms.ValidationError('The max_guests value is invalid.')
+        return max_guests
+
     class Meta:
         model = Product
         exclude = ['owner', 'score', 'status', 'timezone']
@@ -124,7 +134,7 @@ class ProductUpdateForm(ProductAddForm):
     )
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
-    max_guests = forms.IntegerField(required=False)
+    max_guests = forms.CharField(required=False)
     action = forms.ChoiceField(required=False, choices=ACTION_CHOICES)
 
     def clean(self):
@@ -163,7 +173,7 @@ class ProductListFilterForm(forms.Form):
         guests = self.cleaned_data.get('guests')
         if guests and guests.endswith('+'):
             try:
-                return int(guests[:-1]) + 1
+                return int(guests[:-1])
             except ValueError:
                 return ''
         else:
