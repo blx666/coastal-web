@@ -1,6 +1,6 @@
 from django.http.response import HttpResponseRedirect
 from django.utils import timezone
-from coastal.apps.account.models import ValidateEmail, InviteCode
+from coastal.apps.account.models import ValidateEmail, InviteRecord
 from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.account.forms import RegistrationForm
@@ -39,12 +39,11 @@ def sign_up(request, invite_code):
 
     cleaned_data = sign_up_form.cleaned_data
     user = create_user(cleaned_data['email'], cleaned_data['password'])
-
     auth_login(request, user)
     if cleaned_data['uuid'] and cleaned_data['token']:
         bind_token(cleaned_data['uuid'], cleaned_data['token'], user)
     referrer = User.objects.get(userprofile=UserProfile.objects.get(invite_code=invite_code))
-    InviteCode.objects.create(invite_code=invite_code, user=user, referrer=referrer)
+    InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
     data = {
         'user_id': user.id,
         'logged': request.user.is_authenticated(),

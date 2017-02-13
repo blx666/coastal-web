@@ -126,8 +126,13 @@ class Transaction(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
 
-class InviteCode(models.Model):
+class InviteRecord(models.Model):
     user = models.ForeignKey(User, related_name='user_invite_code')
     referrer = models.ForeignKey(User, related_name='referrer_invite_code')
     invite_code = models.CharField(max_length=32)
     date_create = models.DateTimeField(auto_now_add=True)
+
+
+class InviteCode(models.Model):
+    invite_code = models.CharField(max_length=32, unique=True)
+    used = models.BooleanField(default=False)

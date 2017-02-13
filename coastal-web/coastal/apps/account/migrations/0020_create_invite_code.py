@@ -7,29 +7,26 @@ import string
 
 def add_invite_codes(apps, schema_editor):
 
-    InviteCodes = apps.get_model('support', 'InviteCodes')
-    result = []
+    InviteCode = apps.get_model('account', 'InviteCode')
+    count = 0
     source = list(string.ascii_uppercase)
     source.extend('0123456789')
-    while len(result) < 1000000:
+    while count < 1000000:
         key = ''
         for index in range(11):
             key += random.choice(source)
-        if key in result:
-            pass
-        else:
-            result.append(key)
-            InviteCodes.objects.create(invite_code=key)
+        if InviteCode.objects.get_or_create(invite_code=key):
+            count += 1
 
 
 def reverse_add_invite_codes(apps, schema_editor):
-    InviteCodes = apps.get_model('support', 'InviteCodes')
-    InviteCodes.objects.all().delete()
+    InviteCode = apps.get_model('account', 'InviteCode')
+    InviteCode.objects.all().delete()
 
 
 class Migration(migrations.Migration):
     dependencies = [
-        ('support', '0004_invitecodes'),
+        ('account', '0019_invite_code_20170213_0201'),
     ]
 
     operations = [
