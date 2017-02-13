@@ -17,6 +17,5 @@ urlpatterns = [
 
     url(r'^stripe-info/$', views.stripe_info, name='stripe-info'),
     url(r'^login/facebook/$', views.facebook_login, name='facebook-login'),
-    url(r'^sign-up/(?P<invite_code>.+)/$', views.sign_up, name='sign-up'),
     url(r'^invite-code/$', views.invite_codes, name='invite-code'),
 ]
