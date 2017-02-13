@@ -19,3 +19,7 @@ class Helpcenter(models.Model):
     subject = models.CharField(max_length=225, null=True)
     content = models.TextField()
     create_date = models.DateTimeField(auto_now_add=True)
+
+
+class InviteCodes(models.Model):
+    invite_code = models.CharField(max_length=32)

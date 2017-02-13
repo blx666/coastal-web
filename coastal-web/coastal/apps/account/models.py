@@ -53,6 +53,7 @@ class UserProfile(models.Model):
     email_confirmed = models.CharField(max_length=32, choices=state, blank=True, default='unconfirmed')
     stripe_customer_id = models.CharField(max_length=255, blank=True, default='')
     client = models.CharField(max_length=20, default='', blank=True, choices=CLIENT_CHOICES)
+    invite_code = models.CharField(max_length=32, blank=True)
 
     @property
     def has_agency_info(self):
@@ -122,3 +123,10 @@ class Transaction(models.Model):
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
     order_number = models.CharField(max_length=64)
     date_created = models.DateTimeField(auto_now_add=True)
+
+
+class InviteCode(models.Model):
+    user = models.ForeignKey(User, related_name='user_invite_code')
+    referrer = models.ForeignKey(User, related_name='referrer_invite_code')
+    invite_code = models.CharField(max_length=32)
+    date_create = models.DateTimeField(auto_now_add=True)

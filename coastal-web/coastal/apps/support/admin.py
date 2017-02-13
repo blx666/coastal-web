@@ -1,5 +1,5 @@
 from django.contrib import admin
-from coastal.apps.support.models import Report, Helpcenter
+from coastal.apps.support.models import Report, Helpcenter, InviteCodes
 
 
 class ReportAdmin(admin.ModelAdmin):
@@ -11,3 +11,4 @@ admin.site.register(Report, ReportAdmin)
 class HelpAdmin(admin.ModelAdmin):
     list_display = ['email', 'subject', 'content']
 admin.site.register(Helpcenter, HelpAdmin)
+admin.site.register(InviteCodes)

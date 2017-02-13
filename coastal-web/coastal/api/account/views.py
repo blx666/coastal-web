@@ -13,7 +13,7 @@ from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
 from coastal.api.core.decorators import login_required
-from coastal.apps.account.models import ValidateEmail, FavoriteItem
+from coastal.apps.account.models import ValidateEmail, FavoriteItem, InviteCode
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
@@ -21,6 +21,7 @@ from coastal.apps.account.models import UserProfile, CoastalBucket
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
+from coastal.apps.support.models import InviteCodes
 
 
 def register(request):
@@ -481,3 +482,47 @@ def my_orders(request):
 @login_required
 def stripe_info(request):
     return CoastalJsonResponse(get_stripe_info(request.user))
+
+
+def sign_up(request, invite_code):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    sign_up_form = RegistrationForm(request.POST)
+    if not sign_up_form.is_valid():
+        return CoastalJsonResponse(sign_up_form.errors, status=response.STATUS_400)
+
+    cleaned_data = sign_up_form.cleaned_data
+    user = create_user(cleaned_data['email'], cleaned_data['password'])
+
+    auth_login(request, user)
+    if cleaned_data['uuid'] and cleaned_data['token']:
+        bind_token(cleaned_data['uuid'], cleaned_data['token'], user)
+    referrer = User.objects.get(userprofile=UserProfile.objects.get(invite_code=invite_code))
+    InviteCode.objects.create(invite_code=invite_code, user=user, referrer=referrer)
+    data = {
+        'user_id': user.id,
+        'logged': request.user.is_authenticated(),
+        "has_agency_info": user.userprofile.has_agency_info,
+        'email': user.email,
+        'email_confirmed': user.userprofile.email_confirmed,
+        'name': user.get_full_name(),
+        'photo': user.basic_info()['photo'],
+    }
+    return CoastalJsonResponse(data)
+
+
+@login_required
+def invite_codes(request):
+    import ipdb;ipdb.set_trace()
+    if not request.user.userprofile.invite_code:
+        invite_code = InviteCodes.objects.get(id=request.user.id).invite_code
+        UserProfile.objects.filter(user=request.user).update(invite_code=invite_code)
+    else:
+        invite_code = request.user.userprofile.invite_code
+    data = {
+        'invite_code': invite_code,
+        'invite_url': '%s%s/' % ('/api/account/sign-up/', invite_code),
+    }
+
+    return CoastalJsonResponse(data)
