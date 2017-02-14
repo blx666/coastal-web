@@ -155,6 +155,9 @@ def payment_stripe(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
+    if rental_order.status == 'paid':
+        return CoastalJsonResponse(status=response.STATUS_1500)
+
     if rental_order.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
 
@@ -195,6 +198,9 @@ def payment_coastal(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    if rental_order.status == 'paid':
+        return CoastalJsonResponse(status=response.STATUS_1500)
 
     if rental_order.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
