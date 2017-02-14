@@ -18,10 +18,11 @@ from coastal.apps.account.models import ValidateEmail, FavoriteItem
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
-from coastal.apps.account.models import UserProfile, CoastalBucket
+from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
@@ -495,3 +496,19 @@ def my_orders(request):
 @login_required
 def stripe_info(request):
     return CoastalJsonResponse(get_stripe_info(request.user))
+
+
+@login_required
+def invite_codes(request):
+    if not request.user.userprofile.invite_code:
+        invite_code = InviteCode.objects.filter(used=False)[0].invite_code
+        UserProfile.objects.filter(user=request.user).update(invite_code=invite_code)
+        InviteCode.objects.filter(invite_code=invite_code).update(used=True)
+    else:
+        invite_code = request.user.userprofile.invite_code
+    data = {
+        'invite_code': invite_code,
+        'invite_url': reverse('account:sign-up', args=(invite_code,)),
+    }
+
+    return CoastalJsonResponse(data)
