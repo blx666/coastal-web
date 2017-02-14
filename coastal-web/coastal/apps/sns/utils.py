@@ -274,6 +274,7 @@ def publish_paid_owner_offer(sale_offer):
         sale_offer.product.name, sale_offer.coastal_dollar)
     extra_attr = {
         'type': 'check_in_offer',
+        'sale_offer_id': sale_offer.id,
         'product_name': sale_offer.product.name,
         'coastal_dollar': sale_offer.coastal_dollar,
         'product': {
