@@ -15,7 +15,8 @@ def add_invite_codes(apps, schema_editor):
         key = ''
         for index in range(11):
             key += random.choice(source)
-        if InviteCode.objects.get_or_create(invite_code=key):
+        _, created = InviteCode.objects.get_or_create(invite_code=key)
+        if created:
             count += 1
 
 
