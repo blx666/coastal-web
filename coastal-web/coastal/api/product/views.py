@@ -860,7 +860,7 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     try:
-        product = Product.objects.get(id=request.POST.get('pid'))
+        product = Product.objects.get(id=request.POST.get('product_ids'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
