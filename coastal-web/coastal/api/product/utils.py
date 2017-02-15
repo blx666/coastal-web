@@ -119,37 +119,41 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
     return data
 
 
-def calc_price(product, rental_unit, start_date, end_date):
-    rental_price = product.get_price(rental_unit)
-    if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_unit == 'day':
-        end_date -= datetime.timedelta(days=1)
-
-    total_time = end_date.timestamp() - start_date.timestamp()
-
-    if rental_unit == 'day':
-        rental_date = math.ceil(total_time / (24.0 * 3600.0))
-    elif rental_unit == 'half-day':
-        rental_date = math.ceil(total_time / (6.0 * 3600.0))
+def calc_price(product, rental_unit, start_date, end_date, guest_count):
+    if product.category_id == defs.CATEGORY_EXPERIENCE:
+        rental_amount = math.ceil(product.rental_price * guest_count)
+        return [rental_amount, rental_amount, False, False]
     else:
-        rental_date = math.ceil(total_time / 3600.0)
+        rental_price = product.get_price(rental_unit)
+        if product.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT, defs.CATEGORY_ROOM) and rental_unit == 'day':
+            end_date -= datetime.timedelta(days=1)
 
-    sub_rental_amount = math.ceil(rental_date * rental_price)
+        total_time = end_date.timestamp() - start_date.timestamp()
 
-    if product.discount_monthly and total_time >= 30 * 24 * 3600:
-        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
-        discount_type = 'm'
-        discount_rate = product.discount_monthly
-    elif product.discount_weekly and total_time >= 7 * 24 * 3600:
-        rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
-        discount_type = 'w'
-        discount_rate = product.discount_weekly
-    else:
-        rental_amount = sub_rental_amount
-        discount_rate = False
-        discount_type = False
-    if rental_amount <= 0:
-        rental_amount = 0
-    return [sub_rental_amount, rental_amount, discount_type, discount_rate]
+        if rental_unit == 'day':
+            rental_date = math.ceil(total_time / (24.0 * 3600.0))
+        elif rental_unit == 'half-day':
+            rental_date = math.ceil(total_time / (6.0 * 3600.0))
+        else:
+            rental_date = math.ceil(total_time / 3600.0)
+
+        sub_rental_amount = math.ceil(rental_date * rental_price)
+
+        if product.discount_monthly and total_time >= 30 * 24 * 3600:
+            rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_monthly / 100.0))
+            discount_type = 'm'
+            discount_rate = product.discount_monthly
+        elif product.discount_weekly and total_time >= 7 * 24 * 3600:
+            rental_amount = math.ceil(sub_rental_amount * (1 - product.discount_weekly / 100.0))
+            discount_type = 'w'
+            discount_rate = product.discount_weekly
+        else:
+            rental_amount = sub_rental_amount
+            discount_rate = False
+            discount_type = False
+        if rental_amount <= 0:
+            rental_amount = 0
+        return [sub_rental_amount, rental_amount, discount_type, discount_rate]
 
 
 def format_date(value, default=None):
