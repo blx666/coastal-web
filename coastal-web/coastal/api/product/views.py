@@ -606,7 +606,7 @@ def black_dates_for_rental(request):
             if end_date.hour - start_date.hour == 24:
                 data.append([start_date.date(), end_date.date()])
             else:
-                data.append({start_date.date(): [start_date.time(), end_date.time()]})
+                data.append({start_date.date().strftime('%Y-%m-%d'): [start_date.time(), end_date.time()]})
     else:
         for dr in date_ranges2:
             start_date = localtime(dr.start_date)
