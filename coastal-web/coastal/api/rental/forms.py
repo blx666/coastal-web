@@ -30,8 +30,6 @@ class RentalBookForm(forms.ModelForm):
             if unit:
                 if unit_mapping[unit] < unit_mapping[product.rental_unit]:
                     raise forms.ValidationError('the rental_unit is invalid.')
-                else:
-                    raise forms.ValidationError({'rental_unit' : 'This field is required.'})
         guest_count = self.cleaned_data.get('guest_count')
         if product.category_id != defs.CATEGORY_BOAT_SLIP and not guest_count:
             raise forms.ValidationError({'guest_count' : 'This field is required.'})
