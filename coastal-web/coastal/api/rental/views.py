@@ -33,7 +33,7 @@ def book_rental(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
-
+    guest_count = form.cleaned_data.get('guest_count')
     rental_order = form.save(commit=False)
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
@@ -47,9 +47,9 @@ def book_rental(request):
 
     rental_order.product = product
     rental_order.guest = request.user
-
+    rental_unit = rental_order.rental_unit or ''
     sub_total_price, total_price, discount_type, discount_rate = \
-        calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
+        calc_price(product, rental_unit, rental_order.start_datetime, rental_order.end_datetime, guest_count)
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency

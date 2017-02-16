@@ -5,7 +5,13 @@ from coastal.apps.product import defines as defs
 
 
 class RentalBookForm(forms.ModelForm):
+    CHARGE_UNIT_CHOICES = (
+        ('day', 'Day'),
+        ('half-day', 'Half-Day'),
+        ('hour', 'Hour'),
+    )
     guest_count = forms.IntegerField(required=False)
+    rental_unit = forms.ChoiceField(required=False, choices=CHARGE_UNIT_CHOICES)
 
     class Meta:
         model = RentalOrder
@@ -19,9 +25,12 @@ class RentalBookForm(forms.ModelForm):
         }
         unit = self.cleaned_data.get('rental_unit')
         product = self.cleaned_data.get('product')
-        if unit and product:
-            if unit_mapping[unit] < unit_mapping[product.rental_unit]:
-                raise forms.ValidationError('the rental_unit is invalid.')
+        if product and product.category.get_root() != 9:
+            if unit:
+                if unit_mapping[unit] < unit_mapping[product.rental_unit]:
+                    raise forms.ValidationError('the rental_unit is invalid.')
+                else:
+                    raise forms.ValidationError({'rental_unit' : 'This field is required.'})
         guest_count = self.cleaned_data.get('guest_count')
         if product.category_id != defs.CATEGORY_BOAT_SLIP and not guest_count:
             raise forms.ValidationError({'guest_count' : 'This field is required.'})
