@@ -23,6 +23,7 @@ from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
 from django.urls import reverse
+from coastal.apps.product import defines as product_defs
 
 logger = logging.getLogger(__name__)
 
@@ -264,7 +265,7 @@ def my_activity(request):
 
     for order in orders:
         if isinstance(order, RentalOrder):
-            if order.product.category.get_root().id == 9:
+            if order.product.category.get_root().id == product_defs.CATEGORY_EXPERIENCE:
                 date_format = '%A, %B, %d, %l:%M %p'
                 if order.product.exp_time_unit == 'hour':
                     start_time = order.start_datetime
@@ -274,8 +275,8 @@ def my_activity(request):
                     start_minute = order.product.exp_start_time.minute
                     end_hour = order.product.exp_end_time.hour
                     end_minute = order.product.exp_end_time.minute
-                    start_time = order.start_datetime.replace(hour=start_hour, minute=start_minute)
-                    end_time = order.start_datetime.replace(hour=end_hour, minute=end_minute)
+                    start_time = order.start_datetime.replace(hour=start_hour)
+                    end_time = order.end_datetime.replace(hour=end_hour)
             else:
                 start_time = order.start_datetime
                 end_time = order.end_datetime
