@@ -6,6 +6,7 @@ from coastal.apps.product import defines as defs
 
 class RentalBookForm(forms.ModelForm):
     CHARGE_UNIT_CHOICES = (
+        ('', '----'),
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
@@ -25,7 +26,7 @@ class RentalBookForm(forms.ModelForm):
         }
         unit = self.cleaned_data.get('rental_unit')
         product = self.cleaned_data.get('product')
-        if product and product.category.get_root() != 9:
+        if product and product.category.get_root().id != defs.CATEGORY_EXPERIENCE:
             if unit:
                 if unit_mapping[unit] < unit_mapping[product.rental_unit]:
                     raise forms.ValidationError('the rental_unit is invalid.')
