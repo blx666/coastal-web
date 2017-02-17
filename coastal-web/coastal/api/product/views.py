@@ -653,26 +653,21 @@ def get_available_time(request):
         out_ranges = list(RentalOutDate.objects.filter(
             product=product, start_date__gte=start_time, end_date__lte=end_time).order_by(
             'start_date').values_list('start_date', 'end_date'))
-        if out_ranges:
-            out_ranges.insert(0, (start_time, start_time))
-            out_ranges.append((end_time, end_time))
+        out_ranges.insert(0, (start_time, start_time))
+        out_ranges.append((end_time, end_time))
 
-            available_start_time = []
-            for i in range(len(out_ranges) - 1):
-                a = timezone.localtime(out_ranges[i][1])
-                b = timezone.localtime(out_ranges[i + 1][0])
-                if b.time() <= product.exp_start_time or a.time() >= product.exp_end_time:
-                    continue
+        available_start_time = []
+        for i in range(len(out_ranges) - 1):
+            a = timezone.localtime(out_ranges[i][1])
+            b = timezone.localtime(out_ranges[i + 1][0])
+            if b.time() <= product.exp_start_time or a.time() >= product.exp_end_time:
+                continue
 
-                a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
-                b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
-                b = b - timezone.timedelta(hours=product.exp_time_length)
-                if b >= a:
-                    available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
-        else:
-            a = start_time.replace(hour=product.exp_start_time.hour)
-            b = end_time.replace(hour=product.exp_end_time.hour) - timezone.timedelta(hours=product.exp_time_length)
-            available_start_time = [(a.strftime("%I:%M %p"), b.time().strftime("%I:%M %p"))]
+            a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
+            b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
+            b = b - timezone.timedelta(hours=product.exp_time_length)
+            if b >= a:
+                available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
 
     return CoastalJsonResponse({'start_time': available_start_time})
 
