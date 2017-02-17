@@ -645,27 +645,29 @@ def get_available_time(request):
     start_time = timezone.make_aware(timezone.datetime.strptime(date, '%Y-%m-%d'))
     end_time = start_time + timezone.timedelta(seconds=24 * 3600 - 1)
 
-    if BlackOutDate.objects.filter(product=product, start_date__gte=start_time, end_date__lte=end_time).exists():
+    if BlackOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
         available_start_time = []
-    elif RentalOutDate.objects.filter(product=product, start_date__gte=start_time, end_date__lte=end_time).exists():
+    elif RentalOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
         available_start_time = []
     else:
-        out_ranges = RentalOutDate.objects.filter(
-            product=product, start_date__lte=start_time, end_date__gte=end_time).order_by(
-            'start_date').values_list('start_date', 'end_date')
+        out_ranges = list(RentalOutDate.objects.filter(
+            product=product, start_date__gte=start_time, end_date__lte=end_time).order_by(
+            'start_date').values_list('start_date', 'end_date'))
         if out_ranges:
-            out_ranges.insert((start_time, start_time))
+            out_ranges.insert(0, (start_time, start_time))
             out_ranges.append((end_time, end_time))
 
             available_start_time = []
             for i in range(len(out_ranges) - 1):
-                a = timezone.localtime(out_ranges[i].end_date)
-                b = timezone.localtime(out_ranges[i + 1].start_date) - timezone.timedelta(hours=product.exp_time_length)
-                if b.time() < product.exp_start_time or a.time() > product.exp_end_time:
+                a = timezone.localtime(out_ranges[i][1])
+                b = timezone.localtime(out_ranges[i + 1][0])
+                if b.time() <= product.exp_start_time or a.time() >= product.exp_end_time:
                     continue
+
+                a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
+                b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
+                b = b - timezone.timedelta(hours=product.exp_time_length)
                 if b >= a:
-                    a = max(a.time(), product.exp_start_time)
-                    b = min(b.time(), product.exp_end_time)
                     available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
         else:
             a = start_time.replace(hour=product.exp_start_time.hour)
