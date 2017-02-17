@@ -7,10 +7,10 @@ from django.core.paginator import PageNotAnInteger
 from django.db.models import Avg, Count
 from django.forms.models import model_to_dict
 from django.views.decorators.cache import cache_page
+from django.utils import timezone
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
-from datetime import timedelta
 from django.contrib.gis.db.models.functions import Distance
 
 
@@ -629,6 +629,50 @@ def black_dates_for_rental(request):
                     data.append([start_date.date(), end_date.date()])
 
     return CoastalJsonResponse(data)
+
+
+def get_available_time(request):
+    product_id = request.GET.get('product_id')
+    date = request.GET.get('date')
+    try:
+        product = Product.objects.get(id=product_id)
+    except (Product.DoesNotExist, ValueError):
+        return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
+
+    if product.exp_time_unit != 'hour':
+        return CoastalJsonResponse(status=response.STATUS_405, message="The product does not support to be booked by hours.")
+
+    start_time = timezone.make_aware(timezone.datetime.strptime(date, '%Y-%m-%d'))
+    end_time = start_time + timezone.timedelta(seconds=24 * 3600 - 1)
+
+    if BlackOutDate.objects.filter(product=product, start_date__gte=start_time, end_date__lte=end_time).exists():
+        available_start_time = []
+    elif RentalOutDate.objects.filter(product=product, start_date__gte=start_time, end_date__lte=end_time).exists():
+        available_start_time = []
+    else:
+        out_ranges = RentalOutDate.objects.filter(
+            product=product, start_date__lte=start_time, end_date__gte=end_time).order_by(
+            'start_date').values_list('start_date', 'end_date')
+        if out_ranges:
+            out_ranges.insert((start_time, start_time))
+            out_ranges.append((end_time, end_time))
+
+            available_start_time = []
+            for i in range(len(out_ranges) - 1):
+                a = timezone.localtime(out_ranges[i].end_date)
+                b = timezone.localtime(out_ranges[i + 1].start_date) - timezone.timedelta(hours=product.exp_time_length)
+                if b.time() < product.exp_start_time or a.time() > product.exp_end_time:
+                    continue
+                if b >= a:
+                    a = max(a.time(), product.exp_start_time)
+                    b = min(b.time(), product.exp_end_time)
+                    available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
+        else:
+            a = start_time.replace(hour=product.exp_start_time.hour)
+            b = end_time.replace(hour=product.exp_end_time.hour) - timezone.timedelta(hours=product.exp_time_length)
+            available_start_time = [(a.strftime("%I:%M %p"), b.time().strftime("%I:%M %p"))]
+
+    return CoastalJsonResponse({'start_time': available_start_time})
 
 
 def search(request):
