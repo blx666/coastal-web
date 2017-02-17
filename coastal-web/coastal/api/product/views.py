@@ -947,7 +947,7 @@ def flag_junk(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if request.POST.get('reported') == '1':
+    if request.POST.get('flag') == '1':
         if Report.objects.filter(product=product, user=request.user):
             Report.objects.filter(product=product, user=request.user).update(status=0, datetime=datetime.now())
         else:
