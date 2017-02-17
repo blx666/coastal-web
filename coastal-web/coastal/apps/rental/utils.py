@@ -25,8 +25,8 @@ def rental_out_date(product, start_datetime, end_datetime):
             else:
                 start_range = start_datetime -datetime.timedelta(days=product.exp_time_length * 7)
                 end_range = end_datetime + datetime.timedelta(days=product.exp_time_length * 7)
-            start_out_date = RentalOutDate.objects.filter(end_date__gte=start_range, end_date__lte=end_range, product=product)
-            end_out_date = RentalOutDate.objects.filter(start_date__lte=start_range, start_date__gte=end_range, product=product)
+            start_out_date = RentalOutDate.objects.filter(end_date__gte=start_range, end_date__lte=end_datetime, product=product)
+            end_out_date = RentalOutDate.objects.filter(start_date__lte=start_datetime, start_date__gte=end_range, product=product)
             if start_out_date and end_out_date:
                 start_out_date.update(end_date=end_out_date[0].end_date)
                 end_out_date.delete()

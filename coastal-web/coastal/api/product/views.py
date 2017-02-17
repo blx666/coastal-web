@@ -126,10 +126,12 @@ def product_list(request):
     for product in products:
         if product.category_id == product_defs.CATEGORY_EXPERIENCE:
             product_data = model_to_dict(product,
-                                         fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length'])
+                                         fields=['id', 'exp_time_unit', 'exp_time_length'])
             product_data.update({
                 'rental_price': product.rental_price,
-                'rental_price_display': price_display(product.rental_price, product.currency) + '/' + product.new_rental_unit(),
+                'rental_price_display': price_display(product.rental_price, product.currency),
+                'exp_time_unit': product.exp_time_unit,
+                'max_guests': product.max_guests or 0,
         })
         elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
@@ -145,7 +147,7 @@ def product_list(request):
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': price_display(int(product.get_price('day')), product.currency) + '/Day',
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
@@ -603,10 +605,8 @@ def black_dates_for_rental(request):
         for dr in date_ranges2:
             start_date = localtime(dr.start_date)
             end_date = localtime(dr.end_date)
-            if end_date.hour - start_date.hour == 24:
+            if end_date.hour == start_date.hour:
                 data.append([start_date.date(), end_date.date()])
-            else:
-                data.append({start_date.date().strftime('%Y-%m-%d'): [start_date.time(), end_date.time()]})
     else:
         for dr in date_ranges2:
             start_date = localtime(dr.start_date)
