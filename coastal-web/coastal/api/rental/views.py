@@ -245,6 +245,18 @@ def order_detail(request):
     start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
     end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
 
+    if order.product.category_id == defs.CATEGORY_EXPERIENCE:
+        if order.product.exp_time_unit == 'hour':
+            start_time = order.start_datetime
+            end_time = order.end_datetime
+        else:
+            start_hour = order.product.exp_start_time.hour
+            end_hour = order.product.exp_end_time.hour
+            start_time = order.start_datetime.replace(hour=start_hour)
+            end_time = order.end_datetime.replace(hour=end_hour)
+        start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+        end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
@@ -271,6 +283,12 @@ def order_detail(request):
         'status': order.get_status_display(),
     }
 
+    if order.product.category_id == defs.CATEGORY_EXPERIENCE:
+        result.update(
+            {
+                'title': 'An Experience at %s' % order.product.city.title(),
+                'experience_length': order.product.get_exp_time_display()
+        })
     if order.status == 'charge':
         result.update(get_payment_info(order, request.user))
     return CoastalJsonResponse(result)
