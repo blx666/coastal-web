@@ -33,7 +33,7 @@ def home(request):
         home_banners_list.append(banner_dict)
 
     # get recommended products
-    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price')
+    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price', '-sale_usd_price')
 
     paginator = Paginator(products, defs.PER_PAGE_ITEM)
     try:

@@ -102,9 +102,9 @@ def product_list(request):
         products = products.order_by(sort.replace('price', 'rental_price'))
 
     if point:
-        products = products.order_by(Distance('point', point), '-score', '-rental_price')
+        products = products.order_by(Distance('point', point), '-score', '-sale_usd_price')
     else:
-        products = products.order_by('-score', '-rental_price')
+        products = products.order_by('-score', '-rental_usd_price', '-sale_usd_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
