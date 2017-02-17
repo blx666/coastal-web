@@ -34,6 +34,7 @@ from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
 from coastal.apps.currency.utils import price_display
+from coastal.apps.rental.utils import recreate_rental_out_date
 
 
 def product_list(request):
@@ -125,10 +126,12 @@ def product_list(request):
     for product in products:
         if product.category_id == product_defs.CATEGORY_EXPERIENCE:
             product_data = model_to_dict(product,
-                                         fields=['id', 'max_guests', 'exp_time_unit', 'exp_time_length'])
+                                         fields=['id', 'exp_time_unit', 'exp_time_length'])
             product_data.update({
                 'rental_price': product.rental_price,
-                'rental_price_display': price_display(product.rental_price, product.currency) + '/' + product.new_rental_unit(),
+                'rental_price_display': price_display(product.rental_price, product.currency),
+                'exp_time_unit': product.exp_time_unit,
+                'max_guests': product.max_guests or 0,
         })
         elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
@@ -144,7 +147,7 @@ def product_list(request):
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': price_display(int(product.get_price('day')), product.currency) + '/Day',
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
@@ -190,8 +193,8 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
     if product.category_id == product_defs.CATEGORY_EXPERIENCE:
         data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
-        data['exp_start_time'] = product.exp_start_time.strftime('%I:%M %p') or ''
-        data['exp_end_time'] = product.exp_end_time.strftime('%I:%M %p') or ''
+        data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
+        data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
         data['exp_time_unit'] = product.get_exp_time_unit_display()
     else:
         data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
@@ -381,8 +384,8 @@ def calc_total_price(request):
     end_datetime = form.cleaned_data['end_datetime']
     rental_unit = form.cleaned_data['rental_unit']
     product = form.cleaned_data['product']
-
-    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime)[1]
+    guest_count = form.cleaned_data['guest_count']
+    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime, guest_count)[1]
     data = [{
         'amount': total_amount,
         'currency': product.currency,
@@ -400,6 +403,9 @@ def product_update(request):
         product = Product.objects.get(id=request.POST.get('product_id'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    product_start_time = product.exp_start_time
+    product_end_time = product.exp_end_time
 
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
@@ -429,6 +435,11 @@ def product_update(request):
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
+
+    exp_start_time = form.cleaned_data.get('exp_start_time')
+    exp_end_time = form.cleaned_data.get('exp_end_time')
+    if exp_start_time != product_start_time or exp_end_time != product_end_time:
+        recreate_rental_out_date(product)
 
     return CoastalJsonResponse()
 
@@ -590,25 +601,32 @@ def black_dates_for_rental(request):
         data.append([localtime(dr.start_date).date(), localtime(dr.end_date).date()])
 
     date_ranges2 = RentalOutDate.objects.filter(product=product)
-    for dr in date_ranges2:
-        start_date = localtime(dr.start_date)
-        end_date = localtime(dr.end_date)
-        if rental_unit == 'day':
-            if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT, product_defs.CATEGORY_ROOM):
-                start_date = start_date - timedelta(hours=12)
-                end_date = end_date - timedelta(hours=12) - timedelta(seconds=1)
+    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+        for dr in date_ranges2:
+            start_date = localtime(dr.start_date)
+            end_date = localtime(dr.end_date)
+            if end_date.hour == start_date.hour:
                 data.append([start_date.date(), end_date.date()])
+    else:
+        for dr in date_ranges2:
+            start_date = localtime(dr.start_date)
+            end_date = localtime(dr.end_date)
+            if rental_unit == 'day':
+                if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT, product_defs.CATEGORY_ROOM):
+                    start_date = start_date - timedelta(hours=12)
+                    end_date = end_date - timedelta(hours=12) - timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
+                else:
+                    end_date = end_date - timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
             else:
-                end_date = end_date - timedelta(seconds=1)
-                data.append([start_date.date(), end_date.date()])
-        else:
-            if start_date.hour == 12:
-                start_date += timedelta(hours=12)
-            if end_date.hour == 12:
-                end_date -= timedelta(hours=12)
-            if start_date != end_date:
-                end_date -= timedelta(seconds=1)
-                data.append([start_date.date(), end_date.date()])
+                if start_date.hour == 12:
+                    start_date += timedelta(hours=12)
+                if end_date.hour == 12:
+                    end_date -= timedelta(hours=12)
+                if start_date != end_date:
+                    end_date -= timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
 
     return CoastalJsonResponse(data)
 
@@ -721,6 +739,7 @@ def product_owner(request):
     spaces_list = []
     yachts_list = []
     jets_list = []
+    experience_list = []
     for product in products:
         liked_product_id_list = []
         if request.user.is_authenticated:
@@ -773,6 +792,26 @@ def product_owner(request):
             else:
                 yachts_dict['beds'] = product.beds or 0
             yachts_list.append(yachts_dict)
+        elif product.category.get_root().id == 9:
+            experience_list.append({
+                "id": product.id,
+                "category": product.category_id,
+                "image": product.images and product.images[0].image.url or '',
+                "liked": product.id in liked_product_id_list,
+                "rental_price": product.rental_price,
+                "rental_price_display": product.get_rental_price_display(),
+                "rental_unit": product.new_rental_unit(),
+                "city": product.city,
+                "max_guests": product.max_guests or 0,
+                'beds': product.beds or 0,
+                'rooms': product.rooms or 0,
+                "reviews_count": reviews_avg_score['id__count'],
+                "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
+                'exp_start_time':  product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
+                'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
+                'exp_time_unit': product.get_exp_time_unit_display(),
+                'exp_time_length': product.exp_time_length or 0,
+            })
         else:
             jets_list.append({
                 "id": product.id,
@@ -814,7 +853,8 @@ def product_owner(request):
     products = {
         'spaces': spaces_list,
         'yachts': yachts_list,
-        'jets': jets_list
+        'jets': jets_list,
+        'experience': experience_list,
     }
     result = {
         'owner': owner,
