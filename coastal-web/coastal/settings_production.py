@@ -26,12 +26,9 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
-        },
         'simple': {
-            'format': '%(levelname)s %(message)s'
-        },
+            'format': '%(levelname)s %(asctime)s %(message)s'
+        }
     },
     'handlers': {
         'mail_admins': {
@@ -42,6 +39,7 @@ LOGGING = {
             'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, "logs/coastal.log"),
+            'formatter': 'simple',
         },
     },
     'loggers': {
