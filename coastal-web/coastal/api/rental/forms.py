@@ -10,6 +10,7 @@ class RentalBookForm(forms.ModelForm):
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
+        ('week', 'Week'),
     )
     guest_count = forms.IntegerField(required=False)
     rental_unit = forms.ChoiceField(required=False, choices=CHARGE_UNIT_CHOICES)
@@ -22,11 +23,12 @@ class RentalBookForm(forms.ModelForm):
         unit_mapping = {
             'day': 24,
             'half-day': 6,
-            'hour': 1
+            'hour': 1,
+            'week': 24*7
         }
         unit = self.cleaned_data.get('rental_unit')
         product = self.cleaned_data.get('product')
-        if product and product.category.get_root().id != defs.CATEGORY_EXPERIENCE:
+        if product and product.category.get_root().id != defs.CATEGORY_ADVENTURE:
             if unit:
                 if unit_mapping[unit] < unit_mapping[product.rental_unit]:
                     raise forms.ValidationError('the rental_unit is invalid.')

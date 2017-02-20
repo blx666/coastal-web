@@ -124,7 +124,7 @@ def product_list(request):
     data = []
 
     for product in products:
-        if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+        if product.category_id == product_defs.CATEGORY_ADVENTURE:
             product_data = model_to_dict(product,
                                          fields=['id', 'exp_time_unit', 'exp_time_length'])
             product_data.update({
@@ -191,7 +191,7 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
-    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+    if product.category_id == product_defs.CATEGORY_ADVENTURE:
         data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
         data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
@@ -601,7 +601,7 @@ def black_dates_for_rental(request):
         data.append([localtime(dr.start_date).date(), localtime(dr.end_date).date()])
 
     date_ranges2 = RentalOutDate.objects.filter(product=product)
-    if product.category_id == product_defs.CATEGORY_EXPERIENCE:
+    if product.category_id == product_defs.CATEGORY_ADVENTURE:
         for dr in date_ranges2:
             start_date = localtime(dr.start_date)
             end_date = localtime(dr.end_date)

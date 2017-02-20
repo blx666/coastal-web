@@ -120,7 +120,7 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
 
 
 def calc_price(product, rental_unit, start_date, end_date, guest_count):
-    if product.category_id == defs.CATEGORY_EXPERIENCE:
+    if product.category_id == defs.CATEGORY_ADVENTURE:
         rental_amount = math.ceil(product.rental_price * guest_count)
         return [rental_amount, rental_amount, False, False]
     else:

@@ -17,7 +17,7 @@ def validate_rental_date(product, start_date, end_date):
 def rental_out_date(product, start_datetime, end_datetime):
     start_datetime = timezone.localtime(start_datetime, timezone.get_current_timezone())
     end_datetime = timezone.localtime(end_datetime, timezone.get_current_timezone())
-    if product.category_id == defs.CATEGORY_EXPERIENCE:
+    if product.category_id == defs.CATEGORY_ADVENTURE:
         if product.exp_time_unit != 'hour':
             if product.exp_time_unit == 'day':
                 start_range = start_datetime - datetime.timedelta(days=product.exp_time_length)
@@ -101,7 +101,7 @@ def rental_out_date(product, start_datetime, end_datetime):
 
 
 def clean_rental_out_date(product, start_datetime, end_datetime):
-    if product.category_id == defs.CATEGORY_EXPERIENCE:
+    if product.category_id == defs.CATEGORY_ADVENTURE:
         today_begin = start_datetime.replace(hour=0, minute=0, second=0)
         today_end = today_begin + datetime.timedelta(days=1)
         rental_date = RentalOutDate.objects.filter(start_date=today_begin, end_date=today_end, product=product)
