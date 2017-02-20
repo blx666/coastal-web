@@ -1,4 +1,5 @@
 from celery import shared_task
+from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.rental.utils import clean_rental_out_date
 from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_paid_owner_order, \
@@ -67,7 +68,14 @@ def pay_owner(order_id):
         return
 
     if order.status == 'check-in':
-        # TODO: pay owner coastal dollar
+        bucket = CoastalBucket.objects.get(user=order.owner)
+        bucket.balance += order.total_price_usd
+        bucket.save()
+        Transaction.objects.create(
+            bucket=bucket,
+            type='in',
+            order_number=order.number
+        )
 
         order.status = 'paid'
         order.save()
