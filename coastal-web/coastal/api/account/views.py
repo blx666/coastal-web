@@ -305,8 +305,10 @@ def my_activity(request):
                 'status': order.get_status_display(),
                 'type': 'rental'
             }
-            if order.product.category.get_root().id != 9:
+            if order.product.category.get_root().id != product_defs.CATEGORY_ADVENTURE:
                 data['more_info'] = '%s %s' % (guest_count_display, order.get_time_length_display())
+            if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
+                data['more_info'] = order.guest_count,
         else:
             data = {
                 'id': order.id,
