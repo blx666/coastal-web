@@ -31,6 +31,7 @@ class RentalOrder(models.Model):
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
+        ('week', 'Week'),
     )
     number = models.CharField(max_length=32, unique=True)
     product = models.ForeignKey(Product)
