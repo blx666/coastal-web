@@ -204,7 +204,7 @@ class Product(models.Model):
         if not self.productimage_set:
             return False
 
-        if not (self.for_sale or self.for_rental) and self.category_id != defs.CATEGORY_EXPERIENCE:
+        if not (self.for_sale or self.for_rental) and self.category_id != defs.CATEGORY_Adventure:
             return False
 
         if self.for_rental:
@@ -218,7 +218,7 @@ class Product(models.Model):
         if self.category_id == defs.CATEGORY_JET:
             if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year):
                 return False
-        elif self.category_id == defs.CATEGORY_EXPERIENCE:
+        elif self.category_id == defs.CATEGORY_Adventure:
             if not (self.exp_start_time and self.exp_end_time and self.exp_time_length and self.exp_time_unit):
                 return False
         elif self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
@@ -255,7 +255,7 @@ class Product(models.Model):
         return price_display(self.rental_price, self.currency)
 
     def new_rental_unit(self):
-        if self.category_id == defs.CATEGORY_EXPERIENCE:
+        if self.category_id == defs.CATEGORY_Adventure:
             return 'Person (%s)' % self.get_exp_time_display()
         return self.get_rental_unit_display()
 

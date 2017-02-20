@@ -266,7 +266,7 @@ def my_activity(request):
 
     for order in orders:
         if isinstance(order, RentalOrder):
-            if order.product.category.get_root().id == product_defs.CATEGORY_EXPERIENCE:
+            if order.product.category.get_root().id == product_defs.CATEGORY_Adventure:
                 date_format = '%A, %B, %d, %l:%M %p'
                 if order.product.exp_time_unit == 'hour':
                     start_time = order.start_datetime
