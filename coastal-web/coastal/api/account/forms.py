@@ -5,7 +5,7 @@ from coastal.apps.account.models import UserProfile
 
 class RegistrationForm(forms.ModelForm):
     email = forms.EmailField()
-    password = forms.CharField(min_length=6)
+    password = forms.CharField(min_length=6, widget=forms.PasswordInput)
     uuid = forms.CharField(required=False)
     token = forms.CharField(required=False)
 

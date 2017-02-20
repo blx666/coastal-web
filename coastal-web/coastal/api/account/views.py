@@ -525,7 +525,7 @@ def invite_codes(request):
         invite_code = request.user.userprofile.invite_code
     data = {
         'invite_code': invite_code,
-        'invite_url': reverse('account:sign-up', args=(invite_code,)),
+        'invite_url': settings.SITE_DOMAIN+reverse('account:sign-up', args=(invite_code,)),
     }
 
     return CoastalJsonResponse(data)
