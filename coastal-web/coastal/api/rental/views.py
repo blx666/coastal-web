@@ -33,6 +33,8 @@ def book_rental(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
+    if product.status != 'published':
+        return CoastalJsonResponse(form.errors, status=response.STATUS_1301)
     guest_count = form.cleaned_data.get('guest_count')
     rental_order = form.save(commit=False)
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
