@@ -101,6 +101,8 @@ def make_offer(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
+    if product.status != 'published':
+        return CoastalJsonResponse(form.errors, status=response.STATUS_1301)
     sale_offer = form.save(commit=False)
 
     sale_offer.status = 'request'
@@ -162,6 +164,9 @@ def payment_stripe(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
+    if sale_offer.status in ('pay', 'finished'):
+        return CoastalJsonResponse(status=response.STATUS_1500)
+
     if sale_offer.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
 
@@ -209,6 +214,9 @@ def payment_coastal(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    if sale_offer.status in ('pay', 'finished'):
+        return CoastalJsonResponse(status=response.STATUS_1500)
 
     if sale_offer.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)

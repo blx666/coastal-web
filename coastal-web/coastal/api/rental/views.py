@@ -33,7 +33,9 @@ def book_rental(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
-
+    if product.status != 'published':
+        return CoastalJsonResponse(form.errors, status=response.STATUS_1301)
+    guest_count = form.cleaned_data.get('guest_count')
     rental_order = form.save(commit=False)
     valid = validate_rental_date(product, rental_order.start_datetime, rental_order.end_datetime)
     if valid:
@@ -47,9 +49,9 @@ def book_rental(request):
 
     rental_order.product = product
     rental_order.guest = request.user
-
+    rental_unit = rental_order.rental_unit or ''
     sub_total_price, total_price, discount_type, discount_rate = \
-        calc_price(product, rental_order.rental_unit, rental_order.start_datetime, rental_order.end_datetime)
+        calc_price(product, rental_unit, rental_order.start_datetime, rental_order.end_datetime, guest_count)
     rental_order.total_price = total_price
     rental_order.sub_total_price = sub_total_price
     rental_order.currency = product.currency
@@ -155,6 +157,9 @@ def payment_stripe(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
+    if rental_order.status == 'paid':
+        return CoastalJsonResponse(status=response.STATUS_1500)
+
     if rental_order.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
 
@@ -195,6 +200,9 @@ def payment_coastal(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    if rental_order.status == 'paid':
+        return CoastalJsonResponse(status=response.STATUS_1500)
 
     if rental_order.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
@@ -239,9 +247,22 @@ def order_detail(request):
     start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
     end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
 
+    if order.product.category_id == defs.CATEGORY_ADVENTURE:
+        if order.product.exp_time_unit == 'hour':
+            start_time = order.start_datetime
+            end_time = order.end_datetime
+        else:
+            start_hour = order.product.exp_start_time.hour
+            end_hour = order.product.exp_end_time.hour
+            start_time = order.start_datetime.replace(hour=start_hour)
+            end_time = order.end_datetime.replace(hour=end_hour)
+        start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+        end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
         'product': {
+            'id': order.product_id,
             'category': order.product.category_id,
             'for_rental': order.product.for_rental,
             'for_sale': order.product.for_sale,
@@ -264,6 +285,12 @@ def order_detail(request):
         'status': order.get_status_display(),
     }
 
+    if order.product.category_id == defs.CATEGORY_ADVENTURE:
+        result.update(
+            {
+                'title': 'An Adventure at %s' % order.product.city.title(),
+                'experience_length': order.product.get_exp_time_display()
+        })
     if order.status == 'charge':
         result.update(get_payment_info(order, request.user))
     return CoastalJsonResponse(result)

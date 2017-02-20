@@ -8,6 +8,8 @@ STATUS_1000 = 1000
 STATUS_1101 = 1101
 STATUS_1200 = 1200
 STATUS_1300 = 1300
+STATUS_1500 = 1500
+STATUS_1301 = 1301
 
 STATUS_CODE = {
     0: 'ok',
@@ -28,6 +30,10 @@ STATUS_CODE = {
 
     # 1300-1399 Book Rental
     STATUS_1300: 'Sorry, this time has been booked by others. Please select any other time.',
+    STATUS_1301: 'Sorry, the listing is unpublished..',
+
+    # 1500-1599 Payment
+    STATUS_1500: 'You have paid already.',
 }
 
 

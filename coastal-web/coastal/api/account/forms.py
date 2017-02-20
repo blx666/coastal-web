@@ -34,7 +34,7 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['agency_email', 'agency_name', 'agency_address', 'photo']
+        fields = ['agency_email', 'agency_name', 'agency_address', 'photo', 'purpose']
 
 
 class CheckEmailForm(forms.Form):
