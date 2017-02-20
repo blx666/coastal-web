@@ -101,6 +101,8 @@ def make_offer(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
+    if product.status != 'published':
+        return CoastalJsonResponse(form.errors, status=response.STATUS_1301)
     sale_offer = form.save(commit=False)
 
     sale_offer.status = 'request'
