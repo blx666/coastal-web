@@ -245,7 +245,7 @@ def order_detail(request):
     start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
     end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
 
-    if order.product.category_id == defs.CATEGORY_Adventure:
+    if order.product.category_id == defs.CATEGORY_ADVENTURE:
         if order.product.exp_time_unit == 'hour':
             start_time = order.start_datetime
             end_time = order.end_datetime
@@ -283,7 +283,7 @@ def order_detail(request):
         'status': order.get_status_display(),
     }
 
-    if order.product.category_id == defs.CATEGORY_Adventure:
+    if order.product.category_id == defs.CATEGORY_ADVENTURE:
         result.update(
             {
                 'title': 'An Adventure at %s' % order.product.city.title(),
