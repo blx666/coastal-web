@@ -51,11 +51,10 @@ def check_in(order_id):
         return
 
     if order.status == 'booked':
-        order.status = 'check_in'
+        order.status = 'check-in'
         order.save()
 
         pay_owner.apply_async((order_id,), countdown=3 * 60 * 60)
-
 
 
 @shared_task
