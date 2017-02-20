@@ -54,7 +54,8 @@ def check_in(order_id):
         order.status = 'check-in'
         order.save()
 
-        pay_owner.apply_async((order_id,), countdown=3 * 60 * 60)
+        pay_owner.apply_async((order.id,), countdown=3 * 60 * 60)
+        check_out.apply_async((order.id,), eta=order.end_datetime)
 
 
 @shared_task
