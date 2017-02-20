@@ -68,7 +68,7 @@ ROOT_URLCONF = 'coastal.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'coastal/templates'), ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
