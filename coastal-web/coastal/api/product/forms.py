@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.gis.geos import Point
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
+from coastal.apps.product import defines as product_defs
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -88,6 +89,9 @@ class ProductAddForm(forms.ModelForm):
                 self.cleaned_data['point'] = Point(lon, lat)
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
+        if self.cleaned_data['category'].id == product_defs.CATEGORY_ADVENTURE:
+            self.cleaned_data['for_sale'] = '1'
+            self.cleaned_data['for_rental'] = '1'
 
     def clean_black_out_dates(self):
         black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
