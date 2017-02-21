@@ -89,9 +89,9 @@ class ProductAddForm(forms.ModelForm):
                 self.cleaned_data['point'] = Point(lon, lat)
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
-        if self.cleaned_data['category'].id == product_defs.CATEGORY_ADVENTURE:
-            self.cleaned_data['for_sale'] = '1'
-            self.cleaned_data['for_rental'] = '1'
+        if self.cleaned_data.get('category') == product_defs.CATEGORY_ADVENTURE:
+            self.cleaned_data['for_sale'] = True
+            self.cleaned_data['for_rental'] = True
 
     def clean_black_out_dates(self):
         black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
