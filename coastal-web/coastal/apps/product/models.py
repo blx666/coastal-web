@@ -247,7 +247,8 @@ class Product(models.Model):
         unit_mapping = {
             'day': 24,
             'half-day': 6,
-            'hour': 1
+            'hour': 1,
+            'week': 7 * 24
         }
         return unit_mapping[unit] / unit_mapping[self.rental_unit] * self.rental_price
 
