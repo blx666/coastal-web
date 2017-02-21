@@ -6,9 +6,10 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Thanks for signing up.</title>
+<title>Thanks for signing up！</title>
 <meta name="description" content="">
 <meta name="keywords" content="">
+<link rel="short icon" href="/static/img/coastal.ico">
 <link href="" rel="stylesheet">
 <script src="/static/js/jquery-3.1.1.js"></script>
 </head>
@@ -17,10 +18,10 @@
 		*,*:before,*:after{ padding:0; margin: 0; box-sizing:border-box;-moz-box-sizing:border-box; -webkit-box-sizing:border-box; }
 		body{ width:100%; height: 100%; background-color: #6da3dc; line-height: 1.45;color: #fff; font-family: "Avenir,Helvetica";}
 		input[type="text"],input[type="email"],input[type="password"],input[type="submit"]{ -webkit-appearance:none; border:none; padding:0; background-color: transparent;outline: none;}
-		::-webkit-input-placeholder { /* WebKit browsers */ color:#fff;}
-		:-moz-placeholder { /* Mozilla Firefox 4 to 18 */ color:#fff;}
-		::-moz-placeholder { /* Mozilla Firefox 19+ */  color:#fff;}
-		:-ms-input-placeholder { /* Internet Explorer 10+ */ color:#fff;}
+		::-webkit-input-placeholder { /* WebKit browsers */ color:#666;}
+		:-moz-placeholder { /* Mozilla Firefox 4 to 18 */ color:#666;}
+		::-moz-placeholder { /* Mozilla Firefox 19+ */  color:#666;}
+		:-ms-input-placeholder { /* Internet Explorer 10+ */ color:#666;}
 		.hidden{ display: none; }
 		#id_email input{outline:none}
 		input.btn{ display: inline-block; padding: 6px 12px; border-radius: 6px; background-color: #fff; line-height: 1.4; height: 40px; font-size: 16px; color: #6da3dc; }
@@ -62,4 +63,8 @@
 	</div>
 
 </body>
+<script>
+    document.getElementById('id_email').setAttribute('placeholder','Enter your email');
+    document.getElementById('id_password').setAttribute('placeholder','Create your password');
+</script>
 </html>
