@@ -69,7 +69,7 @@ def facebook_login(request):
                  (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
-        is_first = bool(user.last_login)
+        is_first = not bool(user.last_login)
         auth_login(request, user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -77,7 +77,7 @@ def facebook_login(request):
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
         UserProfile.objects.create(user=user, email_confirmed='confirmed', client='facebook')
         CoastalBucket.objects.create(user=user)
-        is_first = bool(user.last_login)
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
     if form.cleaned_data['token']:
@@ -105,7 +105,7 @@ def login(request):
     logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
                  (request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid')))
     if user:
-        is_first = bool(user.last_login)
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
         uuid = request.POST.get('uuid')
