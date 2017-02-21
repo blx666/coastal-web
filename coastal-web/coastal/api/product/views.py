@@ -710,7 +710,7 @@ def search(request):
             'for_rental': product.for_rental or '',
             'for_sale': product.for_sale or '',
             'max_guests': product.max_guests or 0,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         }
