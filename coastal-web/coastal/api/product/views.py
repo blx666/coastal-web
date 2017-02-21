@@ -143,7 +143,7 @@ def product_list(request):
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
                                                  'max_guests'])
-        if product.for_rental:
+        if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
@@ -154,7 +154,7 @@ def product_list(request):
                 rental_price *= 4
             if product.rental_unit == 'hour':
                 rental_price *= 24
-        if product.for_sale:
+        if product.for_sale and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'sale_price': product.sale_price,
                 'sale_price_display': product.get_sale_price_display(),
