@@ -282,7 +282,7 @@ def my_activity(request):
                     start_hour = order.product.exp_start_time.hour
                     end_hour = order.product.exp_end_time.hour
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
-                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
             else:
                 if order.rental_unit == 'day':
                     date_format = '%A, %B, %d'
