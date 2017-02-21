@@ -38,7 +38,7 @@ def sign_up(request, invite_code):
             user = create_user(cleaned_data['email'], cleaned_data['password'])
             if referrer:
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
-            return HttpResponse('ok')
+            return HttpResponseRedirect('http://itscoastal.com')
     else:
         form = RegistrationForm()
 
