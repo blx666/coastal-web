@@ -275,7 +275,7 @@ def my_activity(request):
                     end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
                 else:
                     start_hour = order.product.exp_start_time
-                    end_hour = order.product.exp_emd_time
+                    end_hour = order.product.exp_end_time
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
                     end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour).strftime(date_format)
             else:
