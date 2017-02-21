@@ -266,27 +266,25 @@ def my_activity(request):
 
     for order in orders:
         if isinstance(order, RentalOrder):
+            start_time = order.start_datetime
+            end_time = order.end_datetime
             if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
                 date_format = '%A, %B, %d, %l:%M %p'
                 if order.product.exp_time_unit == 'hour':
-                    start_time = order.start_datetime
-                    end_time = order.end_datetime
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
                 else:
-                    start_hour = order.product.exp_start_time.hour
-                    start_minute = order.product.exp_start_time.minute
-                    end_hour = order.product.exp_end_time.hour
-                    end_minute = order.product.exp_end_time.minute
-                    start_time = order.start_datetime.replace(hour=start_hour)
-                    end_time = order.end_datetime.replace(hour=end_hour)
+                    start_hour = order.product.exp_start_time
+                    end_hour = order.product.exp_emd_time
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour).strftime(date_format)
             else:
-                start_time = order.start_datetime
-                end_time = order.end_datetime
                 if order.rental_unit == 'day':
                     date_format = '%A, %B, %d'
                 else:
                     date_format = '%A, %B, %d, %l:%M %p'
-            start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-            end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
+                start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
@@ -308,7 +306,7 @@ def my_activity(request):
             if order.product.category.get_root().id != product_defs.CATEGORY_ADVENTURE:
                 data['more_info'] = '%s %s' % (guest_count_display, order.get_time_length_display())
             if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
-                data['more_info'] = order.guest_count,
+                data['more_info'] = '%s' % guest_count_display
         else:
             data = {
                 'id': order.id,
@@ -325,7 +323,6 @@ def my_activity(request):
             }
 
         result['orders'].append(data)
-
     return CoastalJsonResponse(result)
 
 

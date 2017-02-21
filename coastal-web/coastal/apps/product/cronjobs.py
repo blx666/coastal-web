@@ -2,6 +2,7 @@ from coastal.apps.account.models import FavoriteItem
 from coastal.apps.product.models import Product, ProductViewCount
 from coastal.apps.currency.models import Currency
 from coastal.apps.currency.utils import get_exchange_rate
+from coastal.apps.product import defines as defs
 
 from django.utils import timezone
 import urllib.request
@@ -44,4 +45,6 @@ def exchange_rate():
             product.rental_usd_price = math.ceil(product.get_price('day') / currency_rate)
         if product.sale_price:
             product.sale_usd_price = math.ceil(product.sale_price / currency_rate)
+        if product.rental_price and product.category_id == defs.CATEGORY_ADVENTURE:
+            product.rental_usd_price = math.ceil(product.rental_price / currency_rate)
         product.save()
