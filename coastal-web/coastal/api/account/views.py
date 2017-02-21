@@ -69,6 +69,7 @@ def facebook_login(request):
                  (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
+        is_first = user.last_login
         auth_login(request, user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -89,6 +90,7 @@ def facebook_login(request):
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
+        'first_login': not is_first and True or False
     }
 
     return CoastalJsonResponse(data)
@@ -102,6 +104,7 @@ def login(request):
     logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
                  (request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid')))
     if user:
+        is_first = user.last_login
         auth_login(request, user)
 
         uuid = request.POST.get('uuid')
@@ -117,6 +120,7 @@ def login(request):
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
+            'first_login': not is_first and True or False
         }
     else:
         data = {
