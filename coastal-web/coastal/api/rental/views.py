@@ -175,7 +175,7 @@ def payment_stripe(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
+        check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
             publish_paid_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
@@ -223,7 +223,7 @@ def payment_coastal(request):
         rental_order.status = 'booked'
         rental_order.save()
 
-        check_in.apply_async((rental_order.id,), eta=rental_order.start_datetime)
+        check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
             publish_paid_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
