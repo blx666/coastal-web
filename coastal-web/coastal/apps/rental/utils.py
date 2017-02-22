@@ -68,26 +68,31 @@ def rental_out_date(product, start_datetime, end_datetime):
     start_datetime = timezone.localtime(start_datetime)
     end_datetime = timezone.localtime(end_datetime)
     if product.category_id == defs.CATEGORY_ADVENTURE:
-        if product.exp_time_unit != 'hour':
-            if product.exp_time_unit == 'day':
-                start_extend = start_datetime - datetime.timedelta(days=product.exp_time_length)
-                end_extend = end_datetime + datetime.timedelta(days=product.exp_time_length)
-            else:  # weekly
-                start_extend = start_datetime - datetime.timedelta(days=product.exp_time_length * 7)
-                end_extend = end_datetime + datetime.timedelta(days=product.exp_time_length * 7)
-            insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
-        else:
-            start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length)
-            end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length)
-            out_date = insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
+        if product.exp_time_unit == 'hour':
+            if start_datetime.hour - product.exp_time_length < product.exp_start_time.hour:
+                start_datetime = start_datetime.replace(hour=0)
+                start_extend = start_datetime
+            else:
+                start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length)
 
-            new_start, new_end = None, None
-            if out_date.start_date.hour - product.exp_time_length < product.exp_start_time.hour:
-                new_start = out_date.start_date.replace(hour=0)
-            if out_date.end_date.hour + product.exp_time_length > product.exp_end_time.hour:
-                new_end = out_date.end_date.replace(hour=0) + datetime.timedelta(days=1)
-            if new_start or new_end:
-                update_rental_out_date(out_date, new_start, new_end)
+            if end_datetime.hour + product.exp_time_length > product.exp_end_time.hour:
+                end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+                end_extend = end_datetime
+            else:
+                end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length)
+        else:
+            extend_mapping = {
+                'day': {
+                    'days': product.exp_time_length,
+                },
+                'week': {
+                    'days': product.exp_time_length * 7,
+                }
+            }
+            extend_time = datetime.timedelta(extend_mapping[product.exp_time_unit])
+            start_extend = start_datetime - extend_time
+            end_extend = end_datetime + extend_time
+        insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
 
     else:
         if start_datetime.hour < 12:
