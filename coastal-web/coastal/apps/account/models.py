@@ -56,6 +56,9 @@ class UserProfile(models.Model):
     invite_code = models.CharField(max_length=32, blank=True)
     purpose = models.TextField(default='', blank=True)
 
+    def __str__(self):
+        return self.user.username
+
     @property
     def has_agency_info(self):
         return self.is_agent is not None
