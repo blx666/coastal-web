@@ -63,6 +63,8 @@ def product_list(request):
     if lon and lat:
         point = Point(lon, lat, srid=4326)
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
+    else:
+        point = None
 
     if guests:
         products = products.filter(max_guests__gte=guests)
@@ -143,7 +145,7 @@ def product_list(request):
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
                                                  'max_guests'])
-        if product.for_rental:
+        if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
@@ -154,7 +156,7 @@ def product_list(request):
                 rental_price *= 4
             if product.rental_unit == 'hour':
                 rental_price *= 24
-        if product.for_sale:
+        if product.for_sale and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'sale_price': product.sale_price,
                 'sale_price_display': product.get_sale_price_display(),
@@ -276,7 +278,7 @@ def product_detail(request, pid):
         },
     }
 
-    if product.for_rental:
+    if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
         price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
         discount = {
             'discount': {
@@ -710,7 +712,7 @@ def search(request):
             'for_rental': product.for_rental or '',
             'for_sale': product.for_sale or '',
             'max_guests': product.max_guests or 0,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         }

@@ -77,7 +77,7 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     if rental_order.status == 'request':
         try:
@@ -147,6 +147,8 @@ def payment_stripe(request):
     :param request: POST data {"rental_order_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('booked', 'check-in', 'paid', 'check-out', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -157,7 +159,7 @@ def payment_stripe(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if rental_order.status == 'paid':
+    if rental_order.status in CHARGED_STATUS_LIST:
         return CoastalJsonResponse(status=response.STATUS_1500)
 
     if rental_order.status != 'charge':
@@ -191,6 +193,8 @@ def payment_coastal(request):
     :param request: POST data {"rental_order_id": 1}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('booked', 'check-in', 'paid', 'check-out', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -201,7 +205,7 @@ def payment_coastal(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if rental_order.status == 'paid':
+    if rental_order.status in CHARGED_STATUS_LIST:
         return CoastalJsonResponse(status=response.STATUS_1500)
 
     if rental_order.status != 'charge':
@@ -251,13 +255,15 @@ def order_detail(request):
         if order.product.exp_time_unit == 'hour':
             start_time = order.start_datetime
             end_time = order.end_datetime
+            start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+            end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
         else:
             start_hour = order.product.exp_start_time.hour
             end_hour = order.product.exp_end_time.hour
-            start_time = order.start_datetime.replace(hour=start_hour)
-            end_time = order.end_datetime.replace(hour=end_hour)
-        start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
-        end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+            start_time = order.start_datetime
+            end_time = order.end_datetime
+            start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime('%l:%M %p, %A/ %B %d, %Y')
+            end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
 
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),

@@ -69,6 +69,7 @@ def facebook_login(request):
                  (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
+        is_first = not bool(user.last_login)
         auth_login(request, user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -76,6 +77,7 @@ def facebook_login(request):
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
         UserProfile.objects.create(user=user, email_confirmed='confirmed', client='facebook')
         CoastalBucket.objects.create(user=user)
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
     if form.cleaned_data['token']:
@@ -89,6 +91,7 @@ def facebook_login(request):
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
+        'first_login': is_first,
     }
 
     return CoastalJsonResponse(data)
@@ -102,6 +105,7 @@ def login(request):
     logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
                  (request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid')))
     if user:
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
         uuid = request.POST.get('uuid')
@@ -117,6 +121,7 @@ def login(request):
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
+            'first_login': is_first,
         }
     else:
         data = {
@@ -266,27 +271,25 @@ def my_activity(request):
 
     for order in orders:
         if isinstance(order, RentalOrder):
+            start_time = order.start_datetime
+            end_time = order.end_datetime
             if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
                 date_format = '%A, %B, %d, %l:%M %p'
                 if order.product.exp_time_unit == 'hour':
-                    start_time = order.start_datetime
-                    end_time = order.end_datetime
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
                 else:
                     start_hour = order.product.exp_start_time.hour
-                    start_minute = order.product.exp_start_time.minute
                     end_hour = order.product.exp_end_time.hour
-                    end_minute = order.product.exp_end_time.minute
-                    start_time = order.start_datetime.replace(hour=start_hour)
-                    end_time = order.end_datetime.replace(hour=end_hour)
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
             else:
-                start_time = order.start_datetime
-                end_time = order.end_datetime
                 if order.rental_unit == 'day':
                     date_format = '%A, %B, %d'
                 else:
                     date_format = '%A, %B, %d, %l:%M %p'
-            start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-            end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
+                start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
@@ -308,7 +311,7 @@ def my_activity(request):
             if order.product.category.get_root().id != product_defs.CATEGORY_ADVENTURE:
                 data['more_info'] = '%s %s' % (guest_count_display, order.get_time_length_display())
             if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
-                data['more_info'] = order.guest_count,
+                data['more_info'] = '%s' % guest_count_display
         else:
             data = {
                 'id': order.id,
@@ -325,7 +328,6 @@ def my_activity(request):
             }
 
         result['orders'].append(data)
-
     return CoastalJsonResponse(result)
 
 
