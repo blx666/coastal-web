@@ -56,6 +56,9 @@ class UserProfile(models.Model):
     invite_code = models.CharField(max_length=32, blank=True)
     purpose = models.TextField(default='', blank=True)
 
+    def __str__(self):
+        return self.user.username
+
     @property
     def has_agency_info(self):
         return self.is_agent is not None
@@ -122,8 +125,9 @@ class Transaction(models.Model):
     )
     bucket = models.ForeignKey(CoastalBucket)
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
-    order_number = models.CharField(max_length=64)
+    order_number = models.CharField(max_length=64, blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    note = models.CharField(max_length=255, blank=True, null=True)
 
 
 class InviteRecord(models.Model):
