@@ -63,6 +63,8 @@ def product_list(request):
     if lon and lat:
         point = Point(lon, lat, srid=4326)
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
+    else:
+        point = None
 
     if guests:
         products = products.filter(max_guests__gte=guests)
