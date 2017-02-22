@@ -77,7 +77,7 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
 
     if rental_order.status == 'request':
         try:
