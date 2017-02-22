@@ -32,5 +32,5 @@ def price_display(price, currency):
     """
     currency_info = currencies().get(currency.upper())
     if price and currency_info:
-        return '%s%d' % (currency_info['display'], price)
+        return '%s%s' % (currency_info['display'], format(int(price), ','))
     return ''
