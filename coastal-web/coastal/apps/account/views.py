@@ -37,7 +37,6 @@ def sign_up(request, invite_code):
             cleaned_data = form.cleaned_data
             user = create_user(cleaned_data['email'], cleaned_data['password'])
             if referrer:
-                import ipdb;ipdb.set_trace()
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
                 referrer_bucket = referrer.coastalbucket
                 referrer_bucket.balance += 10
