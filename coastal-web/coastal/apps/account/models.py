@@ -122,8 +122,9 @@ class Transaction(models.Model):
     )
     bucket = models.ForeignKey(CoastalBucket)
     type = models.CharField(max_length=32, choices=TYPE_CHOICES)
-    order_number = models.CharField(max_length=64)
+    order_number = models.CharField(max_length=64, blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
+    note = models.CharField(max_length=255, blank=True, null=True)
 
 
 class InviteRecord(models.Model):

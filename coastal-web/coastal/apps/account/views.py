@@ -1,6 +1,6 @@
 from django.http.response import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
-from coastal.apps.account.models import ValidateEmail, InviteRecord
+from coastal.apps.account.models import ValidateEmail, InviteRecord, Transaction
 from coastal.apps.account.utils import create_user
 from coastal.apps.account.models import UserProfile
 from django.contrib.auth.models import User
@@ -37,11 +37,16 @@ def sign_up(request, invite_code):
             cleaned_data = form.cleaned_data
             user = create_user(cleaned_data['email'], cleaned_data['password'])
             if referrer:
+                import ipdb;ipdb.set_trace()
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
-                referrer.coastalbucket.balance += 10
-                referrer.coastalbucket.save()
-                user.coastalbucket.balance += 35
-                user.coastalbucket.save()
+                referrer_bucket = referrer.coastalbucket
+                referrer_bucket.balance += 10
+                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer')
+                referrer_bucket.save()
+                user_bucket = user.coastalbucket
+                user_bucket.balance += 35
+                Transaction.objects.create(bucket=user_bucket, type='in', note='invite_user')
+                user_bucket.save()
 
             return TemplateResponse(request, 'successful.html')
     else:
