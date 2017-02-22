@@ -648,9 +648,9 @@ def get_available_time(request):
     end_time = start_time + timezone.timedelta(seconds=24 * 3600 - 1)
 
     if BlackOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
-        available_start_time = []
+        return CoastalJsonResponse(status=response.STATUS_1300)
     elif RentalOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
-        available_start_time = []
+        return CoastalJsonResponse(status=response.STATUS_1300)
     else:
         out_ranges = list(RentalOutDate.objects.filter(
             product=product, start_date__gte=start_time, end_date__lte=end_time).order_by(
@@ -670,6 +670,9 @@ def get_available_time(request):
             b = b - timezone.timedelta(hours=product.exp_time_length)
             if b >= a:
                 available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
+
+        if not available_start_time:
+            return CoastalJsonResponse(status=response.STATUS_1300)
 
     return CoastalJsonResponse({'start_time': available_start_time})
 
