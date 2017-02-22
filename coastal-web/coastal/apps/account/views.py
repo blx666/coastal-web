@@ -38,7 +38,12 @@ def sign_up(request, invite_code):
             user = create_user(cleaned_data['email'], cleaned_data['password'])
             if referrer:
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
-            return HttpResponseRedirect('http://itscoastal.com')
+                referrer.coastalbucket.balance += 10
+                referrer.coastalbucket.save()
+                user.coastalbucket.balance += 35
+                user.coastalbucket.save()
+
+            return TemplateResponse(request, 'successful.html')
     else:
         form = RegistrationForm()
 

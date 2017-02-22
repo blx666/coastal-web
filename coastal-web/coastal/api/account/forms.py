@@ -4,15 +4,15 @@ from coastal.apps.account.models import UserProfile
 
 
 class RegistrationForm(forms.ModelForm):
-    email = forms.EmailField()
-    password = forms.CharField(min_length=6, widget=forms.PasswordInput)
+    email = forms.EmailField(error_messages={'required': 'Please enter a valid email address'})
+    password = forms.CharField(min_length=6, widget=forms.PasswordInput, error_messages={'required': 'Password should be at least 6 characters.'})
     uuid = forms.CharField(required=False)
     token = forms.CharField(required=False)
 
     def clean_email(self):
         email = self.cleaned_data['email']
         if User.objects.filter(username=email.lower()).exists():
-            raise forms.ValidationError('The user have already been used for register')
+            raise forms.ValidationError('An account with this email address already exists.')
         return email
 
     class Meta:
