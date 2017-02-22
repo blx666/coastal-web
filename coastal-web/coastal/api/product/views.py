@@ -276,7 +276,7 @@ def product_detail(request, pid):
         },
     }
 
-    if product.for_rental:
+    if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
         price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
         discount = {
             'discount': {
