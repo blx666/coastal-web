@@ -30,7 +30,7 @@ STATUS_CODE = {
 
     # 1300-1399 Book Rental
     STATUS_1300: 'Sorry, this time has been booked by others. Please select any other time.',
-    STATUS_1301: 'Sorry, the listing is unpublished..',
+    STATUS_1301: 'Sorry, the listing is unpublished.',
 
     # 1500-1599 Payment
     STATUS_1500: 'You have paid already.',
