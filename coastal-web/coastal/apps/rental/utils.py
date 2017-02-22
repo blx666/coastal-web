@@ -14,68 +14,81 @@ def validate_rental_date(product, start_date, end_date):
     return black_out_dates or rental_dates
 
 
+def insert_rental_out_date(product, start, end, start_extend=None, end_extend=None):
+    if not start_extend:
+        start_extend = start
+    if not end_extend:
+        end_extend = end
+
+    start_out_date = RentalOutDate.objects.filter(start_date__lte=start_extend, end_date__gte=start_extend,
+                                                  product=product)
+    end_out_date = RentalOutDate.objects.filter(
+        start_date__lte=end_extend, end_date__gte=end_extend, product=product).order_by('-end_date')
+    if start_out_date and end_out_date:
+        start_out_date.update(end_date=end_out_date[0].end_date)
+        end_out_date.delete()
+        return start_out_date.first()
+    elif start_out_date:
+        start_out_date.update(end_date=start)
+        return start_out_date.first()
+    elif end_out_date:
+        end_out_date.update(start_date=end)
+        return end_out_date.first()
+    else:
+        return RentalOutDate.objects.create(product=product, start_date=start, end_date=end)
+
+
+def update_rental_out_date(out_date, start, end, start_extend=None, end_extend=None):
+    if not start_extend:
+        start_extend = start
+    if not end_extend:
+        end_extend = end
+
+    start_out_date = RentalOutDate.objects.filter(start_date__lte=start_extend, end_date__gte=start_extend,
+                                                  product=out_date.product)
+    end_out_date = RentalOutDate.objects.filter(
+        start_date__lte=end_extend, end_date__gte=end_extend, product=out_date.product).order_by('-end_date')
+    if start_out_date and end_out_date:
+        start_out_date.update(end_date=end_out_date[0].end_date)
+        end_out_date.delete()
+        out_date.delete()
+    elif start_out_date:
+        start_out_date.update(end_date=end)
+        out_date.delete()
+    elif end_out_date:
+        end_out_date.update(start_date=start)
+        out_date.delete()
+    else:
+        out_date.start_date = start
+        out_date.end_date = end
+        out_date.save()
+
+
 def rental_out_date(product, start_datetime, end_datetime):
-    start_datetime = timezone.localtime(start_datetime, timezone.get_current_timezone())
-    end_datetime = timezone.localtime(end_datetime, timezone.get_current_timezone())
+    start_datetime = timezone.localtime(start_datetime)
+    end_datetime = timezone.localtime(end_datetime)
     if product.category_id == defs.CATEGORY_ADVENTURE:
         if product.exp_time_unit != 'hour':
             if product.exp_time_unit == 'day':
-                start_range = start_datetime - datetime.timedelta(days=product.exp_time_length)
-                end_range = end_datetime + datetime.timedelta(days=product.exp_time_length)
-            else:
-                start_range = start_datetime -datetime.timedelta(days=product.exp_time_length * 7)
-                end_range = end_datetime + datetime.timedelta(days=product.exp_time_length * 7)
-            start_out_date = RentalOutDate.objects.filter(end_date__gte=start_range, end_date__lte=end_datetime, product=product)
-            end_out_date = RentalOutDate.objects.filter(start_date__lte=start_datetime, start_date__gte=end_range, product=product)
-            if start_out_date and end_out_date:
-                start_out_date.update(end_date=end_out_date[0].end_date)
-                end_out_date.delete()
-            elif start_out_date:
-                start_out_date.update(end_date=end_range)
-            elif end_out_date:
-                end_out_date.update(start_date=start_range)
-            else:
-                RentalOutDate.objects.create(product=product, start_date=start_datetime, end_date=end_datetime)
+                start_extend = start_datetime - datetime.timedelta(days=product.exp_time_length)
+                end_extend = end_datetime + datetime.timedelta(days=product.exp_time_length)
+            else:  # weekly
+                start_extend = start_datetime - datetime.timedelta(days=product.exp_time_length * 7)
+                end_extend = end_datetime + datetime.timedelta(days=product.exp_time_length * 7)
+            insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
         else:
-            today_begin = start_datetime.replace(hour=0, minute=0, second=0)
-            today_end = today_begin.replace(hour=23, minute=59, second=59)
-            if start_datetime - datetime.timedelta(hours=product.exp_time_length) < today_begin:
-                start_range = today_begin
-            else:
-                start_range = start_datetime - datetime.timedelta(hours=product.exp_time_length)
-            if end_datetime + datetime.timedelta(hours=product.exp_time_length) > today_end:
-                end_range = today_end
-            else:
-                end_range = end_datetime + datetime.timedelta(hours=product.exp_time_length)
-            rental_date = RentalOutDate.objects.filter(product=product, start_date__gte=today_begin,
-                                                       end_date__lte=today_end)
-            start_out_date = rental_date.filter(end_date__gte=start_range, end_date__lte=end_datetime)
-            end_out_date = rental_date.filter(start_date__lte=start_datetime, start_date__gte=end_range)
-            if start_out_date and end_out_date:
-                start_out_date.update(end_date=end_out_date[0].end_date)
-                end_out_date.delete()
-            elif start_out_date:
-                start_out_date.update(end_date=end_range)
-            elif end_out_date:
-                end_out_date.update(start_date=start_range)
-            else:
-                RentalOutDate.objects.create(product=product, start_date=start_datetime, end_date=end_datetime)
-            product_start = today_begin.replace(hour=product.exp_start_time.hour,minute=product.exp_start_time.minute)
-            product_end = today_begin.replace(hour=product.exp_end_time.hour,minute=product.exp_end_time.minute)
-            rental_date = RentalOutDate.objects.filter(product=product, start_date__gte=today_begin,
-                                                       end_date__lte=today_end).order_by('start_date')
-            product_seconds = product.exp_time_length * 60 * 60
-            if rental_date.count() > 1:
-                seconds = [(rental_date[0].start_date-product_start).seconds, (product_end - rental_date[rental_date.count()-1].end_date).seconds]
-                for i in range(len(rental_date)-2):
-                    seconds.append((rental_date[i+1].start_date - rental_date[i].end_date).seconds)
-                if max(seconds) < product_seconds:
-                    rental_date.delete()
-                    RentalOutDate.objects.create(product=product, start_date=today_begin, end_date=today_end)
-            else:
-                if (rental_date[0].start_date-product_start).seconds < product_seconds and (product_end - rental_date[0].end_date).seconds < product_seconds:
-                    rental_date.delete()
-                    RentalOutDate.objects.create(product=product, start_date=today_begin,end_date=today_end)
+            start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length)
+            end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length)
+            out_date = insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
+
+            new_start, new_end = None, None
+            if out_date.start_date.hour - product.exp_time_length < product.exp_start_time.hour:
+                new_start = out_date.start_date.replace(hour=0)
+            if out_date.end_date.hour + product.exp_time_length > product.exp_end_time.hour:
+                new_end = out_date.end_date.replace(hour=0) + datetime.timedelta(days=1)
+            if new_start or new_end:
+                update_rental_out_date(out_date, new_start, new_end)
+
     else:
         if start_datetime.hour < 12:
             start_datetime = start_datetime.replace(hour=0)
@@ -155,7 +168,7 @@ def recreate_rental_out_date(product):
     rental_date = RentalOutDate.objects.filter(product=product)
     if rental_date:
         rental_date.delete()
-        rental_order = RentalOrder.objects.filter(product=product).exclude(status='declined')
+        rental_order = RentalOrder.objects.filter(product=product).exclude(status__in=RentalOrder.INVALID_STATUS_LIST)
         for order in rental_order:
             if order.end_datetime.replace(tzinfo=None) > datetime.datetime.now().replace(hour=0, minute=0, second=0):
                 rental_out_date(product, order.start_datetime, order.end_datetime)

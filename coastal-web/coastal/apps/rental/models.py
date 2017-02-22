@@ -29,6 +29,7 @@ class RentalOrder(models.Model):
         ('finished', 'Finished'),
     )
     END_STATUS_LIST = ['declined', 'invalid', 'finished']
+    INVALID_STATUS_LIST = ['declined', 'invalid']
     CHARGE_UNIT_CHOICES = (
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
