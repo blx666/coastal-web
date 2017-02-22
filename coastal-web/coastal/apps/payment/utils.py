@@ -8,8 +8,8 @@ def get_payment_info(rental_order, user):
     if rental_order.total_price_usd < user.coastalbucket.balance:
         payment_info['payment_list'] = ['coastal', 'stripe']
         payment_info['coastal'] = {
-            'coastal_dollar': user.coastalbucket.balance,
-            'amount': rental_order.total_price_usd,
+            'coastal_dollar': format(int(user.coastalbucket.balance), ','),
+            'amount': format(int(rental_order.total_price_usd), ','),
         }
     else:
         payment_info['payment_list'] = ['stripe']
@@ -31,8 +31,8 @@ def sale_payment_info(sale_offer, user):
     if sale_offer.price_usd < user.coastalbucket.balance:
         payment_info['payment_list'] = ['coastal', 'stripe']
         payment_info['coastal'] = {
-            'coastal_dollar': user.coastalbucket.balance,
-            'amount': sale_offer.price_usd,
+            'coastal_dollar': format(user.coastalbucket.balance, ','),
+            'amount': format(sale_offer.price_usd, ','),
         }
     else:
         payment_info['payment_list'] = ['stripe']
