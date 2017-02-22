@@ -24,7 +24,7 @@ class RentalBookForm(forms.ModelForm):
             'day': 24,
             'half-day': 6,
             'hour': 1,
-            'week': 24*7
+            'week': 24 * 7
         }
         unit = self.cleaned_data.get('rental_unit')
         product = self.cleaned_data.get('product')

@@ -66,6 +66,7 @@ class RentalOrder(models.Model):
             'day': 24,
             'half-day': 6,
             'hour': 1,
+            'week': 24 * 7,
         }
         return math.ceil(
             (self.end_datetime - self.start_datetime).total_seconds() / 3600 / _unit_mapping[self.rental_unit])
