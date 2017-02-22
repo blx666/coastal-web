@@ -7,17 +7,18 @@ from django.db import migrations
 
 def recently_no_repeat(apps, schema_editor):
     User = apps.get_model("auth", "User")
+    RecentlyViewed = apps.get_model('account', 'RecentlyViewed')
     user_list = User.objects.all()
-    Recently = apps.get_model('account', 'RecentlyViewed')
     for user in user_list:
         repeat = []
-        recently_views = list(user.recently_viewed.all().values_list('product', flat=True))
+        recently_views = list(user.recently_viewed.all().values_list('product_id', flat=True))
         for recently_view in recently_views:
             if recently_views.count(recently_view) > 1:
                 repeat.append(recently_view)
+        repeat = set(repeat)
         if repeat:
             for i in repeat:
-                p = Recently.objects.filter(product=i, user=user).order_by('-date_created')[1:]
+                p = RecentlyViewed.objects.filter(product_id=i, user=user).order_by('-date_created')[1:]
                 for p_i in p:
                     p_i.delete()
 
