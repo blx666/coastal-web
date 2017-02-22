@@ -154,6 +154,8 @@ def payment_stripe(request):
     :param request: POST data {"sale_offer_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('pay', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -164,7 +166,7 @@ def payment_stripe(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if sale_offer.status in ('pay', 'finished'):
+    if sale_offer.status in CHARGED_STATUS_LIST:
         return CoastalJsonResponse(status=response.STATUS_1500)
 
     if sale_offer.status != 'charge':
@@ -205,6 +207,8 @@ def payment_coastal(request):
     :param request: POST data {"sale_offer_id": 1}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('pay', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -215,7 +219,7 @@ def payment_coastal(request):
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if sale_offer.status in ('pay', 'finished'):
+    if sale_offer.status in CHARGED_STATUS_LIST:
         return CoastalJsonResponse(status=response.STATUS_1500)
 
     if sale_offer.status != 'charge':
