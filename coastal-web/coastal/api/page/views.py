@@ -73,7 +73,7 @@ def home(request):
         product_data['image'] = product.main_image and product.main_image.image.url or ''
         reviews = Review.objects.filter(product=product)
         avg_score = reviews.aggregate(Avg('score'), Count('id'))
-        product_data['reviews_count_review'] = avg_score['id__count']
+        product_data['reviews_count'] = avg_score['id__count']
         product_data['reviews_avg_score'] = avg_score['score__avg'] or 0
         if product.point:
             product_data.update({
