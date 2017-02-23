@@ -90,7 +90,7 @@ def rental_out_date(product, start_datetime, end_datetime):
                     'days': product.exp_time_length * 7,
                 }
             }
-            extend_time = datetime.timedelta(extend_mapping[product.exp_time_unit])
+            extend_time = datetime.timedelta(**extend_mapping[product.exp_time_unit])
             start_extend = start_datetime - extend_time
             end_extend = end_datetime + extend_time
         insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
