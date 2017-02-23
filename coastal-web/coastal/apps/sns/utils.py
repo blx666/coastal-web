@@ -53,13 +53,14 @@ def push_notification(receiver, content, extra_attr=None):
 
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
-            continue
+            Token.objects.filter(user=receiver, endpoint=endpoint).delete()
 
         res = aws.publish(
             Message=json.dumps(result_message),
             TargetArn=endpoint,
             MessageStructure='json'
         )
+        logger.debug('message: %s' % result_message)
         logger.debug('The response of publish message: \n%s' % res)
 
 

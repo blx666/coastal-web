@@ -67,7 +67,7 @@ def pay_owner(order_id):
         # TODO: add log
         return
 
-    if order.status == 'check-in':
+    if order.status in ('check-in', 'check-out'):
         bucket = CoastalBucket.objects.get(user=order.owner)
         bucket.balance += order.total_price_usd
         bucket.save()
@@ -77,8 +77,13 @@ def pay_owner(order_id):
             order_number=order.number
         )
 
-        order.status = 'paid'
-        order.save()
+        if order.status == 'check-in':
+            order.status = 'paid'
+            order.save()
+
+        if order.status == 'check-out':
+            order.status = 'finished'
+            order.save()
 
         try:
             publish_paid_owner_order(order)
@@ -94,9 +99,14 @@ def check_out(order_id):
         # TODO: add log
         return
 
-    if order.status == 'paid':
-        order.status = 'finished'
-        order.save()
+    if order.status in ('check-in', 'paid'):
+        if order.status == 'check-in':
+            order.status = 'check-out'
+            order.save()
+
+        if order.status == 'paid':
+            order.status = 'finished'
+            order.save()
 
         try:
             publish_check_out_order(order)

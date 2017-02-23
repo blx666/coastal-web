@@ -12,6 +12,8 @@ from coastal.apps.account.models import FavoriteItem
 from coastal.api import defines as defs
 from coastal.apps.product import defines as product_defs
 from coastal.apps.currency.utils import price_display
+from django.db.models import Avg, Count
+from coastal.apps.review.models import Review
 
 
 def home(request):
@@ -69,6 +71,10 @@ def home(request):
 
         product_data['liked'] = product.id in liked_product_id_list
         product_data['image'] = product.main_image and product.main_image.image.url or ''
+        reviews = Review.objects.filter(product=product)
+        avg_score = reviews.aggregate(Avg('score'), Count('id'))
+        product_data['reviews_count'] = avg_score['id__count']
+        product_data['reviews_avg_score'] = avg_score['score__avg'] or 0
         if product.point:
             product_data.update({
                 "lon": product.point[0],
