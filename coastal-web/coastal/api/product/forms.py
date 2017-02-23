@@ -90,7 +90,7 @@ class ProductAddForm(forms.ModelForm):
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
         if self.cleaned_data.get('category') == product_defs.CATEGORY_ADVENTURE:
-            self.cleaned_data['for_sale'] = True
+            self.cleaned_data['for_sale'] = False
             self.cleaned_data['for_rental'] = True
 
     def clean_black_out_dates(self):

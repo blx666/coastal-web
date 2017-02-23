@@ -72,10 +72,11 @@ def product_list(request):
     if category:
         products = products.filter(category_id__in=category)
 
-    if for_rental and not for_sale:
-        products = products.filter(for_rental=True)
-    elif for_sale and not for_rental:
-        products = products.filter(for_sale=True)
+    if product_defs.CATEGORY_ADVENTURE not in category:
+        if for_rental and not for_sale:
+            products = products.filter(for_rental=True)
+        elif for_sale and not for_rental:
+            products = products.filter(for_sale=True)
 
     if min_price:
         products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
@@ -189,10 +190,12 @@ def product_detail(request, pid):
             user = request.user
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
                 'product_id', flat=True)
+
             if RecentlyViewed.objects.filter(user=user, product=product):
                 RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
+
     if product.category_id == product_defs.CATEGORY_ADVENTURE:
         data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
@@ -792,6 +795,7 @@ def product_owner(request):
     yachts_list = []
     jets_list = []
     experience_list = []
+
     for product in products:
         liked_product_id_list = []
         if request.user.is_authenticated:
