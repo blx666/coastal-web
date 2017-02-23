@@ -29,10 +29,10 @@ def insert_rental_out_date(product, start, end, start_extend=None, end_extend=No
         end_out_date.delete()
         return start_out_date.first()
     elif start_out_date:
-        start_out_date.update(end_date=start)
+        start_out_date.update(end_date=end)
         return start_out_date.first()
     elif end_out_date:
-        end_out_date.update(start_date=end)
+        end_out_date.update(start_date=start)
         return end_out_date.first()
     else:
         return RentalOutDate.objects.create(product=product, start_date=start, end_date=end)
