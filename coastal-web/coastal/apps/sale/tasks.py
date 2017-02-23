@@ -16,7 +16,6 @@ def expire_offer_request(offer_id):
     if offer.status == 'request':
         offer.status = 'invalid'
         offer.save()
-        clean_rental_out_date(offer.product, offer.start_datetime, offer.end_datetime)
 
         try:
             publish_unconfirmed_order(offer)
@@ -35,7 +34,6 @@ def expire_offer_charge(offer_id):
     if offer.status == 'charge':
         offer.status = 'invalid'
         offer.save()
-        clean_rental_out_date(offer.product, offer.start_datetime, offer.end_datetime)
 
         try:
             publish_unpay_offer(offer)

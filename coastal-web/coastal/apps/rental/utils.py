@@ -25,14 +25,15 @@ def insert_rental_out_date(product, start, end, start_extend=None, end_extend=No
     end_out_date = RentalOutDate.objects.filter(
         start_date__lte=end_extend, end_date__gte=end_extend, product=product).order_by('-end_date')
     if start_out_date and end_out_date:
-        start_out_date.update(end_date=end_out_date[0].end_date)
+        new_end_date = end_out_date[0].end_date
         end_out_date.delete()
+        start_out_date.update(end_date=new_end_date)
         return start_out_date.first()
     elif start_out_date:
-        start_out_date.update(end_date=start)
+        start_out_date.update(end_date=end)
         return start_out_date.first()
     elif end_out_date:
-        end_out_date.update(start_date=end)
+        end_out_date.update(start_date=start)
         return end_out_date.first()
     else:
         return RentalOutDate.objects.create(product=product, start_date=start, end_date=end)
@@ -73,13 +74,13 @@ def rental_out_date(product, start_datetime, end_datetime):
                 start_datetime = start_datetime.replace(hour=0)
                 start_extend = start_datetime
             else:
-                start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length)
+                start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length) + datetime.timedelta(seconds=1)
 
             if end_datetime.hour + product.exp_time_length > product.exp_end_time.hour:
                 end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
                 end_extend = end_datetime
             else:
-                end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length)
+                end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length) - datetime.timedelta(seconds=1)
         else:
             extend_mapping = {
                 'day': {
@@ -89,7 +90,7 @@ def rental_out_date(product, start_datetime, end_datetime):
                     'days': product.exp_time_length * 7,
                 }
             }
-            extend_time = datetime.timedelta(extend_mapping[product.exp_time_unit])
+            extend_time = datetime.timedelta(**extend_mapping[product.exp_time_unit])
             start_extend = start_datetime - extend_time
             end_extend = end_datetime + extend_time
         insert_rental_out_date(product, start_datetime, end_datetime, start_extend, end_extend)
