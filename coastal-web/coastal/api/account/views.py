@@ -527,9 +527,10 @@ def invite_codes(request):
         invite_code = request.user.userprofile.invite_code
     data = {
         'invite_code': invite_code,
-        'invite_url': 'http://'+settings.SITE_DOMAIN+reverse('account:sign-up', args=(invite_code,)),
+        'invite_url': 'http://%s%s' % (settings.SITE_DOMAIN, reverse('account:sign-up', args=(invite_code,))),
         'invite_msg': '%s %s' % (request.user.first_name, "invited you to join it'sCoastal."),
         'award_msg': 'Sign up and get $35 off your first adventure.',
+        'logo_url': 'http://%s%s' % (settings.SITE_DOMAIN, '/static/img/coastal.ico'),
     }
 
     return CoastalJsonResponse(data)
