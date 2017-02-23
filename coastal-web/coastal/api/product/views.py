@@ -572,8 +572,8 @@ def discount_calculator(request):
     price = get_product_discount(rental_price, rental_unit, discount_weekly, discount_monthly)
 
     data = {
-        'weekly_price': price[0],
-        'monthly_price': price[1],
+        'weekly_price': format(price[0], ','),
+        'monthly_price': format(price[1], ','),
     }
     return CoastalJsonResponse(data)
 
