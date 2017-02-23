@@ -55,13 +55,18 @@ def push_notification(receiver, content, extra_attr=None):
         if enabled == 'false':
             Token.objects.filter(user=receiver, endpoint=endpoint).delete()
 
-        res = aws.publish(
-            Message=json.dumps(result_message),
-            TargetArn=endpoint,
-            MessageStructure='json'
-        )
         logger.debug('message: %s' % result_message)
-        logger.debug('The response of publish message: \n%s' % res)
+        try:
+            res = aws.publish(
+                Message=json.dumps(result_message),
+                TargetArn=endpoint,
+                MessageStructure='json'
+            )
+            logger.debug('The response of publish message: \n%s' % res)
+        except ClientError as e:
+            logger.error(e)
+
+
 
 
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
