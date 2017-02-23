@@ -602,18 +602,18 @@ def black_dates_for_rental(request):
     for dr in date_ranges:
         data.append([localtime(dr.start_date).date(), localtime(dr.end_date).date()])
 
-    date_ranges2 = RentalOutDate.objects.filter(product=product)
+    date_ranges2 = RentalOutDate.objects.filter(product=product).order_by('start_date')
     if product.category_id == product_defs.CATEGORY_ADVENTURE:
         for dr in date_ranges2:
             start_date = localtime(dr.start_date)
             end_date = localtime(dr.end_date)
-            if end_date.hour != 0:
-                end_date = end_date.replace(hour=0)
-            elif start_date.hour != 0:
+            if start_date.hour != 0:
                 start_date = (start_date + timedelta(days=1)).replace(hour=0)
+            elif end_date.hour != 0:
+                end_date = end_date.replace(hour=0)
 
             end_date -= timedelta(minutes=1)
-            if start_date != end_date:
+            if start_date < end_date:
                 data.append([start_date.date(), end_date.date()])
     else:
         for dr in date_ranges2:
