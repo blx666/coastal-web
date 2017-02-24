@@ -69,14 +69,21 @@ def product_list(request):
     if guests:
         products = products.filter(max_guests__gte=guests)
 
-    if category:
-        products = products.filter(category_id__in=category)
-
     if category and product_defs.CATEGORY_ADVENTURE not in category:
+        products = products.filter(category_id__in=category)
         if for_rental and not for_sale:
             products = products.filter(for_rental=True)
         elif for_sale and not for_rental:
             products = products.filter(for_sale=True)
+    elif category and product_defs.CATEGORY_ADVENTURE in category:
+        category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+        first_products = products.filter(category_id__in=category)
+        if for_rental and not for_sale:
+            first_products = first_products.filter(for_rental=True)
+        elif for_sale and not for_rental:
+            first_products = first_products.filter(for_sale=True)
+        second_products = products.filter(category_id=product_defs.CATEGORY_ADVENTURE)
+        products = first_products | second_products
 
     if min_price:
         products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
