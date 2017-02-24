@@ -1,5 +1,7 @@
 import math
+import pytz
 from django.utils.functional import cached_property
+from django.utils.timezone import make_aware, make_naive
 from django.contrib.gis.db import models
 from django.contrib.auth.models import User
 from coastal.apps.currency.utils import price_display
@@ -27,10 +29,12 @@ class RentalOrder(models.Model):
         ('finished', 'Finished'),
     )
     END_STATUS_LIST = ['declined', 'invalid', 'finished']
+    INVALID_STATUS_LIST = ['declined', 'invalid']
     CHARGE_UNIT_CHOICES = (
         ('day', 'Day'),
         ('half-day', 'Half-Day'),
         ('hour', 'Hour'),
+        ('week', 'Week'),
     )
     number = models.CharField(max_length=32, unique=True)
     product = models.ForeignKey(Product)
@@ -65,6 +69,7 @@ class RentalOrder(models.Model):
             'day': 24,
             'half-day': 6,
             'hour': 1,
+            'week': 24 * 7,
         }
         return math.ceil(
             (self.end_datetime - self.start_datetime).total_seconds() / 3600 / _unit_mapping[self.rental_unit])
@@ -73,6 +78,18 @@ class RentalOrder(models.Model):
         time_length = self.time_length
         return (time_length > 1 and '%s %ss' or '%s %s') % (
             time_length, self.get_rental_unit_display())
+
+    def localtime(self, _datetime):
+        naive_time = make_naive(_datetime)
+        return make_aware(naive_time, timezone=pytz.timezone(self.timezone))
+
+    @cached_property
+    def local_start_datetime(self):
+        return self.localtime(self.start_datetime)
+
+    @cached_property
+    def local_end_datetime(self):
+        return self.localtime(self.end_datetime)
 
 
 class RentalOrderDiscount(models.Model):

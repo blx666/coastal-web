@@ -7,10 +7,10 @@ from django.core.paginator import PageNotAnInteger
 from django.db.models import Avg, Count
 from django.forms.models import model_to_dict
 from django.views.decorators.cache import cache_page
+from django.utils import timezone
 from django.utils.timezone import localtime
 from timezonefinder import TimezoneFinder
 from datetime import datetime
-from datetime import timedelta
 from django.contrib.gis.db.models.functions import Distance
 
 
@@ -34,6 +34,7 @@ from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
 from coastal.apps.currency.utils import price_display
+from coastal.apps.rental.utils import recreate_rental_out_date
 
 
 def product_list(request):
@@ -62,6 +63,8 @@ def product_list(request):
     if lon and lat:
         point = Point(lon, lat, srid=4326)
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
+    else:
+        point = None
 
     if guests:
         products = products.filter(max_guests__gte=guests)
@@ -69,10 +72,11 @@ def product_list(request):
     if category:
         products = products.filter(category_id__in=category)
 
-    if for_rental and not for_sale:
-        products = products.filter(for_rental=True)
-    elif for_sale and not for_rental:
-        products = products.filter(for_sale=True)
+    if category and product_defs.CATEGORY_ADVENTURE not in category:
+        if for_rental and not for_sale:
+            products = products.filter(for_rental=True)
+        elif for_sale and not for_rental:
+            products = products.filter(for_sale=True)
 
     if min_price:
         products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
@@ -101,9 +105,9 @@ def product_list(request):
         products = products.order_by(sort.replace('price', 'rental_price'))
 
     if point:
-        products = products.order_by(Distance('point', point), '-score', '-rental_price')
+        products = products.order_by(Distance('point', point), '-score', '-rental_usd_price', '-sale_usd_price')
     else:
-        products = products.order_by('-score', '-rental_price')
+        products = products.order_by('-score', '-rental_usd_price', '-sale_usd_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
@@ -123,7 +127,16 @@ def product_list(request):
     data = []
 
     for product in products:
-        if product.category_id == product_defs.CATEGORY_BOAT_SLIP:
+        if product.category_id == product_defs.CATEGORY_ADVENTURE:
+            product_data = model_to_dict(product,
+                                         fields=['id', 'exp_time_unit', 'exp_time_length'])
+            product_data.update({
+                'rental_price': product.rental_price,
+                'rental_price_display': price_display(product.rental_price, product.currency),
+                'exp_time_unit': product.exp_time_unit,
+                'max_guests': product.max_guests or 0,
+        })
+        elif product.category_id == product_defs.CATEGORY_BOAT_SLIP:
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'length',
                                                  'max_guests'])
@@ -133,18 +146,18 @@ def product_list(request):
             product_data = model_to_dict(product,
                                          fields=['id', 'for_rental', 'for_sale', 'beds',
                                                  'max_guests'])
-        if product.for_rental:
+        if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'rental_price': int(product.get_price('day')),
                 'rental_unit': 'Day',
-                'rental_price_display': price_display(int(product.get_price('day')), product.currency) + '/Day',
+                'rental_price_display': price_display(int(product.get_price('day')), product.currency),
         })
             rental_price = product.rental_price
             if product.rental_unit == "half-day":
                 rental_price *= 4
             if product.rental_unit == 'hour':
                 rental_price *= 24
-        if product.for_sale:
+        if product.for_sale and product.category_id != product_defs.CATEGORY_ADVENTURE:
             product_data.update({
                 'sale_price': product.sale_price,
                 'sale_price_display': product.get_sale_price_display(),
@@ -177,12 +190,19 @@ def product_detail(request, pid):
             user = request.user
             liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
                 'product_id', flat=True)
+
             if RecentlyViewed.objects.filter(user=user, product=product):
                 RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
             else:
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
-    data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+    if product.category_id == product_defs.CATEGORY_ADVENTURE:
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
+        data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
+        data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
+        data['exp_time_unit'] = product.get_exp_time_unit_display()
+    else:
+        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
     if product.max_guests:
         data['max_guests'] = product.max_guests
 
@@ -199,8 +219,8 @@ def product_detail(request, pid):
     if product.get_amenities_display():
         data['amenities'] = product.get_amenities_display()
     data['short_desc'] = product.short_desc
-    if product.get_rental_unit_display():
-        data['rental_unit'] = product.get_rental_unit_display()
+    if product.new_rental_unit():
+        data['rental_unit'] = product.new_rental_unit()
     else:
         data['rental_unit'] = 'Day'
     if product.description:
@@ -232,6 +252,7 @@ def product_detail(request, pid):
         'user_id': product.owner_id,
         'name': product.owner.basic_info()['name'],
         'photo': product.owner.basic_info()['photo'],
+        'purpose': product.owner.userprofile.purpose,
     }
     reviews = Review.objects.filter(product=product).order_by('-date_created')
     last_review = reviews.first()
@@ -260,7 +281,7 @@ def product_detail(request, pid):
         },
     }
 
-    if product.for_rental:
+    if product.for_rental and product.category_id != product_defs.CATEGORY_ADVENTURE:
         price = get_product_discount(product.rental_price, product.rental_unit, product.discount_weekly, product.discount_monthly)
         discount = {
             'discount': {
@@ -294,7 +315,7 @@ def product_detail(request, pid):
         content['rooms'] = p.rooms or 0
         content['rental_price_display'] = p.get_rental_price_display()
         content['sale_price_display'] = p.get_sale_price_display()
-        content['rental_unit'] = p.rental_unit
+        content['rental_unit'] = p.new_rental_unit()
         content['image'] = p.main_image and p.main_image.image.url or ''
 
         similar_product_dict.append(content)
@@ -368,8 +389,8 @@ def calc_total_price(request):
     end_datetime = form.cleaned_data['end_datetime']
     rental_unit = form.cleaned_data['rental_unit']
     product = form.cleaned_data['product']
-
-    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime)[1]
+    guest_count = form.cleaned_data['guest_count']
+    total_amount = calc_price(product, rental_unit, start_datetime, end_datetime, guest_count)[1]
     data = [{
         'amount': total_amount,
         'currency': product.currency,
@@ -387,6 +408,9 @@ def product_update(request):
         product = Product.objects.get(id=request.POST.get('product_id'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    product_start_time = product.exp_start_time
+    product_end_time = product.exp_end_time
 
     form = ProductUpdateForm(request.POST, instance=product)
     if not form.is_valid():
@@ -416,6 +440,11 @@ def product_update(request):
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
+
+    exp_start_time = form.cleaned_data.get('exp_start_time')
+    exp_end_time = form.cleaned_data.get('exp_end_time')
+    if exp_start_time != product_start_time or exp_end_time != product_end_time:
+        recreate_rental_out_date(product)
 
     return CoastalJsonResponse()
 
@@ -546,8 +575,8 @@ def discount_calculator(request):
     price = get_product_discount(rental_price, rental_unit, discount_weekly, discount_monthly)
 
     data = {
-        'weekly_price': price[0],
-        'monthly_price': price[1],
+        'weekly_price': format(price[0], ','),
+        'monthly_price': format(price[1], ','),
     }
     return CoastalJsonResponse(data)
 
@@ -576,28 +605,85 @@ def black_dates_for_rental(request):
     for dr in date_ranges:
         data.append([localtime(dr.start_date).date(), localtime(dr.end_date).date()])
 
-    date_ranges2 = RentalOutDate.objects.filter(product=product)
-    for dr in date_ranges2:
-        start_date = localtime(dr.start_date)
-        end_date = localtime(dr.end_date)
-        if rental_unit == 'day':
-            if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT, product_defs.CATEGORY_ROOM):
-                start_date = start_date - timedelta(hours=12)
-                end_date = end_date - timedelta(hours=12) - timedelta(seconds=1)
+    date_ranges2 = RentalOutDate.objects.filter(product=product).order_by('start_date')
+    if product.category_id == product_defs.CATEGORY_ADVENTURE:
+        for dr in date_ranges2:
+            start_date = localtime(dr.start_date)
+            end_date = localtime(dr.end_date)
+            if start_date.hour != 0:
+                start_date = (start_date + timedelta(days=1)).replace(hour=0)
+            elif end_date.hour != 0:
+                end_date = end_date.replace(hour=0)
+
+            end_date -= timedelta(minutes=1)
+            if start_date < end_date:
                 data.append([start_date.date(), end_date.date()])
+    else:
+        for dr in date_ranges2:
+            start_date = localtime(dr.start_date)
+            end_date = localtime(dr.end_date)
+            if rental_unit == 'day':
+                if product.category_id in (product_defs.CATEGORY_HOUSE, product_defs.CATEGORY_APARTMENT, product_defs.CATEGORY_ROOM):
+                    start_date = start_date - timedelta(hours=12)
+                    end_date = end_date - timedelta(hours=12) - timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
+                else:
+                    end_date = end_date - timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
             else:
-                end_date = end_date - timedelta(seconds=1)
-                data.append([start_date.date(), end_date.date()])
-        else:
-            if start_date.hour == 12:
-                start_date += timedelta(hours=12)
-            if end_date.hour == 12:
-                end_date -= timedelta(hours=12)
-            if start_date != end_date:
-                end_date -= timedelta(seconds=1)
-                data.append([start_date.date(), end_date.date()])
+                if start_date.hour == 12:
+                    start_date += timedelta(hours=12)
+                if end_date.hour == 12:
+                    end_date -= timedelta(hours=12)
+                if start_date != end_date:
+                    end_date -= timedelta(seconds=1)
+                    data.append([start_date.date(), end_date.date()])
 
     return CoastalJsonResponse(data)
+
+
+def get_available_time(request):
+    product_id = request.GET.get('product_id')
+    date = request.GET.get('date')
+    try:
+        product = Product.objects.get(id=product_id)
+    except (Product.DoesNotExist, ValueError):
+        return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
+
+    if product.exp_time_unit != 'hour':
+        return CoastalJsonResponse(status=response.STATUS_405, message="The product does not support to be booked by hours.")
+
+    start_time = timezone.make_aware(timezone.datetime.strptime(date, '%Y-%m-%d'))
+    end_time = start_time + timezone.timedelta(seconds=24 * 3600 - 1)
+
+    if BlackOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
+        return CoastalJsonResponse(status=response.STATUS_1300)
+    elif RentalOutDate.objects.filter(product=product, start_date__lte=start_time, end_date__gte=end_time).exists():
+        return CoastalJsonResponse(status=response.STATUS_1300)
+    else:
+        out_ranges = list(RentalOutDate.objects.filter(
+            product=product, start_date__gte=start_time, end_date__lte=end_time).order_by(
+            'start_date').values_list('start_date', 'end_date'))
+        out_ranges.insert(0, (start_time, start_time))
+        out_ranges.append((end_time, end_time))
+
+        available_start_time = []
+        for i in range(len(out_ranges) - 1):
+            a = timezone.localtime(out_ranges[i][1])
+            b = timezone.localtime(out_ranges[i + 1][0])
+            if b.time() <= product.exp_start_time or a.time() >= product.exp_end_time:
+                continue
+
+            a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
+            b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
+            b = b - timezone.timedelta(hours=product.exp_time_length)
+            if b >= a:
+                available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
+
+        if not available_start_time:
+            return CoastalJsonResponse(status=response.STATUS_1300)
+
+    return CoastalJsonResponse({'start_time': available_start_time})
 
 
 def search(request):
@@ -638,7 +724,7 @@ def search(request):
             'for_rental': product.for_rental or '',
             'for_sale': product.for_sale or '',
             'max_guests': product.max_guests or 0,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         }
@@ -708,6 +794,8 @@ def product_owner(request):
     spaces_list = []
     yachts_list = []
     jets_list = []
+    experience_list = []
+
     for product in products:
         liked_product_id_list = []
         if request.user.is_authenticated:
@@ -760,6 +848,26 @@ def product_owner(request):
             else:
                 yachts_dict['beds'] = product.beds or 0
             yachts_list.append(yachts_dict)
+        elif product.category.get_root().id == 9:
+            experience_list.append({
+                "id": product.id,
+                "category": product.category_id,
+                "image": product.images and product.images[0].image.url or '',
+                "liked": product.id in liked_product_id_list,
+                "rental_price": product.rental_price,
+                "rental_price_display": product.get_rental_price_display(),
+                "rental_unit": product.new_rental_unit(),
+                "city": product.city,
+                "max_guests": product.max_guests or 0,
+                'beds': product.beds or 0,
+                'rooms': product.rooms or 0,
+                "reviews_count": reviews_avg_score['id__count'],
+                "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
+                'exp_start_time':  product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
+                'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
+                'exp_time_unit': product.get_exp_time_unit_display(),
+                'exp_time_length': product.exp_time_length or 0,
+            })
         else:
             jets_list.append({
                 "id": product.id,
@@ -786,6 +894,7 @@ def product_owner(request):
         'name': user.first_name,
         'email': secure_email(user.email),
         'photo': user.basic_info()['photo'],
+        'purpose': user.userprofile.purpose,
     }
     if reviews:
         latest_review = {
@@ -800,7 +909,8 @@ def product_owner(request):
     products = {
         'spaces': spaces_list,
         'yachts': yachts_list,
-        'jets': jets_list
+        'jets': jets_list,
+        'experience': experience_list,
     }
     result = {
         'owner': owner,
@@ -846,13 +956,13 @@ def flag_junk(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     try:
-        product = Product.objects.get(id=request.POST.get('pid'))
+        product = Product.objects.get(id=request.POST.get('product_ids'))
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
 
-    if request.POST.get('reported') == '1':
+    if request.POST.get('flag') == '1':
         if Report.objects.filter(product=product, user=request.user):
             Report.objects.filter(product=product, user=request.user).update(status=0, datetime=datetime.now())
         else:
@@ -917,7 +1027,7 @@ def all_detail(request):
         'for_sale': product.for_sale,
         'rental_price': product.rental_price or 0,
         'rental_price_display': product.get_rental_price_display(),
-        'rental_unit': product.get_rental_unit_display(),
+        'rental_unit': product.new_rental_unit(),
         'currency': product.currency,
         'sale_price': product.sale_price or 0,
         'sale_price_display': product.get_sale_price_display(),
@@ -935,6 +1045,10 @@ def all_detail(request):
         'desc_interaction': product.desc_interaction or '',
         'desc_getting_around': product.desc_getting_around or '',
         'desc_other_to_note': product.desc_other_to_note or '',
+        'exp_time_unit': product.get_exp_time_unit_display() or '',
+        'exp_time_length': product.exp_time_length or 0,
+        'exp_start_time': product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
+        'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
     }
     result.update(discount)
     return CoastalJsonResponse(result)

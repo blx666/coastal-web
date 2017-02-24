@@ -1,4 +1,5 @@
 from celery import shared_task
+from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.rental.models import RentalOrder
 from coastal.apps.rental.utils import clean_rental_out_date
 from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_paid_owner_order, \
@@ -51,11 +52,11 @@ def check_in(order_id):
         return
 
     if order.status == 'booked':
-        order.status = 'check_in'
+        order.status = 'check-in'
         order.save()
 
-        pay_owner.apply_async((order_id,), countdown=3 * 60 * 60)
-
+        pay_owner.apply_async((order.id,), countdown=3 * 60 * 60)
+        check_out.apply_async((order.id,), eta=order.local_end_datetime)
 
 
 @shared_task
@@ -66,11 +67,23 @@ def pay_owner(order_id):
         # TODO: add log
         return
 
-    if order.status == 'check-in':
-        # TODO: pay owner coastal dollar
+    if order.status in ('check-in', 'check-out'):
+        bucket = CoastalBucket.objects.get(user=order.owner)
+        bucket.balance += order.total_price_usd
+        bucket.save()
+        Transaction.objects.create(
+            bucket=bucket,
+            type='in',
+            order_number=order.number
+        )
 
-        order.status = 'paid'
-        order.save()
+        if order.status == 'check-in':
+            order.status = 'paid'
+            order.save()
+
+        if order.status == 'check-out':
+            order.status = 'finished'
+            order.save()
 
         try:
             publish_paid_owner_order(order)
@@ -86,9 +99,14 @@ def check_out(order_id):
         # TODO: add log
         return
 
-    if order.status == 'paid':
-        order.status = 'finished'
-        order.save()
+    if order.status in ('check-in', 'paid'):
+        if order.status == 'check-in':
+            order.status = 'check-out'
+            order.save()
+
+        if order.status == 'paid':
+            order.status = 'finished'
+            order.save()
 
         try:
             publish_check_out_order(order)

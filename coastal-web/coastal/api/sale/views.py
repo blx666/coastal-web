@@ -101,6 +101,8 @@ def make_offer(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
     product = form.cleaned_data.get('product')
+    if product.status != 'published':
+        return CoastalJsonResponse(form.errors, status=response.STATUS_1301)
     sale_offer = form.save(commit=False)
 
     sale_offer.status = 'request'
@@ -152,6 +154,8 @@ def payment_stripe(request):
     :param request: POST data {"sale_offer_id": 1, "card_id": "card_19UiVAIwZ8ZTWo9bYTC4hguE"}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('pay', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -161,6 +165,9 @@ def payment_stripe(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    if sale_offer.status in CHARGED_STATUS_LIST:
+        return CoastalJsonResponse(status=response.STATUS_1500)
 
     if sale_offer.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)
@@ -200,6 +207,8 @@ def payment_coastal(request):
     :param request: POST data {"sale_offer_id": 1}
     :return: json data {}
     """
+    CHARGED_STATUS_LIST = ('pay', 'finished')
+
     if request.method != 'POST':
         return CoastalJsonResponse(status=response.STATUS_405)
 
@@ -209,6 +218,9 @@ def payment_coastal(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
+
+    if sale_offer.status in CHARGED_STATUS_LIST:
+        return CoastalJsonResponse(status=response.STATUS_1500)
 
     if sale_offer.status != 'charge':
         return CoastalJsonResponse({'order': 'The order status should be Unpaid'}, status=response.STATUS_405)

@@ -1,0 +1,70 @@
+{% load staticfiles %}
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Thanks for signing up！</title>
+<meta name="description" content="">
+<meta name="keywords" content="">
+<link rel="short icon" href="/static/img/coastal.ico">
+<link href="" rel="stylesheet">
+<script src="/static/js/jquery-3.1.1.js"></script>
+</head>
+<body>
+    <style>
+		*,*:before,*:after{ padding:0; margin: 0; box-sizing:border-box;-moz-box-sizing:border-box; -webkit-box-sizing:border-box; }
+		body{ width:100%; height: 100%; background-color: #6da3dc; line-height: 1.45;color: #fff; font-family: "Avenir,Helvetica";}
+		input[type="text"],input[type="email"],input[type="password"],input[type="submit"]{ -webkit-appearance:none; border:none; padding:0; background-color: transparent;outline: none;}
+		::-webkit-input-placeholder { /* WebKit browsers */ color:#666;}
+		:-moz-placeholder { /* Mozilla Firefox 4 to 18 */ color:#666;}
+		::-moz-placeholder { /* Mozilla Firefox 19+ */  color:#666;}
+		:-ms-input-placeholder { /* Internet Explorer 10+ */ color:#666;}
+		.hidden{ display: none; }
+		#id_email input{outline:none}
+		input.btn{ display: inline-block; padding: 6px 12px; border-radius: 6px; background-color: #fff; line-height: 1.4; height: 40px; font-size: 16px; color: #6da3dc; }
+		.page-sign-up{ padding-left: 30px; padding-right: 30px; text-align: center; color: #fff; margin-top:100px; font-size: 14px; }
+		.page-sign-up p{ font-size: 20px; margin-bottom: 40px; }
+		.page-sign-up input.btn{ width: 260px; margin-top: 30px; }
+		.form-group{ margin-bottom: 20px; }
+		.form-group .input-group{ position: relative;  width: 260px; margin: 0 auto; }
+		.form-group input{ font-size: inherit; border-bottom: 1px solid #fff; display: inline-block; width: 100%; padding-right: 22px; height:40px; line-height: 40px; color: inherit; }
+		.input-group .glyphicon{ position: absolute; width:18px; height:16px; content:"	"; background:url({% static 'img/ico_access.png' %}) no-repeat;
+		background-size: 100%; right: 2px; top:50%; margin-top: -8px;}
+		.form-group .control-label{ display: none; width: 260px; margin:0 auto; text-align: left; }
+        .form-group .control-label ul li { list-style: none; }
+		.form-group.mes-error{ margin-bottom: 10px; }
+		.form-group.mes-error input{ border-bottom:1px solid rgba(255, 0, 0, 0.66); }
+		.form-group.mes-error .control-label{ display: block; color:#ff0000; opacity: 0.66; }
+	</style>
+	<div class="page-sign-up">
+        {% if referrer %}
+            <p>{{ referrer.basic_info.name }} invited you to join itsCoastal.</p>
+        {% else %}
+            <p>Your invite code is invalid.</p>
+        {% endif %}
+	   	<form action="" method="post">
+	   		<div class="form-group form-group-name {% if form.errors.email %}mes-error{% endif %}">
+	   			<div class="input-group">
+                    {{ form.email }}
+	   			</div>
+                <label class="control-label">{{ form.errors.email }}</label>
+	   		</div>
+	   		<div class="form-group form-group-pwd {% if form.errors.password %}mes-error{% endif %}">
+	   			<div class="input-group">
+                    {{ form.password }}
+	   			</div>
+                <label class="control-label">{{ form.errors.password }}</label>
+	   		</div>
+            <input type="submit" value="Sign Up" class="btn" id="btn-sign-up">
+	   	</form>
+	</div>
+
+</body>
+<script>
+    document.getElementById('id_email').setAttribute('placeholder','Enter your email');
+    document.getElementById('id_password').setAttribute('placeholder','Create your password');
+</script>
+</html>

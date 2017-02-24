@@ -1,5 +1,6 @@
 from dateutil.rrule import rrule, DAILY
 from itertools import chain
+import logging
 
 from django.contrib.auth import authenticate, login as auth_login, logout as auth_logout
 from django.contrib.auth.models import User
@@ -17,10 +18,14 @@ from coastal.apps.account.models import ValidateEmail, FavoriteItem
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
-from coastal.apps.account.models import UserProfile, CoastalBucket
+from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token
+from django.urls import reverse
+from coastal.apps.product import defines as product_defs
+
+logger = logging.getLogger(__name__)
 
 
 def register(request):
@@ -33,6 +38,8 @@ def register(request):
 
     cleaned_data = register_form.cleaned_data
     user = create_user(cleaned_data['email'], cleaned_data['password'])
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 (cleaned_data['email'], cleaned_data['token'], cleaned_data['uuid'], ))
 
     auth_login(request, user)
     if cleaned_data['uuid'] and cleaned_data['token']:
@@ -58,8 +65,11 @@ def facebook_login(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s, User name is %s, User client is Facebook' %
+                 (form.cleaned_data['userid'], form.cleaned_data['token'], form.cleaned_data['uuid'], form.cleaned_data['name']))
     user = User.objects.filter(username=form.cleaned_data['userid']).first()
     if user:
+        is_first = not bool(user.last_login)
         auth_login(request, user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -67,6 +77,7 @@ def facebook_login(request):
                                    first_name=name_list.pop(), last_name=' '.join(name_list))
         UserProfile.objects.create(user=user, email_confirmed='confirmed', client='facebook')
         CoastalBucket.objects.create(user=user)
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
     if form.cleaned_data['token']:
@@ -80,7 +91,9 @@ def facebook_login(request):
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
+        'first_login': is_first,
     }
+
     return CoastalJsonResponse(data)
 
 
@@ -89,7 +102,10 @@ def login(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     user = authenticate(username=request.POST.get('username'), password=request.POST.get('password'))
+    logger.debug('Logging user is %s, User token is %s, User uuid is %s' %
+                 (request.POST.get('username'), request.POST.get('token'), request.POST.get('uuid')))
     if user:
+        is_first = not bool(user.last_login)
         auth_login(request, user)
 
         uuid = request.POST.get('uuid')
@@ -105,6 +121,7 @@ def login(request):
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
+            'first_login': is_first,
         }
     else:
         data = {
@@ -139,7 +156,8 @@ def update_profile(request):
         for key in form.data:
             if key == 'name':
                 name_list = form.cleaned_data['name'].split()
-                setattr(user, 'last_name', name_list.pop())
+                if len(name_list) > 1:
+                    setattr(user, 'last_name', name_list.pop())
                 setattr(user, 'first_name', ' '.join(name_list))
             else:
                 if key in form.cleaned_data:
@@ -154,6 +172,7 @@ def update_profile(request):
             'email_confirmed': user.userprofile.email_confirmed,
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
+            'purpose': user.userprofile.purpose,
         }
         return CoastalJsonResponse(data)
     return CoastalJsonResponse(form.errors, status=response.STATUS_400)
@@ -170,12 +189,13 @@ def my_profile(request):
         'email_confirmed': user.userprofile.email_confirmed,
         'name': user.get_full_name(),
         'photo': user.basic_info()['photo'],
+        'purpose': user.userprofile.purpose
     }
     return CoastalJsonResponse(data)
 
 
-@login_required
 def logout(request):
+    logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
     unbind_token(request.POST.get('token'), request.user)
     auth_logout(request)
     return CoastalJsonResponse()
@@ -252,13 +272,23 @@ def my_activity(request):
         if isinstance(order, RentalOrder):
             start_time = order.start_datetime
             end_time = order.end_datetime
-
-            if order.rental_unit == 'day':
-                date_format = '%A, %B, %d'
-            else:
+            if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
                 date_format = '%A, %B, %d, %l:%M %p'
-            start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-            end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
+                if order.product.exp_time_unit == 'hour':
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
+                else:
+                    start_hour = order.product.exp_start_time.hour
+                    end_hour = order.product.exp_end_time.hour
+                    start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
+                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
+            else:
+                if order.rental_unit == 'day':
+                    date_format = '%A, %B, %d'
+                else:
+                    date_format = '%A, %B, %d, %l:%M %p'
+                start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
+                end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
 
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
@@ -274,10 +304,13 @@ def my_activity(request):
                 'start_date': start_time_display,
                 'end_date': end_time_display,
                 'total_price_display': order.get_total_price_display(),
-                'more_info': '%s %s' % (guest_count_display, order.get_time_length_display()),
                 'status': order.get_status_display(),
                 'type': 'rental'
             }
+            if order.product.category.get_root().id != product_defs.CATEGORY_ADVENTURE:
+                data['more_info'] = '%s %s' % (guest_count_display, order.get_time_length_display())
+            if order.product.category.get_root().id == product_defs.CATEGORY_ADVENTURE:
+                data['more_info'] = '%s' % guest_count_display
         else:
             data = {
                 'id': order.id,
@@ -294,7 +327,6 @@ def my_activity(request):
             }
 
         result['orders'].append(data)
-
     return CoastalJsonResponse(result)
 
 
@@ -303,12 +335,13 @@ def my_account(request):
     user = request.user
 
     data = {
-        'coastal_dollar': user.coastalbucket.balance,
+        'coastal_dollar': format(int(user.coastalbucket.balance), ','),
         'profile': {
             'name': user.get_full_name(),
             'email': user.email,
             'email_confirmed': user.userprofile.email_confirmed,
             'photo': user.basic_info()['photo'],
+            'purpose': user.userprofile.purpose,
         }
     }
 
@@ -481,3 +514,22 @@ def my_orders(request):
 @login_required
 def stripe_info(request):
     return CoastalJsonResponse(get_stripe_info(request.user))
+
+
+@login_required
+def invite_codes(request):
+    if not request.user.userprofile.invite_code:
+        invite_code = InviteCode.objects.filter(used=False)[0].invite_code
+        UserProfile.objects.filter(user=request.user).update(invite_code=invite_code)
+        InviteCode.objects.filter(invite_code=invite_code).update(used=True)
+    else:
+        invite_code = request.user.userprofile.invite_code
+    data = {
+        'invite_code': invite_code,
+        'invite_url': 'http://%s%s' % (settings.SITE_DOMAIN, reverse('account:sign-up', args=(invite_code,))),
+        'invite_msg': '%s %s' % (request.user.first_name or 'Your friend', "invited you to join itsCoastal."),
+        'award_msg': 'Sign up and get $35 off your first adventure.',
+        'logo_url': 'http://%s%s' % (settings.SITE_DOMAIN, '/static/img/coastal.ico'),
+    }
+
+    return CoastalJsonResponse(data)

@@ -53,14 +53,20 @@ def push_notification(receiver, content, extra_attr=None):
 
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
-            continue
+            Token.objects.filter(user=receiver, endpoint=endpoint).delete()
 
-        res = aws.publish(
-            Message=json.dumps(result_message),
-            TargetArn=endpoint,
-            MessageStructure='json'
-        )
-        logger.debug('The response of publish message: \n%s' % res)
+        logger.debug('message: %s' % result_message)
+        try:
+            res = aws.publish(
+                Message=json.dumps(result_message),
+                TargetArn=endpoint,
+                MessageStructure='json'
+            )
+            logger.debug('The response of publish message: \n%s' % res)
+        except ClientError as e:
+            logger.error(e)
+
+
 
 
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
@@ -113,7 +119,7 @@ def publish_confirmed_order(rental_order):
         'is_rental': True,
         'rental_order_id': rental_order.id,
         'product_id': product.id,
-        'product_name': product.product.name,
+        'product_name': product.name,
         'product_image': product.get_main_image(),
         'rental_order_status': rental_order.get_status_display(),
         'total_price_display': rental_order.get_total_price_display(),
@@ -274,6 +280,7 @@ def publish_paid_owner_offer(sale_offer):
         sale_offer.product.name, sale_offer.coastal_dollar)
     extra_attr = {
         'type': 'check_in_offer',
+        'sale_offer_id': sale_offer.id,
         'product_name': sale_offer.product.name,
         'coastal_dollar': sale_offer.coastal_dollar,
         'product': {

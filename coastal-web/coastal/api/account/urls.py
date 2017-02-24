@@ -16,5 +16,6 @@ urlpatterns = [
     url(r'^my-calendar/orders/$', views.my_orders, name='my-orders'),
 
     url(r'^stripe-info/$', views.stripe_info, name='stripe-info'),
-    url(r'^login/facebook/$', views.facebook_login, name='facebook-login')
+    url(r'^login/facebook/$', views.facebook_login, name='facebook-login'),
+    url(r'^invite-code/$', views.invite_codes, name='invite-code'),
 ]

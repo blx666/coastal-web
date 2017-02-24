@@ -10,6 +10,10 @@ from coastal.apps.product.models import Product, ProductImage
 from coastal.api.product.utils import bind_product_main_image
 from coastal.apps.account.models import FavoriteItem
 from coastal.api import defines as defs
+from coastal.apps.product import defines as product_defs
+from coastal.apps.currency.utils import price_display
+from django.db.models import Avg, Count
+from coastal.apps.review.models import Review
 
 
 def home(request):
@@ -31,7 +35,7 @@ def home(request):
         home_banners_list.append(banner_dict)
 
     # get recommended products
-    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price')
+    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price', '-sale_usd_price')
 
     paginator = Paginator(products, defs.PER_PAGE_ITEM)
     try:
@@ -56,7 +60,7 @@ def home(request):
             'length': product.length or 0,
             'beds': product.beds or 0,
             "category": product.category_id,
-            'rental_unit': product.get_rental_unit_display(),
+            'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
         })
@@ -67,6 +71,10 @@ def home(request):
 
         product_data['liked'] = product.id in liked_product_id_list
         product_data['image'] = product.main_image and product.main_image.image.url or ''
+        reviews = Review.objects.filter(product=product)
+        avg_score = reviews.aggregate(Avg('score'), Count('id'))
+        product_data['reviews_count'] = avg_score['id__count']
+        product_data['reviews_avg_score'] = avg_score['score__avg'] or 0
         if product.point:
             product_data.update({
                 "lon": product.point[0],

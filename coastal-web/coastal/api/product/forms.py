@@ -5,6 +5,7 @@ from django import forms
 from django.contrib.gis.geos import Point
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
+from coastal.apps.product import defines as product_defs
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -23,6 +24,7 @@ class ProductAddForm(forms.ModelForm):
     for_rental = forms.CharField(required=False)
     exp_start_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
     exp_end_time = forms.TimeField(required=False, input_formats=['%I:%M %p'])
+    max_guests = forms.CharField(required=False)
 
     def clean_currency(self):
         currency_code = Currency.objects.values_list('code')
@@ -87,6 +89,9 @@ class ProductAddForm(forms.ModelForm):
                 self.cleaned_data['point'] = Point(lon, lat)
             except:
                 raise forms.ValidationError('lon or lat is invalid.')
+        if self.cleaned_data.get('category') == product_defs.CATEGORY_ADVENTURE:
+            self.cleaned_data['for_sale'] = False
+            self.cleaned_data['for_rental'] = True
 
     def clean_black_out_dates(self):
         black_out_dates = self.cleaned_data.get('black_out_dates').replace('(', '[').replace(')', ']')
@@ -111,6 +116,15 @@ class ProductAddForm(forms.ModelForm):
                     date_list.append([second_date, first_date + timedelta])
             return date_list
 
+    def clean_max_guests(self):
+        max_guests = self.cleaned_data['max_guests']
+        if max_guests and max_guests.endswith('+'):
+            try:
+                return int(max_guests[:-1])
+            except ValueError:
+                raise forms.ValidationError('The max_guests value is invalid.')
+        return max_guests
+
     class Meta:
         model = Product
         exclude = ['owner', 'score', 'status', 'timezone']
@@ -124,7 +138,7 @@ class ProductUpdateForm(ProductAddForm):
     )
     city = forms.CharField(max_length=100, required=False)
     country = forms.CharField(max_length=100, required=False)
-    max_guests = forms.IntegerField(required=False)
+    max_guests = forms.CharField(required=False)
     action = forms.ChoiceField(required=False, choices=ACTION_CHOICES)
 
     def clean(self):
@@ -157,13 +171,13 @@ class ProductListFilterForm(forms.Form):
     def clean_category(self):
         category = self.cleaned_data.get('category')
         if category:
-            return category.split(',')
+            return list(map(int, category.split(',')))
 
     def clean_guests(self):
         guests = self.cleaned_data.get('guests')
         if guests and guests.endswith('+'):
             try:
-                return int(guests[:-1]) + 1
+                return int(guests[:-1])
             except ValueError:
                 return ''
         else:
