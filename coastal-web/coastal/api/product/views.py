@@ -72,7 +72,7 @@ def product_list(request):
     if category:
         products = products.filter(category_id__in=category)
 
-    if product_defs.CATEGORY_ADVENTURE not in category:
+    if category and product_defs.CATEGORY_ADVENTURE not in category:
         if for_rental and not for_sale:
             products = products.filter(for_rental=True)
         elif for_sale and not for_rental:
