@@ -171,7 +171,7 @@ class ProductListFilterForm(forms.Form):
     def clean_category(self):
         category = self.cleaned_data.get('category')
         if category:
-            return category.split(',')
+            return list(map(int, category.split(',')))
 
     def clean_guests(self):
         guests = self.cleaned_data.get('guests')
