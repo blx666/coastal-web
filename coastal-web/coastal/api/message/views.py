@@ -4,6 +4,7 @@ from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
+from coastal.apps.sale.models import SaleOffer
 from django.contrib.gis.db.models import Q
 from coastal.api.core.decorators import login_required
 import datetime
@@ -35,7 +36,7 @@ def create_dialogue(request):
             owner, guest, product = order.owner, order.guest, order.product
         elif request.POST.get('sale_offer_id'):
             try:
-                offer = RentalOrder.objects.get(id=request.POST['sale_offer_id'])
+                offer = SaleOffer.objects.get(id=request.POST['sale_offer_id'])
             except RentalOrder.DoesNotExist:
                 return CoastalJsonResponse({'sale_offer_id': 'The sale offer does not exist.'},
                                            status=response.STATUS_400)
