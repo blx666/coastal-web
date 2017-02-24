@@ -309,6 +309,17 @@ class Product(models.Model):
         image_info = self._product_images()
         return image_info['images'] and image_info['images'][0]['url'] or ''
 
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        currency_rate = get_exchange_rate(self.currency)
+        if self.currency and self.rental_unit and self.rental_price:
+            self.rental_usd_price = math.ceil(self.get_price('day') / currency_rate)
+        if self.currency and self.sale_price:
+            self.sale_usd_price = math.ceil(self.sale_price / currency_rate)
+        if self.category_id == defs.CATEGORY_ADVENTURE and self.rental_price:
+            self.rental_usd_price = math.ceil(self.rental_price / currency_rate)
+        super(Product, self).save()
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (

@@ -194,7 +194,7 @@ class ProductListFilterForm(forms.Form):
 
         category = self.cleaned_data['category']
         if category and product_defs.CATEGORY_ADVENTURE in category:
-            self.cleaned_data['category_exp'] = category.pop()
+            self.cleaned_data['category_exp'] = category.pop(a.index(product_defs.CATEGORY_ADVENTURE))
 
 
 class DiscountCalculatorFrom(forms.Form):
