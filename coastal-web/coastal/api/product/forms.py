@@ -192,6 +192,10 @@ class ProductListFilterForm(forms.Form):
         else:
             self.cleaned_data['price_field'] = 'rental_usd_price'
 
+        category = self.cleaned_data['category']
+        if category and product_defs.CATEGORY_ADVENTURE in category:
+            self.cleaned_data['category_exp'] = category.pop()
+
 
 class DiscountCalculatorFrom(forms.Form):
     CHARGE_UNIT_CHOICES = (
