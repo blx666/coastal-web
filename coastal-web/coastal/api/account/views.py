@@ -195,9 +195,10 @@ def my_profile(request):
 
 
 def logout(request):
-    logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
-    unbind_token(request.POST.get('token'), request.user)
-    auth_logout(request)
+    if request.user.is_authenticated():
+        logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
+        unbind_token(request.POST.get('token'), request.user)
+        auth_logout(request)
     return CoastalJsonResponse()
 
 
