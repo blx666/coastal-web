@@ -7,6 +7,7 @@ from treebeard.mp_tree import MP_Node
 from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
+from coastal.apps.currency.utils import get_exchange_rate
 
 
 class Category(MP_Node):
