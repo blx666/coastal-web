@@ -4,7 +4,7 @@ from django.contrib.gis.measure import D
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.forms.models import model_to_dict
 from django.views.decorators.cache import cache_page
 from django.utils import timezone
@@ -51,8 +51,8 @@ def product_list(request):
     checkout_date = form.cleaned_data['checkout_date']
     min_price = form.cleaned_data['min_price']
     max_price = form.cleaned_data['max_price']
-    sort = form.cleaned_data['sort']
     category = form.cleaned_data['category']
+    category_exp = form.cleaned_data.get('category_exp')
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
@@ -65,23 +65,6 @@ def product_list(request):
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
     else:
         point = None
-
-    if guests:
-        products = products.filter(max_guests__gte=guests)
-
-    if category:
-        products = products.filter(category_id__in=category)
-
-    if category and product_defs.CATEGORY_ADVENTURE not in category:
-        if for_rental and not for_sale:
-            products = products.filter(for_rental=True)
-        elif for_sale and not for_rental:
-            products = products.filter(for_sale=True)
-
-    if min_price:
-        products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
-    if max_price:
-        products = products.filter(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
@@ -101,13 +84,39 @@ def product_list(request):
     elif max_coastline_distance:
         products = products.filter(distance_from_coastal__lte=max_coastline_distance)
 
-    if sort:
-        products = products.order_by(sort.replace('price', 'rental_price'))
+    if guests:
+        products = products.filter(max_guests__gte=guests)
+
+    query, query_exp = None, None
+    if category:
+        query = Q(category__in=category)
+        if for_rental and not for_sale:
+            query &= Q(for_rental=True)
+        elif for_sale and not for_rental:
+            query &= Q(for_sale=True)
+        if min_price:
+            query &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
+        if max_price:
+            query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
+    if category_exp:
+        query_exp = Q(category=category_exp)
+        if min_price:
+            query_exp &= Q(rental_usd_price__gte=min_price)
+        if max_price:
+            query_exp &= Q(rental_usd_price__lte=max_price)
+
+    if query and query_exp:
+        products = products.filter(query | query_exp)
+    elif query:
+        products = products.filter(query)
+    elif query_exp:
+        products = products.filter(query_exp)
 
     if point:
         products = products.order_by(Distance('point', point), '-score', '-rental_usd_price', '-sale_usd_price')
     else:
         products = products.order_by('-score', '-rental_usd_price', '-sale_usd_price')
+
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM

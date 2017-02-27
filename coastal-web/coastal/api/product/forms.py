@@ -101,7 +101,7 @@ class ProductAddForm(forms.ModelForm):
             except:
                 raise forms.ValidationError('the black_out_days is invalid.')
             date_list = []
-            timedelta = datetime.timedelta(hours=23,minutes=59,seconds=59)
+            timedelta = datetime.timedelta(hours=23, minutes=59, seconds=59)
             for day in black_out_dates:
                 if len(day) != 2:
                     raise forms.ValidationError('the black_out_days list is invalid.')
@@ -123,6 +123,8 @@ class ProductAddForm(forms.ModelForm):
                 return int(max_guests[:-1])
             except ValueError:
                 raise forms.ValidationError('The max_guests value is invalid.')
+        if not max_guests:
+            return None
         return max_guests
 
     class Meta:
@@ -191,6 +193,10 @@ class ProductListFilterForm(forms.Form):
             self.cleaned_data['price_field'] = 'sale_usd_price'
         else:
             self.cleaned_data['price_field'] = 'rental_usd_price'
+
+        category = self.cleaned_data['category']
+        if category and product_defs.CATEGORY_ADVENTURE in category:
+            self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
 
 
 class DiscountCalculatorFrom(forms.Form):
