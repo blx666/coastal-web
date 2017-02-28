@@ -25,6 +25,13 @@ def home(request):
         banner_dict = {
             'city_name': banner.city_name,
             'image': banner.image.url,
+            'address_info': {
+                'country': banner.country,
+                'administrative_area_level_1': banner.state,
+                'administrative_area_level_2': banner.county,
+                'locality': banner.locality,
+                'sublocality': banner.sublocality,
+            },
         }
         if banner.point:
             banner_dict.update({
