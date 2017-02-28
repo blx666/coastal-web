@@ -26,11 +26,11 @@ def home(request):
             'city_name': banner.city_name,
             'image': banner.image.url,
             'address_info': {
-                'country': banner.country,
-                'administrative_area_level_1': banner.state,
-                'administrative_area_level_2': banner.county,
-                'locality': banner.locality,
-                'sublocality': banner.sublocality,
+                'country': banner.country or '',
+                'administrative_area_level_1': banner.state or '',
+                'administrative_area_level_2': banner.county or '',
+                'locality': banner.locality or '',
+                'sublocality': banner.sublocality or '',
             },
         }
         if banner.point:
