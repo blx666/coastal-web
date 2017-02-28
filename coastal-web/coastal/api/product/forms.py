@@ -159,6 +159,13 @@ class ProductListFilterForm(forms.Form):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
+
+    country = forms.CharField(required=False)
+    administrative_area_level_1 = forms.CharField(required=False)
+    administrative_area_level_2 = forms.CharField(required=False)
+    locality = forms.CharField(required=False)
+    sublocality = forms.CharField(required=False)
+
     guests = forms.CharField(required=False)
     arrival_date = forms.DateTimeField(required=False)
     checkout_date = forms.DateTimeField(required=False)
