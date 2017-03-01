@@ -78,7 +78,7 @@ def product_list(request):
             query_boat_slip &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
     query2 = None
-    for q in (query, query_exp, category_boat_slip):
+    for q in (query, query_exp, query_boat_slip):
         if q:
             if not query2:
                 query2 = q
