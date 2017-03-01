@@ -159,7 +159,7 @@ def publish_paid_order(rental_order):
 # guest check in more than 24 hours
 def publish_paid_owner_order(rental_order):
     owner = rental_order.owner
-    message = 'Congratulations! You have earned %s ' % rental_order.coastal_dollar
+    message = 'Congratulations! You have earned $%s ' % rental_order.coastal_dollar
     extra_attr = {
         'type': 'check_in_order',
         'product_name': rental_order.product.name,
@@ -276,13 +276,13 @@ def publish_unpay_offer(sale_offer):
 # guest check in more than 24 hours
 def publish_paid_owner_offer(sale_offer):
     owner = sale_offer.owner
-    message = 'Congratulations! You sold your listing %s, and you have earned %s ' % (
+    message = 'Congratulations! You sold your listing %s, and you have earned $%s ' % (
         sale_offer.product.name, sale_offer.coastal_dollar)
     extra_attr = {
         'type': 'check_in_offer',
         'sale_offer_id': sale_offer.id,
         'product_name': sale_offer.product.name,
-        'coastal_dollar': sale_offer.coastal_dollar,
+        'coastal_dollar': '$%s' % format(int(sale_offer.coastal_dollar), ','),
         'product': {
             'id': sale_offer.product.id,
             'name': sale_offer.product.name,

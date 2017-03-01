@@ -335,7 +335,7 @@ def my_account(request):
     user = request.user
 
     data = {
-        'coastal_dollar': format(int(user.coastalbucket.balance), ','),
+        'coastal_dollar': '$%s' % format(int(user.coastalbucket.balance), ','),
         'profile': {
             'name': user.get_full_name(),
             'email': user.email,
