@@ -31,6 +31,7 @@ def product_list(request):
     category = form.cleaned_data['category']
     category_exp = form.cleaned_data.get('category_exp')
     category_boat_slip = form.cleaned_data.get('category_boat_slip')
+    category_empty = form.cleaned_data.get('category_empty')
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
@@ -82,6 +83,18 @@ def product_list(request):
         products = products.filter(query)
     elif query_exp:
         products = products.filter(query_exp)
+
+    if category_empty:
+        if for_rental and not for_sale:
+            query &= Q(for_rental=True)
+        elif for_sale and not for_rental:
+            query &= Q(for_sale=True)
+        if min_price:
+            query_exp &= Q(rental_usd_price__gte=min_price)
+        if max_price:
+            query_exp &= Q(rental_usd_price__lte=max_price)
+        if guests:
+            products = products.filter(max_guests__gte=guests)
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
