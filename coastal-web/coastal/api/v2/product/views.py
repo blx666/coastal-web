@@ -57,7 +57,7 @@ def product_list(request):
         if max_price:
             query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
         if guests:
-            products = products.filter(max_guests__gte=guests)
+            query &= Q(max_guests__gte=guests)
     if category_exp:
         query_exp = Q(category=category_exp)
         if min_price:
@@ -65,7 +65,7 @@ def product_list(request):
         if max_price:
             query_exp &= Q(rental_usd_price__lte=max_price)
         if guests:
-            products = products.filter(max_guests__gte=guests)
+            query &= Q(max_guests__gte=guests)
     if category_boat_slip:
         query_exp = Q(category=category_boat_slip)
         if for_rental and not for_sale:
@@ -86,13 +86,13 @@ def product_list(request):
 
     if category_empty:
         if for_rental and not for_sale:
-            query &= Q(for_rental=True)
+            products = products.filter(for_rental=True)
         elif for_sale and not for_rental:
-            query &= Q(for_sale=True)
+            products = products.filter(for_sale=True)
         if min_price:
-            query_exp &= Q(rental_usd_price__gte=min_price)
+            products = products.filter(rental_usd_price__gte=min_price)
         if max_price:
-            query_exp &= Q(rental_usd_price__lte=max_price)
+            products = products.filter(rental_usd_price__lte=max_price)
         if guests:
             products = products.filter(max_guests__gte=guests)
 
