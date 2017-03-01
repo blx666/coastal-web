@@ -206,12 +206,14 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     if product.category_id == product_defs.CATEGORY_ADVENTURE:
-        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
         data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
         data['exp_time_unit'] = product.get_exp_time_unit_display()
+        data['city'] = product.locality or ''
     else:
-        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'currency'])
+        data['city'] = product.locality or ''
     if product.max_guests:
         data['max_guests'] = product.max_guests
 
@@ -728,7 +730,7 @@ def search(request):
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
             'length': product.length or 0,
-            'city': product.city or '',
+            'city': product.locality or '',
             'id': product.id,
             'category': product.category_id,
             'liked': product.id in liked_product_id_list,
@@ -829,7 +831,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
@@ -849,7 +851,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'rooms': product.rooms or 0,
                 "reviews_count": reviews_avg_score['id__count'],
@@ -869,7 +871,7 @@ def product_owner(request):
                 "rental_price": product.rental_price,
                 "rental_price_display": product.get_rental_price_display(),
                 "rental_unit": product.new_rental_unit(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
@@ -893,7 +895,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,

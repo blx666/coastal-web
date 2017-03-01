@@ -355,7 +355,8 @@ def my_account(request):
             'id': product.id,
             'name': product.name,
             'image': product.images[0].image.url if len(product.images) else '',
-            'address': product.country + ',' + product.city,
+            # 'address': product.country + ',' + product.city,
+            'address': product.address,
             'status': product.status,
             'type': product.get_product_type(),
         }
