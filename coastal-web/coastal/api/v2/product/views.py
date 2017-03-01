@@ -2,6 +2,7 @@ from datetime import datetime
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
+from django.db.models import Avg, Count
 from django.forms.models import model_to_dict
 
 from coastal.api import defines as defs
@@ -192,10 +193,12 @@ def product_search(request):
                                                                                                      flat=True)
     products_list = []
     for product in product_page:
+        reviews = product.review_set
+        avg_score = reviews.aggregate(Avg('score'), Count('id'))
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
-            'reviews':  product.review_set.all().count(),
+            'reviews_count':  avg_score['id__count'],
             'rental_price': product.rental_price or 0,
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
@@ -210,6 +213,7 @@ def product_search(request):
             'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
+            'reviews_avg_score': avg_score['score__avg'] or 0,
         }
         if product.point:
             data['lon'] = product.point[0]
