@@ -2,6 +2,7 @@ from datetime import datetime
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
+from django.db.models import Avg, Count, Q
 from django.forms.models import model_to_dict
 
 from coastal.api import defines as defs
@@ -28,6 +29,8 @@ def product_list(request):
     max_price = form.cleaned_data['max_price']
     sort = form.cleaned_data['sort']
     category = form.cleaned_data['category']
+    category_exp = form.cleaned_data.get('category_exp')
+    category_boat_slip = form.cleaned_data.get('category_boat_slip')
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
@@ -41,19 +44,44 @@ def product_list(request):
         if form.cleaned_data[key]:
             products = products.filter(**{key: form.cleaned_data[key]})
 
+    query, query_exp, query_boat_slip = None, None, None
     if category:
-        products = products.filter(category_id__in=category)
-
-    if category and product_defs.CATEGORY_ADVENTURE not in category:
+        query = Q(category__in=category)
         if for_rental and not for_sale:
-            products = products.filter(for_rental=True)
+            query &= Q(for_rental=True)
         elif for_sale and not for_rental:
-            products = products.filter(for_sale=True)
+            query &= Q(for_sale=True)
+        if min_price:
+            query &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
+        if max_price:
+            query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
+        if guests:
+            products = products.filter(max_guests__gte=guests)
+    if category_exp:
+        query_exp = Q(category=category_exp)
+        if min_price:
+            query_exp &= Q(rental_usd_price__gte=min_price)
+        if max_price:
+            query_exp &= Q(rental_usd_price__lte=max_price)
+        if guests:
+            products = products.filter(max_guests__gte=guests)
+    if category_boat_slip:
+        query_exp = Q(category=category_boat_slip)
+        if for_rental and not for_sale:
+            query &= Q(for_rental=True)
+        elif for_sale and not for_rental:
+            query &= Q(for_sale=True)
+        if min_price:
+            query &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
+        if max_price:
+            query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
-    if min_price:
-        products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
-    if max_price:
-        products = products.filter(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
+    if query and query_exp:
+        products = products.filter(query | query_exp)
+    elif query:
+        products = products.filter(query)
+    elif query_exp:
+        products = products.filter(query_exp)
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
@@ -73,15 +101,13 @@ def product_list(request):
     elif max_coastline_distance:
         products = products.filter(distance_from_coastal__lte=max_coastline_distance)
 
-    if guests:
-        products = products.filter(max_guests__gte=guests)
-
     if sort:
         products = products.order_by(sort.replace('price', 'rental_price'))
     else:
         products = products.order_by('-rank', '-score', '-rental_usd_price', '-sale_usd_price')
 
     bind_product_image(products)
+
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
     paginator = Paginator(products, item)
@@ -192,10 +218,12 @@ def product_search(request):
                                                                                                      flat=True)
     products_list = []
     for product in product_page:
+        reviews = product.review_set
+        avg_score = reviews.aggregate(Avg('score'), Count('id'))
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
-            'reviews':  product.review_set.all().count(),
+            'reviews_count':  avg_score['id__count'],
             'rental_price': product.rental_price or 0,
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
@@ -210,6 +238,7 @@ def product_search(request):
             'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
+            'reviews_avg_score': avg_score['score__avg'] or 0,
         }
         if product.point:
             data['lon'] = product.point[0]

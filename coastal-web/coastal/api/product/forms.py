@@ -202,8 +202,11 @@ class ProductListFilterForm(forms.Form):
             self.cleaned_data['price_field'] = 'rental_usd_price'
 
         category = self.cleaned_data['category']
-        if category and product_defs.CATEGORY_ADVENTURE in category:
-            self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+        if category:
+            if product_defs.CATEGORY_ADVENTURE in category:
+                self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+            if product_defs.CATEGORY_BOAT_SLIP in category:
+                self.cleaned_data['category_boat_slip'] = category.pop(category.index(product_defs.CATEGORY_BOAT_SLIP))
 
 
 class DiscountCalculatorFrom(forms.Form):
