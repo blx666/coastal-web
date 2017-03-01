@@ -65,24 +65,27 @@ def product_list(request):
         if max_price:
             query_exp &= Q(rental_usd_price__lte=max_price)
         if guests:
-            query &= Q(max_guests__gte=guests)
+            query_exp &= Q(max_guests__gte=guests)
     if category_boat_slip:
-        query_exp = Q(category=category_boat_slip)
+        query_boat_slip = Q(category=category_boat_slip)
         if for_rental and not for_sale:
-            query &= Q(for_rental=True)
+            query_boat_slip &= Q(for_rental=True)
         elif for_sale and not for_rental:
-            query &= Q(for_sale=True)
+            query_boat_slip &= Q(for_sale=True)
         if min_price:
-            query &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
+            query_boat_slip &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
         if max_price:
-            query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
+            query_boat_slip &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
-    if query and query_exp:
-        products = products.filter(query | query_exp)
-    elif query:
-        products = products.filter(query)
-    elif query_exp:
-        products = products.filter(query_exp)
+    query2 = None
+    for q in (query, query_exp, category_boat_slip):
+        if q:
+            if not query2:
+                query2 = q
+            else:
+                query2 |= q
+    if query2:
+        products = products.filter(query2)
 
     if category_empty:
         if for_rental and not for_sale:
