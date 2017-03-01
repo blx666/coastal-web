@@ -61,7 +61,7 @@ def home(request):
     for product in cur_page.object_list:
         product_data = model_to_dict(product,
                                      fields=['id', 'for_rental', 'for_sale', 'rental_price',
-                                             'sale_price', 'city'])
+                                             'sale_price'])
         product_data.update({
             'max_guests': product.max_guests or 0,
             'length': product.length or 0,
@@ -70,6 +70,7 @@ def home(request):
             'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
+            'city': product.locality or '',
         })
         liked_product_id_list = []
         if request.user.is_authenticated:

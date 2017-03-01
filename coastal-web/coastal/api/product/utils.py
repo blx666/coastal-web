@@ -14,12 +14,10 @@ def get_similar_products(product):
         similar_distance_product = Product.objects.filter(
             status='published', point__distance_lte=(product.point, D(mi=35))).exclude(id=product.id).order_by(
             Distance('point', product.point))[0:12]
-    elif product.country and product.city:
-        similar_distance_product = Product.objects.filter(
-            status='published', country=product.country, city=product.city).exclude(id=product.id).order_by(
-            '-score')[0:12]
     else:
-        similar_distance_product = []
+        similar_distance_product = Product.objects.filter(
+            status='published', country=product.country, administrative_area_level_1=product.administrative_area_level_1,
+            locality=product.locality).exclude(id=product.id).order_by('-score')[0:12]
 
     if product.status == 'published' and (product.rental_price or product.sale_price):
         if product.rental_price:

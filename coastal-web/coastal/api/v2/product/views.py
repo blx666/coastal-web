@@ -200,7 +200,7 @@ def product_search(request):
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
             'length': product.length or 0,
-            'city': product.city or '',
+            'city': product.locality or '',
             'id': product.id,
             'category': product.category_id,
             'liked': product.id in liked_product_id_list,

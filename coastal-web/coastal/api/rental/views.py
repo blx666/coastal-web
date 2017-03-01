@@ -266,7 +266,7 @@ def order_detail(request):
             end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
 
     result = {
-        'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.city.title()),
+        'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.locality or ''),
         'product': {
             'id': order.product_id,
             'category': order.product.category_id,
@@ -294,7 +294,7 @@ def order_detail(request):
     if order.product.category_id == defs.CATEGORY_ADVENTURE:
         result.update(
             {
-                'title': 'An Adventure at %s' % order.product.city.title(),
+                'title': 'An Adventure at %s' % (order.product.locality or ''),
                 'experience_length': order.product.get_exp_time_display()
         })
     if order.status == 'charge':
