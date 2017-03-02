@@ -7,6 +7,8 @@ from treebeard.mp_tree import MP_Node
 from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
+from coastal.apps.currency.utils import get_exchange_rate
+import math
 
 
 class Category(MP_Node):
@@ -308,6 +310,17 @@ class Product(models.Model):
     def get_main_image(self):
         image_info = self._product_images()
         return image_info['images'] and image_info['images'][0]['url'] or ''
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        currency_rate = get_exchange_rate(self.currency)
+        if self.currency and self.rental_unit and self.rental_price:
+            self.rental_usd_price = math.ceil(self.get_price('day') / currency_rate)
+        if self.currency and self.sale_price:
+            self.sale_usd_price = math.ceil(self.sale_price / currency_rate)
+        if self.category_id == defs.CATEGORY_ADVENTURE and self.rental_price:
+            self.rental_usd_price = math.ceil(self.rental_price / currency_rate)
+        super(Product, self).save()
 
 
 class Amenity(models.Model):
