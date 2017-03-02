@@ -71,8 +71,6 @@ def facebook_login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
-        if settings.DEBUG:
-            publish_log_in(user)
     else:
         name_list = form.cleaned_data['name'].split()
         user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
@@ -84,6 +82,9 @@ def facebook_login(request):
 
     if form.cleaned_data['token']:
         bind_token(form.cleaned_data['uuid'], form.cleaned_data['token'], user)
+
+    if settings.DEBUG:
+            publish_log_in(user)
 
     data = {
         'user_id': user.id,
