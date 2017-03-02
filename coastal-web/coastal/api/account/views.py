@@ -125,8 +125,8 @@ def login(request):
             'photo': user.basic_info()['photo'],
             'first_login': is_first,
         }
-    if settings.Debug:
-        publish_log_in(user)
+        if settings.Debug:
+            publish_log_in(user)
     else:
         data = {
             "logged": request.user.is_authenticated(),
