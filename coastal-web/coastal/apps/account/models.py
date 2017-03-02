@@ -128,6 +128,7 @@ class Transaction(models.Model):
     order_number = models.CharField(max_length=64, blank=True, null=True)
     date_created = models.DateTimeField(auto_now_add=True)
     note = models.CharField(max_length=255, blank=True, null=True)
+    amount = models.FloatField()
 
 
 class InviteRecord(models.Model):

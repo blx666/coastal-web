@@ -10,7 +10,8 @@ def charge(rental_order, user):
     Transaction.objects.create(
         bucket=user.coastalbucket,
         type='out',
-        order_number=rental_order.number
+        order_number=rental_order.number,
+        amount=rental_order.total_price_usd,
     )
 
     user.coastalbucket.balance -= rental_order.total_price_usd
@@ -33,7 +34,8 @@ def sale_charge(sale_order, user):
     Transaction.objects.create(
         bucket=user.coastalbucket,
         type='out',
-        order_number=sale_order.number
+        order_number=sale_order.number,
+        amount=sale_order.price_usd,
     )
 
     user.coastalbucket.balance -= sale_order.price_usd
