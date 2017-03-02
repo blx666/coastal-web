@@ -159,6 +159,13 @@ class ProductListFilterForm(forms.Form):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
+
+    country = forms.CharField(required=False)
+    administrative_area_level_1 = forms.CharField(required=False)
+    administrative_area_level_2 = forms.CharField(required=False)
+    locality = forms.CharField(required=False)
+    sublocality = forms.CharField(required=False)
+
     guests = forms.CharField(required=False)
     arrival_date = forms.DateTimeField(required=False)
     checkout_date = forms.DateTimeField(required=False)
@@ -195,8 +202,13 @@ class ProductListFilterForm(forms.Form):
             self.cleaned_data['price_field'] = 'rental_usd_price'
 
         category = self.cleaned_data['category']
-        if category and product_defs.CATEGORY_ADVENTURE in category:
-            self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+        if category:
+            if product_defs.CATEGORY_ADVENTURE in category:
+                self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+            if product_defs.CATEGORY_BOAT_SLIP in category:
+                self.cleaned_data['category_boat_slip'] = category.pop(category.index(product_defs.CATEGORY_BOAT_SLIP))
+        else:
+            self.cleaned_data['category_empty'] = True
 
 
 class DiscountCalculatorFrom(forms.Form):

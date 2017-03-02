@@ -124,7 +124,11 @@ class Product(models.Model):
 
     # address info
     country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
+    administrative_area_level_1 = models.CharField('State', max_length=100, blank=True, null=True)
+    administrative_area_level_2 = models.CharField('County', max_length=100, blank=True, null=True)
+    locality = models.CharField('City', max_length=100, blank=True, null=True)
+    sublocality = models.CharField('District', max_length=100, blank=True, null=True)
+    city = models.CharField('City v1', max_length=100, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
     timezone = models.CharField(max_length=100, blank=True, default='')
