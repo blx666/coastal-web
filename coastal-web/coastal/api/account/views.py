@@ -21,7 +21,7 @@ from coastal.apps.rental.models import RentalOrder
 from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
-from coastal.apps.sns.utils import bind_token, unbind_token
+from coastal.apps.sns.utils import bind_token, unbind_token, publish_log_in
 from django.urls import reverse
 from coastal.apps.product import defines as product_defs
 
@@ -71,6 +71,8 @@ def facebook_login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
+        if settings.DeBUG:
+            publish_log_in(user)
     else:
         name_list = form.cleaned_data['name'].split()
         user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
@@ -123,6 +125,8 @@ def login(request):
             'photo': user.basic_info()['photo'],
             'first_login': is_first,
         }
+        if settings.DeBUG:
+            publish_log_in(user)
     else:
         data = {
             "logged": request.user.is_authenticated(),

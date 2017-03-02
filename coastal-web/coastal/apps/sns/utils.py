@@ -67,8 +67,6 @@ def push_notification(receiver, content, extra_attr=None):
             logger.error(e)
 
 
-
-
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
     message = '%s: %s' % (sender_name, content[0:20])  # TODO: why 21?
     extra_attr = {
@@ -323,3 +321,10 @@ def bind_token(uuid, token, user):
 # TODO
 def unbind_token(token, user):
     Token.objects.filter(token=token, user=user).delete()
+
+
+# guest login success
+def publish_log_in(user):
+    message = 'Congratulations! You are logging in successfully'
+    extra_attr = {}
+    push_notification(user, message, extra_attr)
