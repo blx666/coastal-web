@@ -71,7 +71,7 @@ def facebook_login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
-        if settings.DeBUG:
+        if settings.DEBUG:
             publish_log_in(user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -125,7 +125,7 @@ def login(request):
             'photo': user.basic_info()['photo'],
             'first_login': is_first,
         }
-        if settings.DeBUG:
+        if settings.DEBUG:
             publish_log_in(user)
     else:
         data = {
