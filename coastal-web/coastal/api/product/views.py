@@ -4,7 +4,7 @@ from django.contrib.gis.measure import D
 from django.core.paginator import Paginator
 from django.core.paginator import EmptyPage
 from django.core.paginator import PageNotAnInteger
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Q
 from django.forms.models import model_to_dict
 from django.views.decorators.cache import cache_page
 from django.utils import timezone
@@ -51,8 +51,8 @@ def product_list(request):
     checkout_date = form.cleaned_data['checkout_date']
     min_price = form.cleaned_data['min_price']
     max_price = form.cleaned_data['max_price']
-    sort = form.cleaned_data['sort']
     category = form.cleaned_data['category']
+    category_exp = form.cleaned_data.get('category_exp')
     for_sale = form.cleaned_data['for_sale']
     for_rental = form.cleaned_data['for_rental']
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
@@ -65,30 +65,6 @@ def product_list(request):
         products = products.filter(point__distance_lte=(Point(lon, lat), D(mi=distance)))
     else:
         point = None
-
-    if guests:
-        products = products.filter(max_guests__gte=guests)
-
-    if category and product_defs.CATEGORY_ADVENTURE not in category:
-        products = products.filter(category_id__in=category)
-        if for_rental and not for_sale:
-            products = products.filter(for_rental=True)
-        elif for_sale and not for_rental:
-            products = products.filter(for_sale=True)
-    elif category and product_defs.CATEGORY_ADVENTURE in category:
-        category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
-        first_products = products.filter(category_id__in=category)
-        if for_rental and not for_sale:
-            first_products = first_products.filter(for_rental=True)
-        elif for_sale and not for_rental:
-            first_products = first_products.filter(for_sale=True)
-        second_products = products.filter(category_id=product_defs.CATEGORY_ADVENTURE)
-        products = first_products | second_products
-
-    if min_price:
-        products = products.filter(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
-    if max_price:
-        products = products.filter(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,
@@ -108,13 +84,39 @@ def product_list(request):
     elif max_coastline_distance:
         products = products.filter(distance_from_coastal__lte=max_coastline_distance)
 
-    if sort:
-        products = products.order_by(sort.replace('price', 'rental_price'))
+    if guests:
+        products = products.filter(max_guests__gte=guests)
+
+    query, query_exp = None, None
+    if category:
+        query = Q(category__in=category)
+        if for_rental and not for_sale:
+            query &= Q(for_rental=True)
+        elif for_sale and not for_rental:
+            query &= Q(for_sale=True)
+        if min_price:
+            query &= Q(**{"%s__gte" % form.cleaned_data['price_field']: min_price})
+        if max_price:
+            query &= Q(**{"%s__lte" % form.cleaned_data['price_field']: max_price})
+    if category_exp:
+        query_exp = Q(category=category_exp)
+        if min_price:
+            query_exp &= Q(rental_usd_price__gte=min_price)
+        if max_price:
+            query_exp &= Q(rental_usd_price__lte=max_price)
+
+    if query and query_exp:
+        products = products.filter(query | query_exp)
+    elif query:
+        products = products.filter(query)
+    elif query_exp:
+        products = products.filter(query_exp)
 
     if point:
         products = products.order_by(Distance('point', point), '-score', '-rental_usd_price', '-sale_usd_price')
     else:
         products = products.order_by('-score', '-rental_usd_price', '-sale_usd_price')
+
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
@@ -204,12 +206,14 @@ def product_detail(request, pid):
                 RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     if product.category_id == product_defs.CATEGORY_ADVENTURE:
-        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency', 'city'])
+        data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
         data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
         data['exp_time_unit'] = product.get_exp_time_unit_display()
+        data['city'] = product.locality or ''
     else:
-        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'city', 'currency'])
+        data = model_to_dict(product, fields=['category', 'id', 'for_rental', 'for_sale', 'sale_price', 'currency'])
+        data['city'] = product.locality or ''
     if product.max_guests:
         data['max_guests'] = product.max_guests
 
@@ -694,7 +698,7 @@ def get_available_time(request):
 
 
 def search(request):
-    products = Product.objects.filter(address__icontains=request.GET.get('q'), status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_price')
+    products = Product.objects.filter(address__icontains=request.GET.get('q'), status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_usd_price')
     bind_product_image(products)
     page = request.GET.get('page', 1)
     item = defs.PER_PAGE_ITEM
@@ -716,15 +720,17 @@ def search(request):
                                                                                                      flat=True)
     products_list = []
     for product in product_page:
+        reviews = product.review_set
+        avg_score = reviews.aggregate(Avg('score'), Count('id'))
         data = {
             'type': product.category.name or '',
             'address': product.address or '',
-            'reviews':  product.review_set.all().count(),
+            'reviews_count':  avg_score['id__count'],
             'rental_price': product.rental_price or 0,
             'sale_price': product.sale_price or 0,
             'beds': product.beds or 0,
             'length': product.length or 0,
-            'city': product.city or '',
+            'city': product.locality or '',
             'id': product.id,
             'category': product.category_id,
             'liked': product.id in liked_product_id_list,
@@ -734,6 +740,7 @@ def search(request):
             'rental_unit': product.new_rental_unit(),
             'rental_price_display': product.get_rental_price_display(),
             'sale_price_display': product.get_sale_price_display(),
+            'reviews_avg_score': avg_score['score__avg'] or 0,
         }
         if product.point:
             data['lon'] = product.point[0]
@@ -824,7 +831,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
@@ -844,7 +851,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'rooms': product.rooms or 0,
                 "reviews_count": reviews_avg_score['id__count'],
@@ -864,7 +871,7 @@ def product_owner(request):
                 "rental_price": product.rental_price,
                 "rental_price_display": product.get_rental_price_display(),
                 "rental_unit": product.new_rental_unit(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,
@@ -888,7 +895,7 @@ def product_owner(request):
                 "rental_unit": product.get_rental_unit_display(),
                 "sale_price": product.sale_price,
                 "sale_price_display": product.get_sale_price_display(),
-                "city": product.city,
+                "city": product.locality or '',
                 "max_guests": product.max_guests or 0,
                 'beds': product.beds or 0,
                 'rooms': product.rooms or 0,

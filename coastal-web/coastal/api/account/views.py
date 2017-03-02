@@ -71,7 +71,7 @@ def facebook_login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
-        if settings.DeBUG:
+        if settings.DEBUG:
             publish_log_in(user)
     else:
         name_list = form.cleaned_data['name'].split()
@@ -125,7 +125,7 @@ def login(request):
             'photo': user.basic_info()['photo'],
             'first_login': is_first,
         }
-        if settings.DeBUG:
+        if settings.DEBUG:
             publish_log_in(user)
     else:
         data = {
@@ -199,9 +199,10 @@ def my_profile(request):
 
 
 def logout(request):
-    logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
-    unbind_token(request.POST.get('token'), request.user)
-    auth_logout(request)
+    if request.user.is_authenticated():
+        logger.debug('Logout user is %s, unbind token is %s ' % (request.user, request.POST.get('token')))
+        unbind_token(request.POST.get('token'), request.user)
+        auth_logout(request)
     return CoastalJsonResponse()
 
 
@@ -339,7 +340,7 @@ def my_account(request):
     user = request.user
 
     data = {
-        'coastal_dollar': format(int(user.coastalbucket.balance), ','),
+        'coastal_dollar': '$%s' % format(int(user.coastalbucket.balance), ','),
         'profile': {
             'name': user.get_full_name(),
             'email': user.email,
@@ -358,7 +359,8 @@ def my_account(request):
             'id': product.id,
             'name': product.name,
             'image': product.images[0].image.url if len(product.images) else '',
-            'address': product.country + ',' + product.city,
+            # 'address': product.country + ',' + product.city,
+            'address': product.address,
             'status': product.status,
             'type': product.get_product_type(),
         }

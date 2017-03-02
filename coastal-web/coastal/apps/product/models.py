@@ -7,6 +7,8 @@ from treebeard.mp_tree import MP_Node
 from coastal.apps.currency.utils import price_display
 from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
+from coastal.apps.currency.utils import get_exchange_rate
+import math
 
 
 class Category(MP_Node):
@@ -122,7 +124,11 @@ class Product(models.Model):
 
     # address info
     country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
+    administrative_area_level_1 = models.CharField('State', max_length=100, blank=True, null=True)
+    administrative_area_level_2 = models.CharField('County', max_length=100, blank=True, null=True)
+    locality = models.CharField('City', max_length=100, blank=True, null=True)
+    sublocality = models.CharField('District', max_length=100, blank=True, null=True)
+    city = models.CharField('City v1', max_length=100, blank=True, null=True)
     address = models.CharField(max_length=255, blank=True)
     point = models.PointField(blank=True, null=True)
     timezone = models.CharField(max_length=100, blank=True, default='')
@@ -308,6 +314,17 @@ class Product(models.Model):
     def get_main_image(self):
         image_info = self._product_images()
         return image_info['images'] and image_info['images'][0]['url'] or ''
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+        currency_rate = get_exchange_rate(self.currency)
+        if self.currency and self.rental_unit and self.rental_price:
+            self.rental_usd_price = math.ceil(self.get_price('day') / currency_rate)
+        if self.currency and self.sale_price:
+            self.sale_usd_price = math.ceil(self.sale_price / currency_rate)
+        if self.category_id == defs.CATEGORY_ADVENTURE and self.rental_price:
+            self.rental_usd_price = math.ceil(self.rental_price / currency_rate)
+        super(Product, self).save()
 
 
 class Amenity(models.Model):
