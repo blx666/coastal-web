@@ -371,7 +371,7 @@ def my_account(request):
 
     # my favorite
     favorite_group = []
-    favorite_item = FavoriteItem.objects.filter(favorite__user=user)
+    favorite_item = FavoriteItem.objects.filter(favorite__user=user, product__status='published')
     product_favorite = Product.objects.filter(favoriteitem__in=favorite_item)
     bind_product_image(product_favorite)
     for product in product_favorite:
