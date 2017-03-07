@@ -18,12 +18,14 @@ from coastal.apps.account.models import ValidateEmail, FavoriteItem
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
-from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode
+from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode, InviteRecord
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token, publish_log_in
 from django.urls import reverse
 from coastal.apps.product import defines as product_defs
+from coastal.apps.sns.utils import push_user_reward
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +112,12 @@ def login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
+        user_invite = InviteRecord.objects.get(user=user)
+        if is_first and user_invite:
+            try:
+                push_user_reward(user)
+            except (NoEndpoint, DisabledEndpoint):
+                pass
 
         uuid = request.POST.get('uuid')
         token = request.POST.get('token')

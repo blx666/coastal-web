@@ -328,3 +328,17 @@ def publish_log_in(user):
     message = 'Congratulations! You are logging in successfully'
     extra_attr = {}
     push_notification(user, message, extra_attr)
+
+
+# user register reward
+def push_user_reward(user):
+    message = 'Congratulations! You got $35 coastal dollars off your first adventure.'
+    extra_attr = {}
+    push_notification(user, message, extra_attr)
+
+
+# referrer reward
+def push_referrer_reward(user):
+    message = 'Congratulations! You received $10 coastal dollars for signing up a friend!'
+    extra_attr = {}
+    push_notification(user, message, extra_attr)
