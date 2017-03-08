@@ -245,6 +245,7 @@ def product_detail(request, pid):
     data['liked'] = product.id in liked_product_id_list
     data['rental_price_display'] = product.get_rental_price_display()
     data['sale_price_display'] = product.get_sale_price_display()
+    data['city_address'] = product.city_address or ''
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
