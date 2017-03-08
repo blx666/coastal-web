@@ -37,7 +37,7 @@ def product_list(request):
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
     min_coastline_distance = form.cleaned_data['min_coastline_distance']
     guests = form.cleaned_data['guests']
-    poly = form.cleaned_data['poly']
+    poly = form.cleaned_data.get('poly')
     products = Product.objects.filter(status='published')
 
     # address filter
