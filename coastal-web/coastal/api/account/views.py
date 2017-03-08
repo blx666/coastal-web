@@ -131,7 +131,8 @@ def login(request):
             'name': user.get_full_name(),
             'photo': user.basic_info()['photo'],
             'first_login': is_first,
-            'invited_first_login': invited_first_login
+            'invited_first_login': invited_first_login,
+            'push_message': 'Congratulations! You got $35 coastal dollars off your first adventure.'
         }
         if settings.DEBUG:
             try:
