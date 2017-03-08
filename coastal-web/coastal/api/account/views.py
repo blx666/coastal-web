@@ -86,8 +86,10 @@ def facebook_login(request):
         bind_token(form.cleaned_data['uuid'], form.cleaned_data['token'], user)
 
     if settings.DEBUG:
-            publish_log_in(user)
-
+            try:
+                publish_log_in(user)
+            except (NoEndpoint, DisabledEndpoint):
+                pass
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -135,7 +137,10 @@ def login(request):
             'first_login': is_first,
         }
         if settings.DEBUG:
-            publish_log_in(user)
+            try:
+                publish_log_in(user)
+            except (NoEndpoint, DisabledEndpoint):
+                pass
     else:
         data = {
             "logged": request.user.is_authenticated(),
