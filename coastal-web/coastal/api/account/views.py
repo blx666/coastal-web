@@ -112,7 +112,7 @@ def login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
-        user_invite = InviteRecord.objects.get(user=user)
+        user_invite = InviteRecord.objects.filter(user=user).first()
         if is_first and user_invite:
             try:
                 push_user_reward(user)
