@@ -6,6 +6,8 @@ from coastal.apps.account.models import UserProfile
 from django.contrib.auth.models import User
 from coastal.api.account.forms import RegistrationForm
 from django.template.response import TemplateResponse
+from coastal.apps.sns.utils import push_referrer_reward
+from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 
 
 def validate_email_confirm(request):
@@ -46,6 +48,10 @@ def sign_up(request, invite_code):
                 user_bucket.balance += 35
                 Transaction.objects.create(bucket=user_bucket, type='in', note='invite_user')
                 user_bucket.save()
+                try:
+                    push_referrer_reward(referrer)
+                except (NoEndpoint, DisabledEndpoint):
+                    pass
 
             return TemplateResponse(request, 'successful.html')
     else:
