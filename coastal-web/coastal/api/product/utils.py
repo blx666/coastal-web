@@ -176,9 +176,9 @@ def get_email_cipher(email):
 
 
 def set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat):
-    first_point = Point(northeast_lon, northeast_lat, srid=4326)
-    second_point = Point(northeast_lon, southwest_lat, srid=4326)
-    third_point = Point(southwest_lon, southwest_lat, srid=4326)
-    fourth_point = Point(southwest_lon, northeast_lat, srid=4326)
+    first_point = Point(northeast_lon, northeast_lat)
+    second_point = Point(northeast_lon, southwest_lat)
+    third_point = Point(southwest_lon, southwest_lat)
+    fourth_point = Point(southwest_lon, northeast_lat)
     poly = Polygon((first_point, second_point, third_point, fourth_point, first_point),)
     return poly
