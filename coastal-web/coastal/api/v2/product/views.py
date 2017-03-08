@@ -42,7 +42,7 @@ def product_list(request):
 
     # address filter
     if poly:
-        products = products.filter(point__contained=poly)
+        products = products.filter(point__within=poly)
     else:
         for key in ('country', 'administrative_area_level_1', 'administrative_area_level_2', 'locality', 'sublocality'):
             if form.cleaned_data[key]:
