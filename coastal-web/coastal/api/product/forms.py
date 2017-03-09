@@ -207,9 +207,9 @@ class ProductListFilterForm(forms.Form):
             try:
                 self.cleaned_data['poly'] = set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat)
             except:
-                raise forms.ValidationError('The View Port is invalid .')
+                raise forms.ValidationError('The ViewPort is invalid .')
         elif northeast_lat or northeast_lon or southwest_lat or southwest_lon:
-            raise forms.ValidationError('The View Port is invalid .')
+            raise forms.ValidationError('The ViewPort is invalid .')
         self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
         self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
         if self.cleaned_data['for_sale']:
