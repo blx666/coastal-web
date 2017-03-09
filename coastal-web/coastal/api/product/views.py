@@ -767,7 +767,7 @@ def product_review(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
-    reviews = Review.objects.filter(product=product)
+    reviews = Review.objects.filter(product=product).order_by('-date_created')
     product_dict = {
         'id': product_id,
         'name': product.name,
