@@ -43,7 +43,18 @@ def home(request):
 
     # get recommended products
     products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price', '-sale_usd_price')
-
+    space_products = products.filter(category__in=product_defs.SPACE_CATEGORY_LIST)
+    yacht_products = products.filter(category__in=product_defs.YACHT_CATEGORY_LIST)
+    adventure_products = products.filter(category=product_defs.CATEGORY_ADVENTURE)
+    products = []
+    count = max(space_products.count(), yacht_products.count(), adventure_products.count())
+    for i in range(count):
+        if i < space_products.count():
+            products.append(space_products[i])
+        if i < yacht_products.count():
+            products.append(yacht_products[i])
+        if i < adventure_products.count():
+            products.append(adventure_products[i])
     paginator = Paginator(products, defs.PER_PAGE_ITEM)
     try:
         cur_page = paginator.page(page)
