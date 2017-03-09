@@ -6,7 +6,6 @@ from coastal.apps.product.models import Product
 
 
 key = 'AIzaSyAYvvJ4thuPanNDqOKKaEgKOBP2Ut3CyeY'
-key1 = 'AIzaSyDfJEaVhjCArB6xneZmiUL7mSB7yxkQwYw'
 result_type = 'administrative_area_level_1'
 
 
@@ -19,7 +18,7 @@ def update_products_address():
 def _update_address(product):
     if product.point:
         params = urllib.parse.urlencode({'latlng': '%s,%s' % (product.point.y, product.point.x)})
-        url = "https://maps.googleapis.com/maps/api/geocode/json?result_type=%s&%s&key=%s" % (result_type, params, key1)
+        url = "https://maps.googleapis.com/maps/api/geocode/json?result_type=%s&%s&key=%s" % (result_type, params, key)
         with urllib.request.urlopen(url) as f:
             data = json.loads(f.read().decode('utf-8'))
             if data.get('status') != 'OK':
