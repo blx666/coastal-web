@@ -7,6 +7,7 @@ from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 from django.db.models import F
 from coastal.apps.product import defines as defs
+from django.contrib.gis.geos import Point, Polygon
 
 
 def get_similar_products(product):
@@ -172,3 +173,12 @@ def get_email_cipher(email):
     email_cipher = '%s***@%s' % (email_owner_list[0][0:3], email_owner_list[1])
 
     return email_cipher
+
+
+def set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat):
+    first_point = Point(northeast_lon, northeast_lat)
+    second_point = Point(northeast_lon, southwest_lat)
+    third_point = Point(southwest_lon, southwest_lat)
+    fourth_point = Point(southwest_lon, northeast_lat)
+    poly = Polygon((first_point, second_point, third_point, fourth_point, first_point),)
+    return poly
