@@ -334,7 +334,7 @@ def publish_log_in(user):
 def push_user_reward(user):
     message = 'Congratulations! You got $35 coastal dollars off your first adventure.'
     extra_attr = {
-        'type': 'push_user_reward'
+        'type': 'text',
     }
     push_notification(user, message, extra_attr)
 
@@ -343,6 +343,6 @@ def push_user_reward(user):
 def push_referrer_reward(user):
     message = 'Congratulations! You received $10 coastal dollars for signing up a friend!'
     extra_attr = {
-        'type': 'push_referrer_reward'
+        'type': 'text',
     }
     push_notification(user, message, extra_attr)
