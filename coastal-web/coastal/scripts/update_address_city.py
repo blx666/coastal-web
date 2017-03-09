@@ -6,11 +6,11 @@ from coastal.apps.product.models import Product
 
 
 key = 'AIzaSyAYvvJ4thuPanNDqOKKaEgKOBP2Ut3CyeY'
-result_type = 'administrative_area_level_1'
+result_type = 'locality'
 
 
 def update_products_address():
-    products = Product.objects.order_by('id')
+    products = Product.objects.order_by('-id')
     for p in products:
         _update_address(p)
 
