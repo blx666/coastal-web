@@ -5,7 +5,7 @@ import json
 from coastal.apps.product.models import Product
 
 
-key = 'AIzaSyAYvvJ4thuPanNDqOKKaEgKOBP2Ut3CyeY'
+key = 'AIzaSyDfJEaVhjCArB6xneZmiUL7mSB7yxkQwYw'
 result_type = 'locality'
 
 
