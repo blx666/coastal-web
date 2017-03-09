@@ -42,7 +42,7 @@ def home(request):
         home_banners_list.append(banner_dict)
 
     # get recommended products
-    products = Product.objects.filter(status='published').order_by('-score', '-rental_usd_price', '-sale_usd_price')
+    products = Product.objects.filter(status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_usd_price')
     space_products = products.filter(category__in=product_defs.SPACE_CATEGORY_LIST)
     yacht_products = products.filter(category__in=product_defs.YACHT_CATEGORY_LIST)
     adventure_products = products.filter(category=product_defs.CATEGORY_ADVENTURE)
