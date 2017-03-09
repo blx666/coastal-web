@@ -54,6 +54,7 @@ def push_notification(receiver, content, extra_attr=None):
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
             Token.objects.filter(user=receiver, endpoint=endpoint).delete()
+            continue
 
         logger.debug('message: %s' % result_message)
         try:
