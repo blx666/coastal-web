@@ -119,8 +119,6 @@ def login(request):
         token = request.POST.get('token')
         if uuid and token:
             bind_token(uuid, token, user)
-        if is_first and user_invite:
-            push_user_reward(user)
 
         data = {
             'user_id': user.id,
@@ -135,6 +133,11 @@ def login(request):
         if settings.DEBUG:
             try:
                 publish_log_in(user)
+            except (NoEndpoint, DisabledEndpoint):
+                pass
+        if is_first and user_invite:
+            try:
+                push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
     else:
