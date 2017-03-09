@@ -115,13 +115,12 @@ def login(request):
         is_first = not bool(user.last_login)
         auth_login(request, user)
         user_invite = InviteRecord.objects.filter(user=user).first()
-        if is_first and user_invite:
-            push_user_reward(user)
-
         uuid = request.POST.get('uuid')
         token = request.POST.get('token')
         if uuid and token:
             bind_token(uuid, token, user)
+        if is_first and user_invite:
+            push_user_reward(user)
 
         data = {
             'user_id': user.id,
