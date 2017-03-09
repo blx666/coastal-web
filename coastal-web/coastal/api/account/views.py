@@ -115,8 +115,6 @@ def login(request):
         is_first = not bool(user.last_login)
         auth_login(request, user)
         user_invite = InviteRecord.objects.filter(user=user).first()
-        invited_first_login = bool(is_first and user_invite)
-
         uuid = request.POST.get('uuid')
         token = request.POST.get('token')
         if uuid and token:
@@ -135,6 +133,11 @@ def login(request):
         if settings.DEBUG:
             try:
                 publish_log_in(user)
+            except (NoEndpoint, DisabledEndpoint):
+                pass
+        if is_first and user_invite:
+            try:
+                push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
     else:
