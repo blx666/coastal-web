@@ -37,13 +37,21 @@ def product_list(request):
     max_coastline_distance = form.cleaned_data['max_coastline_distance']
     min_coastline_distance = form.cleaned_data['min_coastline_distance']
     guests = form.cleaned_data['guests']
-
+    poly = form.cleaned_data.get('poly')
+    northeast_lon = form.cleaned_data.get('northeast_lon')
+    southwest_lon = form.cleaned_data.get('southwest_lon')
     products = Product.objects.filter(status='published')
 
     # address filter
-    for key in ('country', 'administrative_area_level_1', 'administrative_area_level_2', 'locality', 'sublocality'):
-        if form.cleaned_data[key]:
-            products = products.filter(**{key: form.cleaned_data[key]})
+    if poly:
+        if northeast_lon > southwest_lon:
+            products = products.filter(point__within=poly)
+        else:
+            products = products.exclude(point__within=poly)
+    else:
+        for key in ('country', 'administrative_area_level_1', 'administrative_area_level_2', 'locality', 'sublocality'):
+            if form.cleaned_data[key]:
+                products = products.filter(**{key: form.cleaned_data[key]})
 
     query, query_exp, query_boat_slip = None, None, None
     if category:
@@ -97,7 +105,7 @@ def product_list(request):
         if max_price:
             products = products.filter(rental_usd_price__lte=max_price)
         if guests:
-            products = products.filter(max_guests__gte=guests)
+            products = products.filter(Q(max_guests__gte=guests) | Q(category=product_defs.CATEGORY_BOAT_SLIP))
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,

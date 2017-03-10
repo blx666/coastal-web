@@ -6,6 +6,7 @@ from django.contrib.gis.geos import Point
 from coastal.apps.product.models import ProductImage, Product, Amenity
 from coastal.apps.currency.models import Currency
 from coastal.apps.product import defines as product_defs
+from coastal.api.product.utils import set_point
 
 
 class ImageUploadForm(forms.ModelForm):
@@ -158,6 +159,10 @@ class ProductUpdateForm(ProductAddForm):
 class ProductListFilterForm(forms.Form):
     lon = forms.FloatField(required=False)
     lat = forms.FloatField(required=False)
+    northeast_lon = forms.FloatField(required=False)
+    northeast_lat = forms.FloatField(required=False)
+    southwest_lon = forms.FloatField(required=False)
+    southwest_lat = forms.FloatField(required=False)
     distance = forms.IntegerField(required=False)
 
     country = forms.CharField(required=False)
@@ -194,6 +199,17 @@ class ProductListFilterForm(forms.Form):
 
     def clean(self):
         purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
+        northeast_lon = self.cleaned_data['northeast_lon']
+        northeast_lat = self.cleaned_data['northeast_lat']
+        southwest_lon = self.cleaned_data['southwest_lon']
+        southwest_lat = self.cleaned_data['southwest_lat']
+        if northeast_lat is not None and northeast_lon is not None and southwest_lat is not None and southwest_lon is not None:
+            try:
+                self.cleaned_data['poly'] = set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat)
+            except:
+                raise forms.ValidationError('The ViewPort is invalid .')
+        elif northeast_lat or northeast_lon or southwest_lat or southwest_lon:
+            raise forms.ValidationError('The ViewPort is invalid .')
         self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
         self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
         if self.cleaned_data['for_sale']:

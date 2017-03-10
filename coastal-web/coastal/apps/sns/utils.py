@@ -54,6 +54,7 @@ def push_notification(receiver, content, extra_attr=None):
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
             Token.objects.filter(user=receiver, endpoint=endpoint).delete()
+            continue
 
         logger.debug('message: %s' % result_message)
         try:
@@ -65,8 +66,6 @@ def push_notification(receiver, content, extra_attr=None):
             logger.debug('The response of publish message: \n%s' % res)
         except ClientError as e:
             logger.error(e)
-
-
 
 
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
@@ -159,7 +158,7 @@ def publish_paid_order(rental_order):
 # guest check in more than 24 hours
 def publish_paid_owner_order(rental_order):
     owner = rental_order.owner
-    message = 'Congratulations! You have earned $%s ' % rental_order.coastal_dollar
+    message = 'Congratulations! You have earned $%s ' % format(int(rental_order.coastal_dollar), ',')
     extra_attr = {
         'type': 'check_in_order',
         'product_name': rental_order.product.name,
@@ -277,7 +276,7 @@ def publish_unpay_offer(sale_offer):
 def publish_paid_owner_offer(sale_offer):
     owner = sale_offer.owner
     message = 'Congratulations! You sold your listing %s, and you have earned $%s ' % (
-        sale_offer.product.name, sale_offer.coastal_dollar)
+        sale_offer.product.name, format(int(sale_offer.coastal_dollar), ','))
     extra_attr = {
         'type': 'check_in_offer',
         'sale_offer_id': sale_offer.id,
@@ -323,3 +322,28 @@ def bind_token(uuid, token, user):
 # TODO
 def unbind_token(token, user):
     Token.objects.filter(token=token, user=user).delete()
+
+
+# guest login success
+def publish_log_in(user):
+    message = 'Congratulations! You are logging in successfully'
+    extra_attr = {}
+    push_notification(user, message, extra_attr)
+
+
+# user register reward
+def push_user_reward(user):
+    message = 'Congratulations! You got $35 coastal dollars off your first adventure.'
+    extra_attr = {
+        'type': 'text',
+    }
+    push_notification(user, message, extra_attr)
+
+
+# referrer reward
+def push_referrer_reward(user):
+    message = 'Congratulations! You received $10 coastal dollars for signing up a friend!'
+    extra_attr = {
+        'type': 'text',
+    }
+    push_notification(user, message, extra_attr)
