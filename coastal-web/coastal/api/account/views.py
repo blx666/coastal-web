@@ -24,8 +24,9 @@ from coastal.api.product.utils import bind_product_image, get_products_by_id, ge
 from coastal.apps.sns.utils import bind_token, unbind_token, publish_log_in
 from django.urls import reverse
 from coastal.apps.product import defines as product_defs
-from coastal.apps.sns.utils import push_user_reward
+from coastal.apps.sns.utils import push_user_reward, push_notification
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+from coastal.apps.sns.models import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,13 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
+    no_pushes = Notification.objects.first(user=user, pushed=False)
+    if no_pushes:
+        for no_push in no_pushes:
+            push_notification(user, no_push.message, no_push.extra_attr)
+            no_push.pushed = True
+            no_push.date_update = timezone.now()
+            no_push.save()
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -140,6 +148,13 @@ def login(request):
                 push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
+        no_pushes = Notification.objects.first(user=user, pushed=False)
+        if no_pushes:
+            for no_push in no_pushes:
+                push_notification(user, no_push.message, no_push.extra_attr)
+                no_push.pushed = True
+                no_push.date_update = timezone.now()
+                no_push.save()
     else:
         data = {
             "logged": request.user.is_authenticated(),

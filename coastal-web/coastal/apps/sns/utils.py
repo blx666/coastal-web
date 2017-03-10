@@ -9,6 +9,7 @@ from django.conf import settings
 from coastal.apps.payment.utils import get_payment_info, sale_payment_info
 from coastal.apps.sns.models import Token
 from coastal.apps.sns.exceptions import NoEndpoint
+from coastal.apps.sns.models import Notification
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +44,7 @@ def push_notification(receiver, content, extra_attr=None):
     # TODO: can we set the endpoint to cache?
     endpoint_list = Token.objects.filter(user=receiver).values_list('endpoint', flat=True)
     if not endpoint_list:
+        Notification.objects.create(user=receiver, message=content, extra_attr=extra_attr)
         raise NoEndpoint
 
     for endpoint in endpoint_list:
@@ -65,6 +67,7 @@ def push_notification(receiver, content, extra_attr=None):
             )
             logger.debug('The response of publish message: \n%s' % res)
         except ClientError as e:
+            Notification.objects.get_or_create(user=receiver, message=content, extra_attr=extra_attr)
             logger.error(e)
 
 
