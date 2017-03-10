@@ -185,7 +185,8 @@ def payment_stripe(request):
         Transaction.objects.create(
             bucket=bucket,
             type='in',
-            order_number=sale_offer.number
+            order_number=sale_offer.number,
+            amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
         sale_offer.save()
@@ -239,7 +240,8 @@ def payment_coastal(request):
         Transaction.objects.create(
             bucket=bucket,
             type='in',
-            order_number=sale_offer.number
+            order_number=sale_offer.number,
+            amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
         sale_offer.save()

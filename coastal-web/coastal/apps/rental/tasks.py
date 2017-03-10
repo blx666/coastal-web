@@ -74,7 +74,8 @@ def pay_owner(order_id):
         Transaction.objects.create(
             bucket=bucket,
             type='in',
-            order_number=order.number
+            order_number=order.number,
+            amount=order.total_price_usd,
         )
 
         if order.status == 'check-in':

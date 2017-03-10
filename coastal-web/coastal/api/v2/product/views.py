@@ -105,7 +105,7 @@ def product_list(request):
         if max_price:
             products = products.filter(rental_usd_price__lte=max_price)
         if guests:
-            products = products.filter(max_guests__gte=guests)
+            products = products.filter(Q(max_guests__gte=guests) | Q(category=product_defs.CATEGORY_BOAT_SLIP))
 
     if arrival_date and checkout_date:
         products = products.exclude(blackoutdate__start_date__lte=arrival_date,

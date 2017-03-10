@@ -42,11 +42,11 @@ def sign_up(request, invite_code):
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
                 referrer_bucket = referrer.coastalbucket
                 referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer')
+                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
                 referrer_bucket.save()
                 user_bucket = user.coastalbucket
                 user_bucket.balance += 35
-                Transaction.objects.create(bucket=user_bucket, type='in', note='invite_user')
+                Transaction.objects.create(bucket=user_bucket, type='in', note='invite_user', amount=35)
                 user_bucket.save()
                 try:
                     push_referrer_reward(referrer)
