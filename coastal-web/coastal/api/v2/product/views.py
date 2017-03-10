@@ -38,14 +38,13 @@ def product_list(request):
     min_coastline_distance = form.cleaned_data['min_coastline_distance']
     guests = form.cleaned_data['guests']
     poly = form.cleaned_data.get('poly')
-    northeast_lon = form.cleaned_data.get('northeast_lon')
-    southwest_lon = form.cleaned_data.get('southwest_lon')
+    poly2 = form.cleaned_data.get('poly')
     products = Product.objects.filter(status='published')
 
     # address filter
     if poly:
-        if northeast_lon > southwest_lon:
-            products = products.filter(point__within=poly)
+        if poly2:
+            products = products.filter(Q(point__within=poly) | Q(point__within=poly2))
         else:
             products = products.exclude(point__within=poly)
     else:

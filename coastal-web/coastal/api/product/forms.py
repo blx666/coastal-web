@@ -198,18 +198,23 @@ class ProductListFilterForm(forms.Form):
             return guests
 
     def clean(self):
-        purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
         northeast_lon = self.cleaned_data['northeast_lon']
         northeast_lat = self.cleaned_data['northeast_lat']
         southwest_lon = self.cleaned_data['southwest_lon']
         southwest_lat = self.cleaned_data['southwest_lat']
         if northeast_lat is not None and northeast_lon is not None and southwest_lat is not None and southwest_lon is not None:
             try:
-                self.cleaned_data['poly'] = set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat)
+                if northeast_lon < southwest_lon:
+                    self.cleaned_data['poly'] = set_point(180, northeast_lat, southwest_lon, southwest_lat)
+                    self.cleaned_data['poly2'] = set_point(northeast_lon, northeast_lat, -180, southwest_lat)
+                else:
+                    self.cleaned_data['poly'] = set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat)
             except:
                 raise forms.ValidationError('The ViewPort is invalid .')
         elif northeast_lat or northeast_lon or southwest_lat or southwest_lon:
             raise forms.ValidationError('The ViewPort is invalid .')
+
+        purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
         self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
         self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
         if self.cleaned_data['for_sale']:
