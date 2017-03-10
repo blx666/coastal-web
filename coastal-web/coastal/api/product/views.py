@@ -527,7 +527,7 @@ def black_out_date(pid, form):
 
 
 def recommend_product_list(request):
-    recommend_products = Product.objects.filter(status='published').order_by('-score')[0:20]
+    recommend_products = Product.objects.filter(status='published').order_by('-rank', '-score', '-rental_usd_price', '-sale_usd_price')[0:20]
     page = request.GET.get('page', 1)
     bind_product_image(recommend_products)
     data = []
@@ -767,7 +767,7 @@ def product_review(request):
         return CoastalJsonResponse(status=response.STATUS_404)
     except ValueError:
         return CoastalJsonResponse(status=response.STATUS_404)
-    reviews = Review.objects.filter(product=product)
+    reviews = Review.objects.filter(product=product).order_by('-date_created')
     product_dict = {
         'id': product_id,
         'name': product.name,

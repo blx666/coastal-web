@@ -54,6 +54,7 @@ def push_notification(receiver, content, extra_attr=None):
         enabled = endpoint_attributes['Attributes']['Enabled']
         if enabled == 'false':
             Token.objects.filter(user=receiver, endpoint=endpoint).delete()
+            continue
 
         logger.debug('message: %s' % result_message)
         try:
@@ -157,7 +158,7 @@ def publish_paid_order(rental_order):
 # guest check in more than 24 hours
 def publish_paid_owner_order(rental_order):
     owner = rental_order.owner
-    message = 'Congratulations! You have earned $%s ' % rental_order.coastal_dollar
+    message = 'Congratulations! You have earned $%s ' % format(int(rental_order.coastal_dollar), ',')
     extra_attr = {
         'type': 'check_in_order',
         'product_name': rental_order.product.name,
@@ -275,7 +276,7 @@ def publish_unpay_offer(sale_offer):
 def publish_paid_owner_offer(sale_offer):
     owner = sale_offer.owner
     message = 'Congratulations! You sold your listing %s, and you have earned $%s ' % (
-        sale_offer.product.name, sale_offer.coastal_dollar)
+        sale_offer.product.name, format(int(sale_offer.coastal_dollar), ','))
     extra_attr = {
         'type': 'check_in_offer',
         'sale_offer_id': sale_offer.id,
