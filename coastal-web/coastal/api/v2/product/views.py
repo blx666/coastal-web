@@ -46,7 +46,7 @@ def product_list(request):
         if poly2:
             products = products.filter(Q(point__within=poly) | Q(point__within=poly2))
         else:
-            products = products.exclude(point__within=poly)
+            products = products.filter(point__within=poly)
     else:
         for key in ('country', 'administrative_area_level_1', 'administrative_area_level_2', 'locality', 'sublocality'):
             if form.cleaned_data[key]:

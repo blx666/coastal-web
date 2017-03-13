@@ -74,9 +74,9 @@ def facebook_login(request):
         is_first = not bool(user.last_login)
         auth_login(request, user)
     else:
-        name_list = form.cleaned_data['name'].split()
         user = User.objects.create(username=form.cleaned_data['userid'], email=form.cleaned_data['email'],
-                                   first_name=name_list.pop(), last_name=' '.join(name_list))
+                                   first_name=form.cleaned_data.get('first_name', ''),
+                                   last_name=form.cleaned_data.get('last_name', ''))
         UserProfile.objects.create(user=user, email_confirmed='confirmed', client='facebook')
         CoastalBucket.objects.create(user=user)
         is_first = not bool(user.last_login)
