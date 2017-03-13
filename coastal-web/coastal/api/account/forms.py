@@ -48,8 +48,12 @@ class FacebookLoginForm(forms.Form):
     token = forms.CharField(required=False)
     uuid = forms.CharField(required=False)
 
-
-
-
-
-
+    def clean(self):
+        name = self.cleaned_data['name']
+        if name:
+            name_list = name.split()
+            if len(name_list) > 1:
+                self.cleaned_data['last_name'] = name_list.pop()
+                self.cleaned_data['first_name'] = ' '.join(name_list)
+            else:
+                self.cleaned_data['first_name'] = name
