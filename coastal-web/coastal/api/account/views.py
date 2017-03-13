@@ -91,13 +91,12 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-    no_pushes = Notification.objects.first(user=user, pushed=False)
-    if no_pushes:
-        for no_push in no_pushes:
-            push_notification(user, no_push.message, no_push.extra_attr)
-            no_push.pushed = True
-            no_push.date_update = timezone.now()
-            no_push.save()
+    not_pushes = Notification.objects.first(user=user, pushed=False)
+    if not_pushes:
+        for not_push in not_pushes:
+            push_notification(user, not_push.message, not_push.extra_attr)
+            if user.tokens:
+                not_push.delete()
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -148,13 +147,15 @@ def login(request):
                 push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-        no_pushes = Notification.objects.first(user=user, pushed=False)
-        if no_pushes:
-            for no_push in no_pushes:
-                push_notification(user, no_push.message, no_push.extra_attr)
-                no_push.pushed = True
-                no_push.date_update = timezone.now()
-                no_push.save()
+        not_pushes = Notification.objects.first(user=user, pushed=False)
+        if not_pushes:
+            for not_push in not_pushes:
+                push_notification(user, not_push.message, not_push.extra_attr)
+                if user.tokens:
+                    not_push.delete()
+                # not_push.pushed = True
+                # not_push.date_update = timezone.now()
+                # not_push.save()
     else:
         data = {
             "logged": request.user.is_authenticated(),

@@ -44,7 +44,7 @@ def push_notification(receiver, content, extra_attr=None):
     # TODO: can we set the endpoint to cache?
     endpoint_list = Token.objects.filter(user=receiver).values_list('endpoint', flat=True)
     if not endpoint_list:
-        Notification.objects.create(user=receiver, message=content, extra_attr=extra_attr)
+        Notification.objects.get_or_create(user=receiver, message=content, extra_attr=extra_attr)
         raise NoEndpoint
 
     for endpoint in endpoint_list:
