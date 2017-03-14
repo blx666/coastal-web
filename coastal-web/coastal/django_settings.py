@@ -191,3 +191,5 @@ EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
 DEFAULT_FROM_EMAIL = "donotreply@itscoastal.com"
+
+CONFIRM_TIME = 72

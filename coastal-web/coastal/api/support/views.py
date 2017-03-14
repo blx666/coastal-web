@@ -1,6 +1,7 @@
 from coastal.api.support.forms import HelpCenterForm
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
+from django.conf import settings
 
 
 def sent_message(request):
@@ -18,7 +19,7 @@ def sent_message(request):
 
 def setting(request):
     data = {
-        'time': 72,
-        'time_information': '72 hours'
+        'time': settings.CONFIRM_TIME,
+        'time_information': '%s hours' % settings.CONFIRM_TIME,
     }
     return CoastalJsonResponse(data)

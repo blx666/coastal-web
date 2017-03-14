@@ -288,7 +288,7 @@ def my_activity(request):
         })
 
     # now = datetime.now()
-    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=settings.CONFIRM_TIME)
     active_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(
         status__in=RentalOrder.END_STATUS_LIST)
     finished_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(
@@ -415,7 +415,7 @@ def my_account(request):
     data['favorites'] = favorite_group
 
     # my orders
-    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=settings.CONFIRM_TIME)
     rental_order_list = list(RentalOrder.objects.filter(
         Q(owner=user) | Q(guest=user), status__in=RentalOrder.END_STATUS_LIST, date_updated__lte=yesterday))
     sale_offer_list = list(SaleOffer.objects.filter(
