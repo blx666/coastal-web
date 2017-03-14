@@ -226,7 +226,7 @@ class Product(models.Model):
             if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year):
                 return False
         elif self.category_id == defs.CATEGORY_ADVENTURE:
-            if not (self.exp_start_time and self.exp_end_time and self.exp_time_length and self.exp_time_unit):
+            if self.exp_start_time is None or self.exp_end_time is None or not self.exp_time_length or not self.exp_time_unit:
                 return False
         elif self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
             if not (self.rooms and self.sleeps and self.beds and self.bathrooms):
