@@ -14,3 +14,11 @@ def sent_message(request):
     else:
         data = {'send': 'failed'}
     return CoastalJsonResponse(data)
+
+
+def setting(request):
+    data = {
+        'time': 72,
+        'time_information': '72 hours'
+    }
+    return CoastalJsonResponse(data)
