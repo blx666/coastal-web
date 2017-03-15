@@ -15,4 +15,4 @@ class Notification(models.Model):
     pushed = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_update = models.DateTimeField(auto_now=True)
-    extra_attr = models.TextField()
+    send_count = models.IntegerField(default=1)

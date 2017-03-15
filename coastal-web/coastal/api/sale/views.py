@@ -39,7 +39,7 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-        expire_offer_charge.apply_async((sale_offer.id,), countdown=settings.CONFIRM_TIME * 60 * 60)
+        expire_offer_charge.apply_async((sale_offer.id,), countdown=settings.defs * 60 * 60)
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):
@@ -122,7 +122,7 @@ def make_offer(request):
         "status": sale_offer.get_status_display(),
     }
 
-    expire_offer_request.apply_async((sale_offer.id,), countdown=settings.CONFIRM_TIME * 60 * 60)
+    expire_offer_request.apply_async((sale_offer.id,), countdown=settings.defs * 60 * 60)
     try:
         publish_new_offer(sale_offer)
     except (NoEndpoint, DisabledEndpoint):

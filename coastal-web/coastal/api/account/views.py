@@ -24,9 +24,10 @@ from coastal.api.product.utils import bind_product_image, get_products_by_id, ge
 from coastal.apps.sns.utils import bind_token, unbind_token, publish_log_in
 from django.urls import reverse
 from coastal.apps.product import defines as product_defs
-from coastal.apps.sns.utils import push_user_reward, push_notification
+from coastal.apps.sns.utils import push_user_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sns.models import Notification
+from coastal.apps.sns.tasks import push_user_notifications
 
 logger = logging.getLogger(__name__)
 
@@ -91,12 +92,10 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-    not_pushes = Notification.objects.first(user=user, pushed=False)
-    if not_pushes:
-        for not_push in not_pushes:
-            push_notification(user, not_push.message, not_push.extra_attr)
-            if user.tokens:
-                not_push.delete()
+    not_notifications = Notification.objects.first(user=user, pushed=False)
+    if not_notifications:
+        for not_notification in not_notifications:
+            push_user_notifications.delay(not_notification.id)
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -147,15 +146,10 @@ def login(request):
                 push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-        not_pushes = Notification.objects.first(user=user, pushed=False)
-        if not_pushes:
-            for not_push in not_pushes:
-                push_notification(user, not_push.message, not_push.extra_attr)
-                if user.tokens:
-                    not_push.delete()
-                # not_push.pushed = True
-                # not_push.date_update = timezone.now()
-                # not_push.save()
+        not_notifications = Notification.objects.filter(user=user, pushed=False)
+        if not_notifications:
+            for not_notification in not_notifications:
+                push_user_notifications(not_notification.id)
     else:
         data = {
             "logged": request.user.is_authenticated(),
@@ -288,7 +282,7 @@ def my_activity(request):
         })
 
     # now = datetime.now()
-    yesterday = timezone.datetime.now() - timezone.timedelta(hours=settings.CONFIRM_TIME)
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
     active_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).exclude(
         status__in=RentalOrder.END_STATUS_LIST)
     finished_orders = RentalOrder.objects.filter(Q(owner=user) | Q(guest=user)).filter(
@@ -415,7 +409,7 @@ def my_account(request):
     data['favorites'] = favorite_group
 
     # my orders
-    yesterday = timezone.datetime.now() - timezone.timedelta(hours=settings.CONFIRM_TIME)
+    yesterday = timezone.datetime.now() - timezone.timedelta(hours=24)
     rental_order_list = list(RentalOrder.objects.filter(
         Q(owner=user) | Q(guest=user), status__in=RentalOrder.END_STATUS_LIST, date_updated__lte=yesterday))
     sale_offer_list = list(SaleOffer.objects.filter(

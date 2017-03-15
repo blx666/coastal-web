@@ -1,11 +1,13 @@
 import datetime
 import hashlib
 from django.contrib.auth.models import User
+from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.contrib.gis.db import models
 from django.core.cache import cache
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+
 from coastal.apps.product.models import Product
 
 
@@ -31,6 +33,28 @@ User.basic_info = basic_info
 @receiver(post_save, sender=User)
 def clear_user_cache(sender, **kwargs):
     cache.delete('user_basic_info|%s' % kwargs['instance'].id)
+
+
+def get_user_endpoint_list(self):
+    from coastal.apps.sns.models import Token
+    endpoints = cache.get('user_endpoints|%s' % self.id)
+    if endpoints is None:
+        endpoints = Token.objects.filter(user=self).values_list('endpoint', flat=True)
+
+        cache.set('user_endpoints|%s' % self.id, endpoints, 5 * 60)
+
+    return endpoints
+User.get_user_endpoint_list = get_user_endpoint_list
+
+
+@receiver(user_logged_in, sender=User)
+def clear_user_endpoint_list(sender, **kwargs):
+    cache.delete('user_endpoints|%s' % kwargs['instance'].id)
+
+
+@receiver(user_logged_out, sender=User)
+def clear_user_endpoint_list(sender, **kwargs):
+    cache.delete('user_endpoints|%s' % kwargs['instance'].id)
 
 
 class UserProfile(models.Model):

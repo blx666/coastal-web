@@ -1,7 +1,7 @@
 from coastal.api.support.forms import HelpCenterForm
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
-from django.conf import settings
+from coastal.api import defines as defs
 
 
 def sent_message(request):
@@ -19,7 +19,7 @@ def sent_message(request):
 
 def setting(request):
     data = {
-        'time': settings.CONFIRM_TIME,
-        'time_information': '%s hours' % settings.CONFIRM_TIME,
+        'expire_time': defs.EXPIRATION_TIME,
+        'expire_time_display': '%s hours' % defs.EXPIRATION_TIME,
     }
     return CoastalJsonResponse(data)
