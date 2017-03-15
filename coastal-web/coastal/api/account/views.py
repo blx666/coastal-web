@@ -92,7 +92,7 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-    not_notifications = Notification.objects.first(user=user, pushed=False)
+    not_notifications = Notification.objects.filter(user=user, pushed=False)
     if not_notifications:
         for not_notification in not_notifications:
             push_user_notifications.delay(not_notification.id)
