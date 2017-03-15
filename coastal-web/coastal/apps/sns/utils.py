@@ -46,7 +46,7 @@ def push_notification(receiver, content, extra_attr=None):
             'APNS': json.dumps(notification)
         })
 
-    Notification.objects.create(user=receiver, message=result_message)
+    notification = Notification.objects.create(user=receiver, message=result_message)
 
     # TODO: can we set the endpoint to cache?
     endpoint_list = receiver.get_user_endpoint_list()
@@ -78,12 +78,13 @@ def push_notification(receiver, content, extra_attr=None):
             logger.error(e)
 
     if succesed:
-        notification = Notification.objects.filter(user=receiver, message=result_message)
-        notification.update(pushed=True)
+        notification.pushed = True
+        notification.save()
 
 
 def re_push(notification):
     notification.send_count += 1
+    notification.save()
     sns_client = _get_sns_client()
     # TODO: can we set the endpoint to cache?
     user = notification.user
@@ -253,7 +254,7 @@ def publish_new_offer(sale_offer):
         'type': 'get_offer',
         'sale_offer_id': sale_offer.id,
         'product_id': product.id,
-        'product_name': notification.product.name,
+        'product_name': product.name,
         'product_image': product.get_main_image(),
         'for_rental': product.for_rental,
         'for_sale': product.for_sale,

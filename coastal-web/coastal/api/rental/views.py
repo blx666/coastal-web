@@ -17,7 +17,6 @@ from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
-from django.conf import settings
 
 
 @login_required

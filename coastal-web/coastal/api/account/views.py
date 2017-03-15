@@ -26,7 +26,6 @@ from django.urls import reverse
 from coastal.apps.product import defines as product_defs
 from coastal.apps.sns.utils import push_user_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
-from coastal.apps.sns.models import Notification
 from coastal.apps.sns.tasks import push_user_notifications
 
 logger = logging.getLogger(__name__)
@@ -92,10 +91,7 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-    not_notifications = Notification.objects.filter(user=user, pushed=False)
-    if not_notifications:
-        for not_notification in not_notifications:
-            push_user_notifications.delay(not_notification.id)
+    push_user_notifications.delay(user.id)
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -146,10 +142,7 @@ def login(request):
                 push_user_reward(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-        not_notifications = Notification.objects.filter(user=user, pushed=False)
-        if not_notifications:
-            for not_notification in not_notifications:
-                push_user_notifications.delay(not_notification.id)
+        push_user_notifications.delay(user.id)
     else:
         data = {
             "logged": request.user.is_authenticated(),
