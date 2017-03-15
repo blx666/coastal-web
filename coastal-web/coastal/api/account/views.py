@@ -149,7 +149,7 @@ def login(request):
         not_notifications = Notification.objects.filter(user=user, pushed=False)
         if not_notifications:
             for not_notification in not_notifications:
-                push_user_notifications(not_notification.id)
+                push_user_notifications.delay(not_notification.id)
     else:
         data = {
             "logged": request.user.is_authenticated(),
