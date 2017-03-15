@@ -7,3 +7,12 @@ class Token(models.Model):
     uuid = models.TextField()
     token = models.TextField()
     endpoint = models.TextField()
+
+
+class Notification(models.Model):
+    user = models.ForeignKey(User, related_name='notifications')
+    message = models.TextField()
+    pushed = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_update = models.DateTimeField(auto_now=True)
+    send_count = models.IntegerField(default=1)

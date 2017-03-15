@@ -20,7 +20,7 @@ class RentalOrder(models.Model):
         ('request', 'Unconfirmed'),  # The order need to be confirmed by host
         ('approved', 'Approved'),  # The order has been confirmed by host
         ('declined', 'Declined'),  # The order has been declined by host
-        ('invalid', 'Invalid'),  # The order did not be handle within 24 hours
+        ('invalid', 'Invalid'),  # The order did not be handle within 72 hours
         ('charge', 'Unpaid'),  # The order need to be paid for by guest
         ('booked', 'In Transaction'),  # Booked successfully
         ('check-in', 'In Transaction'),  # Guest has been checked in (auto set by system)

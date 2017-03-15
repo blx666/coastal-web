@@ -9,17 +9,23 @@ from django.conf import settings
 from coastal.apps.payment.utils import get_payment_info, sale_payment_info
 from coastal.apps.sns.models import Token
 from coastal.apps.sns.exceptions import NoEndpoint
+from coastal.apps.sns.models import Notification
+from coastal.api import defines as defs
 
 logger = logging.getLogger(__name__)
 
 
-def push_notification(receiver, content, extra_attr=None):
+def _get_sns_client():
     aws_key = settings.AWS_ACCESS_KEY_ID
     aws_secret = settings.AWS_SECRET_ACCESS_KEY
     region_name = settings.REGION
     Session(aws_access_key_id=aws_key, aws_secret_access_key=aws_secret, region_name=region_name)
     boto3.setup_default_session(aws_access_key_id=aws_key, aws_secret_access_key=aws_secret, region_name=region_name)
-    aws = boto3.client('sns')
+    return boto3.client('sns')
+
+
+def push_notification(receiver, content, extra_attr=None):
+    sns_client = _get_sns_client()
 
     notification = {
         'aps': {
@@ -32,22 +38,25 @@ def push_notification(receiver, content, extra_attr=None):
         notification.update(extra_attr)
 
     if settings.DEBUG:
-        result_message = {
+        result_message = json.dumps({
             'APNS_SANDBOX': json.dumps(notification)
-        }
+        })
     else:
-        result_message = {
+        result_message = json.dumps({
             'APNS': json.dumps(notification)
-        }
+        })
+
+    notification = Notification.objects.create(user=receiver, message=result_message)
 
     # TODO: can we set the endpoint to cache?
-    endpoint_list = Token.objects.filter(user=receiver).values_list('endpoint', flat=True)
+    endpoint_list = receiver.get_user_endpoint_list()
     if not endpoint_list:
         raise NoEndpoint
 
+    succesed = False
     for endpoint in endpoint_list:
         logger.debug('Endpoint: %s' % endpoint)
-        endpoint_attributes = aws.get_endpoint_attributes(
+        endpoint_attributes = sns_client.get_endpoint_attributes(
             EndpointArn=endpoint,
         )
 
@@ -58,14 +67,57 @@ def push_notification(receiver, content, extra_attr=None):
 
         logger.debug('message: %s' % result_message)
         try:
-            res = aws.publish(
-                Message=json.dumps(result_message),
+            res = sns_client.publish(
+                Message=result_message,
                 TargetArn=endpoint,
                 MessageStructure='json'
             )
             logger.debug('The response of publish message: \n%s' % res)
+            succesed = True
         except ClientError as e:
             logger.error(e)
+
+    if succesed:
+        notification.pushed = True
+        notification.save()
+
+
+def re_push(notification):
+    notification.send_count += 1
+    notification.save()
+    sns_client = _get_sns_client()
+    # TODO: can we set the endpoint to cache?
+    user = notification.user
+    endpoint_list = user.get_user_endpoint_list()
+    if not endpoint_list:
+        raise NoEndpoint
+
+    succesed = False
+    for endpoint in endpoint_list:
+        logger.debug('Endpoint: %s' % endpoint)
+        endpoint_attributes = sns_client.get_endpoint_attributes(
+            EndpointArn=endpoint,
+        )
+
+        enabled = endpoint_attributes['Attributes']['Enabled']
+        if enabled == 'false':
+            Token.objects.filter(user=user, endpoint=endpoint).delete()
+            continue
+
+        logger.debug('message: %s' % notification.message)
+        try:
+            res = sns_client.publish(
+                Message=notification.message,
+                TargetArn=endpoint,
+                MessageStructure='json'
+            )
+            logger.debug('The response of publish message: \n%s' % res)
+            succesed = True
+        except ClientError as e:
+            logger.error(e)
+    if succesed:
+        notification.pushed = True
+        notification.save()
 
 
 def publish_message(content, dialogue_id, receiver_obj, sender_name):
@@ -80,7 +132,7 @@ def publish_message(content, dialogue_id, receiver_obj, sender_name):
 # place an order
 def publish_get_order(rental_order):
     owner = rental_order.owner
-    message = 'You have a new rental request. You must confirm in 24 hours, or it will be cancelled automatically.'
+    message = 'You have a new rental request. You must confirm in %s hours, or it will be cancelled automatically.' % defs.EXPIRATION_TIME
     extra_attr = {
         'type': 'get_order',
         'rental_order_id': rental_order.id,
@@ -93,11 +145,11 @@ def publish_get_order(rental_order):
     push_notification(owner, message, extra_attr)
 
 
-# after 24 hours order is invalid
+# after 72 hours order is invalid
 def publish_unconfirmed_order(rental_order):
     owner = rental_order.owner
     guest = rental_order.guest
-    message = 'The request has been cancelled, for the host didn\'t confirm in 24 hours.'
+    message = 'The request has been cancelled, for the host didn\'t confirm in %s hours.' % defs.EXPIRATION_TIME
     extra_attr = {
         'type': 'unconfirmed_order',
         'product_name': rental_order.product.name,
@@ -110,8 +162,8 @@ def publish_unconfirmed_order(rental_order):
 # owner confirmed order
 def publish_confirmed_order(rental_order):
     guest = rental_order.guest
-    guest_message = 'Your request has been confirmed, please pay for it in 24 hours,' \
-                    ' or it will be cancelled automatically.'
+    guest_message = 'Your request has been confirmed, please pay for it in %s hours,' \
+                    ' or it will be cancelled automatically.' % defs.EXPIRATION_TIME
     product = rental_order.product
     extra_attr = {
         'type': 'confirmed_order',
@@ -128,12 +180,12 @@ def publish_confirmed_order(rental_order):
     push_notification(guest, guest_message, extra_attr)
 
 
-# after 24 hours paid order is invalid
+# after 72 hours paid order is invalid
 def publish_unpay_order(rental_order):
     owner = rental_order.owner
     guest = rental_order.guest
     message = 'Coastal has cancelled the request for you, for the guest hasn\'t finished ' \
-              'the payment in 24 hours.'
+              'the payment in %s hours.' % defs.EXPIRATION_TIME
     extra_attr = {
         'type': 'unpay_order',
         'product_name': rental_order.product.name,
@@ -155,7 +207,7 @@ def publish_paid_order(rental_order):
     push_notification(owner, host_message, extra_attr)
 
 
-# guest check in more than 24 hours
+# guest check in more than 72 hours
 def publish_paid_owner_order(rental_order):
     owner = rental_order.owner
     message = 'Congratulations! You have earned $%s ' % format(int(rental_order.coastal_dollar), ',')
@@ -196,7 +248,7 @@ def publish_refuse_order(rental_order):
 # make an offer
 def publish_new_offer(sale_offer):
     owner = sale_offer.owner
-    message = 'You have received an offer on your listing! You must confirm in 24 hours, or it will be cancelled automatically.'
+    message = 'You have received an offer on your listing! You must confirm in %s hours, or it will be cancelled automatically.' % defs.EXPIRATION_TIME
     product = sale_offer.product
     extra_attr = {
         'type': 'get_offer',
@@ -213,8 +265,8 @@ def publish_new_offer(sale_offer):
 # owner confirmed order
 def publish_confirmed_offer(sale_offer):
     guest = sale_offer.guest
-    guest_message = 'Your offer has been confirmed, please pay for it in 24 hours,' \
-                    ' or it will be cancelled automatically.'
+    guest_message = 'Your offer has been confirmed, please pay for it in %s hours,' \
+                    ' or it will be cancelled automatically.' % defs.EXPIRATION_TIME
     product = sale_offer.product
     extra_attr = {
         'type': 'confirmed_offer',
@@ -243,11 +295,11 @@ def publish_refuse_offer(sale_offer):
     push_notification(guest, message, extra_attr)
 
 
-# after 24 hours offer is invalid
+# after 72 hours offer is invalid
 def publish_unconfirmed_offer(sale_offer):
     owner = sale_offer.owner
     guest = sale_offer.guest
-    message = 'The offer has been cancelled, for the host didn\'t confirm in 24 hours.'
+    message = 'The offer has been cancelled, for the host didn\'t confirm in %s hours.' % defs.EXPIRATION_TIME
     extra_attr = {
         'type': 'unconfirmed_offer',
         'product_name': sale_offer.product.name,
@@ -257,12 +309,12 @@ def publish_unconfirmed_offer(sale_offer):
     push_notification(guest, message, extra_attr)
 
 
-# after 24 hours paid order is invalid
+# after 72 hours paid order is invalid
 def publish_unpay_offer(sale_offer):
     owner = sale_offer.owner
     guest = sale_offer.guest
     message = 'Coastal has cancelled the offer for you, for the guest hasn\'t finished ' \
-              'the payment in 24 hours.'
+              'the payment in %s hours.' % defs.EXPIRATION_TIME
     extra_attr = {
         'type': 'unpay_offer',
         'product_name': sale_offer.product.name,
@@ -272,7 +324,7 @@ def publish_unpay_offer(sale_offer):
     push_notification(guest, message, extra_attr)
 
 
-# guest check in more than 24 hours
+# guest check in more than 72 hours
 def publish_paid_owner_offer(sale_offer):
     owner = sale_offer.owner
     message = 'Congratulations! You sold your listing %s, and you have earned $%s ' % (
@@ -347,3 +399,4 @@ def push_referrer_reward(user):
         'type': 'text',
     }
     push_notification(user, message, extra_attr)
+

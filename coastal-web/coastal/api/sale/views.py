@@ -14,7 +14,7 @@ from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, p
     publish_paid_owner_offer
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
-from coastal.api.product.utils import get_email_cipher
+from coastal.api import defines as defs
 
 
 @login_required
@@ -38,7 +38,7 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-        expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+        expire_offer_charge.apply_async((sale_offer.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):
@@ -121,7 +121,7 @@ def make_offer(request):
         "status": sale_offer.get_status_display(),
     }
 
-    expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+    expire_offer_request.apply_async((sale_offer.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
     try:
         publish_new_offer(sale_offer)
     except (NoEndpoint, DisabledEndpoint):

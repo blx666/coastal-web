@@ -107,7 +107,7 @@ class Product(models.Model):
     )
     ALLOW_RENTAL_CHOICES = (
         ('meet-cr', 'Guests who meet Coastal\'s requirements'),
-        ('no-one', 'No one. I will read and approve every request within 24 hours'),
+        ('no-one', 'No one. I will read and approve every request within 72 hours'),
     )
     STATUS_CHOICES = (
         ('draft', 'Draft'),

@@ -77,14 +77,14 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
 
     if rental_order.status == 'request':
         try:
             publish_get_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
-        expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_request.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -136,7 +136,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 
