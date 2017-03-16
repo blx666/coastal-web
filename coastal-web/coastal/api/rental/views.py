@@ -17,6 +17,7 @@ from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+from coastal.api import defines as api_defs
 
 
 @login_required
@@ -77,14 +78,14 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     if rental_order.status == 'request':
         try:
             publish_get_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
-        expire_order_request.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
+        expire_order_request.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -136,7 +137,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=defs.EXPIRATION_TIME * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 

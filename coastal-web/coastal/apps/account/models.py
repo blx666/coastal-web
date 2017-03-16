@@ -49,12 +49,12 @@ User.get_user_endpoint_list = get_user_endpoint_list
 
 @receiver(user_logged_in, sender=User)
 def clear_user_endpoint_list(sender, **kwargs):
-    cache.delete('user_endpoints|%s' % kwargs['instance'].id)
+    cache.delete('user_endpoints|%s' % kwargs['user'].id)
 
 
 @receiver(user_logged_out, sender=User)
 def clear_user_endpoint_list(sender, **kwargs):
-    cache.delete('user_endpoints|%s' % kwargs['instance'].id)
+    cache.delete('user_endpoints|%s' % kwargs['user'].id)
 
 
 class UserProfile(models.Model):
