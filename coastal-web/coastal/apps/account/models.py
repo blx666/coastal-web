@@ -32,7 +32,7 @@ User.basic_info = basic_info
 
 @receiver(post_save, sender=User)
 def clear_user_cache(sender, **kwargs):
-    cache.delete('user_basic_info|%s' % kwargs['user'].id)
+    cache.delete('user_basic_info|%s' % kwargs['instance'].id)
 
 
 def get_user_endpoint_list(self):
