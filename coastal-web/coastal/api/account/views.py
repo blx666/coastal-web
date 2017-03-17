@@ -302,7 +302,7 @@ def my_activity(request):
                 else:
                     start_hour = order.product.exp_start_time.hour
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
-                    if order.product.check_exp_end_time:
+                    if order.product.check_exp_end_time():
                         end_time_display = (timezone.localtime(end_time, timezone.get_current_timezone()) + datetime.timedelta(days=1)).replace(hour=0, minute=0).strftime(date_format)
                     else:
                         end_hour = order.product.exp_end_time.hour
