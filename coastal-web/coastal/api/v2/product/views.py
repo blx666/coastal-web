@@ -278,7 +278,7 @@ def _advance_filter_product(form):
 
 def get_nearby_products(lon, lat, origin_products):
     point = Point(lon, lat, srid=4326)
-    distance_range = (defs.NEARBY_DISTANCE, defs.   NEARBY_DISTANCE+100, defs.NEARBY_DISTANCE+200)
+    distance_range = (defs.NEARBY_DISTANCE, defs.NEARBY_DISTANCE+100, defs.NEARBY_DISTANCE+200)
     for v in range(len(distance_range)):
         products = Product.objects.filter(status='published', point__distance_lte=(point, D(mi=distance_range[v]))).order_by(Distance('point', point)).exclude(id__in=origin_products)[0:20]
         if products.count() >= 20 or v == len(distance_range)-1:
