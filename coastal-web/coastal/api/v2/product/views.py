@@ -16,12 +16,13 @@ from coastal.api.product.views import product_add as product_add_v1, product_upd
 from coastal.api.core import response
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
+from coastal.apps.account.models import FavoriteItem
 from coastal.apps.product import defines as product_defs
 from coastal.apps.product.models import Product, ProductImage, Amenity
 from coastal.apps.currency.utils import price_display
 from coastal.apps.review.models import Review
 from coastal.api.product.utils import get_similar_products, bind_product_image, count_product_view, \
-    get_product_discount, bind_product_main_image, bind_product_liked, bind_products_liked
+    get_product_discount, bind_product_main_image
 from coastal.apps.account.models import RecentlyViewed
 
 
@@ -30,11 +31,8 @@ def product_list(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
-    products = Product.objects.filter(status='published')
+    products = _advance_filter_product(form)
 
-    # address filter
-    products = _advance_filter_product(form, products)
-    cache.set('products', products, 60)
     bind_product_image(products)
 
     page = request.GET.get('page', 1)
@@ -120,11 +118,9 @@ def product_search(request):
     if not form.is_valid():
         return CoastalJsonResponse(form.errors, status=response.STATUS_400)
 
-    products = Product.objects.filter(status='published')
-
     # address filter
+    products = _advance_filter_product(form)
 
-    products = _advance_filter_product(form, products)
     bind_product_main_image(products)
 
     page = request.GET.get('page', 1)
@@ -143,7 +139,6 @@ def product_search(request):
     if int(page) >= paginator.num_pages:
         if lon and lat:
             nearby_products = get_nearby_products(lon, lat, products)
-            cache.set('nearby_products', nearby_products, 5 * 60)
             bind_product_main_image(nearby_products)
             nearby_products_list = generate_product_data(nearby_products)
 
@@ -151,17 +146,16 @@ def product_search(request):
     else:
         next_page = int(page) + 1
 
-    logging = False
-    user = False
+    liked_product_id_list = []
     if request.user.is_authenticated:
-        logging = True
         user = request.user
-
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=user).values_list(
+                'product_id', flat=True)
     products_list = generate_product_data(product_page)
-    cache.set('products_list', products_list, 60)
-    products_liked = bind_products_liked(product_page, logging, user)
+
     for product in products_list:
-        product['liked'] = products_liked[product['id']]
+        product['liked'] = product['id'] in liked_product_id_list
+
     result = {
         'count': len(products),
         'products': products_list,
@@ -171,7 +165,7 @@ def product_search(request):
     return CoastalJsonResponse(result)
 
 
-def _advance_filter_product(form, products):
+def _advance_filter_product(form):
     arrival_date = form.cleaned_data['arrival_date']
     checkout_date = form.cleaned_data['checkout_date']
     min_price = form.cleaned_data['min_price']
@@ -190,6 +184,8 @@ def _advance_filter_product(form, products):
     poly2 = form.cleaned_data.get('poly2')
 
     query, query_exp, query_boat_slip = None, None, None
+
+    products = Product.objects.filter(status='published')
 
     if poly:
         if poly2:
@@ -325,23 +321,27 @@ def product_detail(request, pid):
         product = Product.objects.get(id=pid)
     except Product.DoesNotExist:
         return CoastalJsonResponse(status=response.STATUS_404, message="The product does not exist.")
-    logging = False
-    user = False
+
+    liked_product_id_list = []
     if request.POST.get('preview') != '1':
         count_product_view(product)
         if request.user.is_authenticated():
-            logging = True
             user = request.user
-            if RecentlyViewed.objects.filter(user=user, product=product):
-                RecentlyViewed.objects.filter(user=user, product=product).update(date_created=timezone.now())
-            else:
-                RecentlyViewed.objects.create(user=user, product=product)
+            liked_product_id_list = FavoriteItem.objects.filter(favorite__user=request.user).values_list(
+                'product_id', flat=True)
 
+            if RecentlyViewed.objects.filter(user=user, product=product):
+                RecentlyViewed.objects.filter(user=user, product=product).update(date_created=datetime.now())
+            else:
+                RecentlyViewed.objects.create(user=user, product=product, date_created=datetime.now())
 
     if product.category_id == product_defs.CATEGORY_ADVENTURE:
         data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
-        data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
+        if product.check_exp_end_time:
+            data['exp_end_time'] = product.exp_end_time and '12:00 AM' or ''
+        else:
+            data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
         data['exp_time_unit'] = product.get_exp_time_unit_display()
         data['city'] = product.locality or ''
     else:
@@ -375,7 +375,7 @@ def product_detail(request, pid):
         data['rental_price'] = product.rental_price
     else:
         data['rental_price'] = 0
-    data['liked'] = bind_product_liked(product, logging, user)
+    data['liked'] = product.id in liked_product_id_list
     data['rental_price_display'] = product.get_rental_price_display()
     data['sale_price_display'] = product.get_sale_price_display()
     data['city_address'] = product.city_address or ''
@@ -445,13 +445,16 @@ def product_detail(request, pid):
         }
     data.get('extra_info').update(discount)
 
-    similar_products = get_similar_products(product)
+    similar_product_dict = cache.get('similar_products|%s' % product.id)
+    if similar_product_dict is None:
+        similar_products = get_similar_products(product)
+        bind_product_main_image(similar_products)
+        similar_product_dict = generate_product_data(similar_products)
 
-    bind_product_main_image(similar_products)
-    similar_product_dict = generate_product_data(similar_products)
-    cache.set('similar_product_dict', similar_product_dict, 5 * 60)
-    products_liked = bind_products_liked(similar_products, logging, user)
+        cache.set('similar_products|%s' % product.id, similar_product_dict, 5 * 60)
+
     for product in similar_product_dict:
-        product['liked'] = products_liked[product['id']]
+        product['liked'] = product['id'] in liked_product_id_list
+
     data['similar_products'] = similar_product_dict
     return CoastalJsonResponse(data)
