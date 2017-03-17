@@ -27,6 +27,7 @@ from coastal.apps.product import defines as product_defs
 from coastal.apps.sns.utils import push_user_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sns.tasks import push_user_notifications
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -300,9 +301,12 @@ def my_activity(request):
                     end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
                 else:
                     start_hour = order.product.exp_start_time.hour
-                    end_hour = order.product.exp_end_time.hour
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
-                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
+                    if order.product.check_exp_end_time:
+                        end_time_display = (timezone.localtime(end_time, timezone.get_current_timezone()) + datetime.timedelta(days=1)).replace(hour=0, minute=0).strftime(date_format)
+                    else:
+                        end_hour = order.product.exp_end_time.hour
+                        end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
             else:
                 if order.rental_unit == 'day':
                     date_format = '%A, %B, %d'

@@ -9,6 +9,7 @@ from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
 from coastal.apps.currency.utils import get_exchange_rate
 import math
+import datetime
 
 
 class Category(MP_Node):
@@ -326,6 +327,9 @@ class Product(models.Model):
         if self.category_id == defs.CATEGORY_ADVENTURE and self.rental_price:
             self.rental_usd_price = math.ceil(self.rental_price / currency_rate)
         super(Product, self).save()
+
+    def check_exp_end_time(self):
+        return self.exp_end_time == datetime.time(hour=23, minute=59)
 
 
 class Amenity(models.Model):

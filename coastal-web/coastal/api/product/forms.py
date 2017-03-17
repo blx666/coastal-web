@@ -128,6 +128,12 @@ class ProductAddForm(forms.ModelForm):
             return None
         return max_guests
 
+    def clean_exp_end_time(self):
+        exp_end_time = self.cleaned_data['exp_end_time']
+        if exp_end_time.hour == 0:
+            exp_end_time = datetime.time(hour=23, minute=59)
+            return exp_end_time
+
     class Meta:
         model = Product
         exclude = ['owner', 'score', 'status', 'timezone']
@@ -242,3 +248,45 @@ class DiscountCalculatorFrom(forms.Form):
     rental_unit = forms.ChoiceField(choices=CHARGE_UNIT_CHOICES)
     discount_weekly	= forms.IntegerField(required=False)
     discount_monthly = forms.IntegerField(required=False)
+
+
+class ProductSearchFilterForm(ProductListFilterForm):
+    lon = forms.FloatField(required=False)
+    lat = forms.FloatField(required=False)
+
+    distance = forms.IntegerField(required=False)
+
+    country = forms.CharField(required=False)
+    administrative_area_level_1 = forms.CharField(required=False)
+    administrative_area_level_2 = forms.CharField(required=False)
+    locality = forms.CharField(required=False)
+    sublocality = forms.CharField(required=False)
+
+    guests = forms.CharField(required=False)
+    arrival_date = forms.DateTimeField(required=False)
+    checkout_date = forms.DateTimeField(required=False)
+    min_price = forms.DecimalField(required=False)
+    max_price = forms.DecimalField(required=False)
+    sort = forms.CharField(required=False)
+    category = forms.CharField(required=False)
+    purchase_or_buy = forms.CharField(required=False)
+    min_coastline_distance = forms.IntegerField(required=False)
+    max_coastline_distance = forms.IntegerField(required=False)
+
+    def clean(self):
+        purchase_or_buy = self.cleaned_data.get('purchase_or_buy')
+        self.cleaned_data['for_rental'] = purchase_or_buy == 'rent'
+        self.cleaned_data['for_sale'] = purchase_or_buy == 'sale'
+        if self.cleaned_data['for_sale']:
+            self.cleaned_data['price_field'] = 'sale_usd_price'
+        else:
+            self.cleaned_data['price_field'] = 'rental_usd_price'
+
+        category = self.cleaned_data['category']
+        if category:
+            if product_defs.CATEGORY_ADVENTURE in category:
+                self.cleaned_data['category_exp'] = category.pop(category.index(product_defs.CATEGORY_ADVENTURE))
+            if product_defs.CATEGORY_BOAT_SLIP in category:
+                self.cleaned_data['category_boat_slip'] = category.pop(category.index(product_defs.CATEGORY_BOAT_SLIP))
+        else:
+            self.cleaned_data['category_empty'] = True

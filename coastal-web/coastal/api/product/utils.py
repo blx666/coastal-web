@@ -8,6 +8,7 @@ from django.contrib.gis.measure import D
 from django.db.models import F
 from coastal.apps.product import defines as defs
 from django.contrib.gis.geos import Point, Polygon
+from coastal.apps.account.models import FavoriteItem
 
 
 def get_similar_products(product):
@@ -182,3 +183,25 @@ def set_point(northeast_lon, northeast_lat, southwest_lon, southwest_lat):
     fourth_point = Point(southwest_lon, northeast_lat)
     poly = Polygon((first_point, second_point, third_point, fourth_point, first_point),)
     return poly
+
+
+def bind_products_liked(products, logging, user):
+    liked_dict = {}
+    if user and logging:
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=user).values_list(
+                'product_id', flat=True)
+        for product in products:
+            liked_dict[product.id] = product.id in liked_product_id_list
+    else:
+        for product in products:
+            liked_dict[product.id] = False
+    return liked_dict
+
+
+def bind_product_liked(product, logging, user):
+    if user and logging:
+        liked_product_id_list = FavoriteItem.objects.filter(favorite__user=user).values_list(
+                'product_id', flat=True)
+        return product.id in liked_product_id_list
+    else:
+        return False

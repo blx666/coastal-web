@@ -260,10 +260,10 @@ def order_detail(request):
             end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
         else:
             start_hour = order.product.exp_start_time.hour
-            end_hour = order.product.exp_end_time.hour
             start_time = order.start_datetime
             end_time = order.end_datetime
             start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime('%l:%M %p, %A/ %B %d, %Y')
+            end_hour = order.product.exp_end_time.hour
             end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
 
     result = {
