@@ -1069,9 +1069,9 @@ def all_detail(request):
         'exp_time_length': product.exp_time_length or 0,
     }
     if product.exp_start_time is not None:
-        result['exp_end_time'] = product.exp_start_time.strftime('%I:%M %p')
+        result['exp_start_time'] = product.exp_start_time.strftime('%I:%M %p')
     else:
-        result['exp_end_time'] = ''
+        result['exp_start_time'] = ''
 
     if product.check_exp_end_time():
         result['exp_end_time'] = '12:00 AM'
