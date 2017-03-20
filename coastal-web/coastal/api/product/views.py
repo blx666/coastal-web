@@ -1067,8 +1067,12 @@ def all_detail(request):
         'desc_other_to_note': product.desc_other_to_note or '',
         'exp_time_unit': product.get_exp_time_unit_display() or '',
         'exp_time_length': product.exp_time_length or 0,
-        'exp_start_time': product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
     }
+    if product.exp_start_time is not None:
+        result['exp_end_time'] = product.exp_start_time.strftime('%I:%M %p')
+    else:
+        result['exp_end_time'] = ''
+
     if product.check_exp_end_time():
         result['exp_end_time'] = '12:00 AM'
     result.update(discount)
