@@ -251,7 +251,7 @@ def order_detail(request):
     time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
     start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
     end_datetime = timezone.localtime(end_time, timezone.get_current_timezone())
-    if end_datetime.time() == datetime.time(hour=23, minute=59):
+    if end_datetime.time() == datetime.time(hour=23, minute=59, second=59):
         end_datetime += datetime.timedelta(minutes=1)
     end_datetime = end_datetime.strftime(time_format)
     if order.product.category_id == defs.CATEGORY_ADVENTURE:
