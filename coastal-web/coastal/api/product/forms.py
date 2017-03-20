@@ -130,9 +130,9 @@ class ProductAddForm(forms.ModelForm):
 
     def clean_exp_end_time(self):
         exp_end_time = self.cleaned_data['exp_end_time']
-        if exp_end_time and exp_end_time.hour == 0:
+        if exp_end_time is not None and exp_end_time.hour == 0:
             exp_end_time = datetime.time(hour=23, minute=59)
-            return exp_end_time
+        return exp_end_time
 
     class Meta:
         model = Product
