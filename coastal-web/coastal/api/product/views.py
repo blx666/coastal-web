@@ -1068,7 +1068,8 @@ def all_detail(request):
         'exp_time_unit': product.get_exp_time_unit_display() or '',
         'exp_time_length': product.exp_time_length or 0,
         'exp_start_time': product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
-        'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
     }
+    if product.check_exp_end_time():
+        result['exp_end_time'] = '12:00 AM'
     result.update(discount)
     return CoastalJsonResponse(result)
