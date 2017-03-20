@@ -339,7 +339,7 @@ def product_detail(request, pid):
         data = model_to_dict(product, fields=['id', 'max_guests', 'exp_time_length', 'category', 'currency'])
         data['exp_start_time'] = product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or ''
         if product.check_exp_end_time():
-            data['exp_end_time'] = product.exp_end_time and '12:00 AM' or ''
+            data['exp_end_time'] = '12:00 AM'
         else:
             data['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
         data['exp_time_unit'] = product.get_exp_time_unit_display()

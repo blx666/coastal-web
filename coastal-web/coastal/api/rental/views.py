@@ -263,8 +263,11 @@ def order_detail(request):
             start_time = order.start_datetime
             end_time = order.end_datetime
             start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime('%l:%M %p, %A/ %B %d, %Y')
-            end_hour = order.product.exp_end_time.hour
-            end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
+            if order.product.check_exp_end_time():
+                end_datetime = timezone.localtime(end_time + datetime.timedelta(days=1), timezone.get_current_timezone()).replace(hour=0,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
+            else:
+                end_hour = order.product.exp_end_time.hour
+                end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
 
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.locality or ''),

@@ -864,7 +864,7 @@ def product_owner(request):
                 yachts_dict['beds'] = product.beds or 0
             yachts_list.append(yachts_dict)
         elif product.category.get_root().id == 9:
-            experience_list.append({
+            experience = {
                 "id": product.id,
                 "category": product.category_id,
                 "image": product.images and product.images[0].image.url or '',
@@ -879,10 +879,15 @@ def product_owner(request):
                 "reviews_count": reviews_avg_score['id__count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
                 'exp_start_time':  product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
-                'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
                 'exp_time_unit': product.get_exp_time_unit_display(),
                 'exp_time_length': product.exp_time_length or 0,
-            })
+            }
+            if product.check_exp_end_time():
+                experience['exp_end_time'] = '12:00 AM'
+            else:
+                experience['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
+            experience_list.append(experience)
+
         else:
             jets_list.append({
                 "id": product.id,
