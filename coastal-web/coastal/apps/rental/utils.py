@@ -103,7 +103,7 @@ def rental_out_date(product, start_datetime, end_datetime):
         if end_datetime.hour < 12:
             end_datetime = end_datetime.replace(hour=12)
         elif end_datetime.hour > 12:
-            end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+            end_datetime = end_datetime.replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
 
         start_out_date = RentalOutDate.objects.filter(end_date=start_datetime, product=product)
         end_out_date = RentalOutDate.objects.filter(start_date=end_datetime, product=product)
