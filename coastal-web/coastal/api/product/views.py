@@ -34,7 +34,7 @@ from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
 from coastal.apps.currency.utils import price_display
-from coastal.apps.rental.utils import recreate_rental_out_date
+from coastal.apps.rental.utils import recreate_rental_out_date, expand_end_datetime
 
 
 def product_list(request):
@@ -689,6 +689,8 @@ def get_available_time(request):
 
             a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
             b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
+            if b.hour == 23 and product.check_exp_end_time():
+                expand_end_datetime(b)
             b = b - timezone.timedelta(hours=product.exp_time_length)
             if b >= a:
                 available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
