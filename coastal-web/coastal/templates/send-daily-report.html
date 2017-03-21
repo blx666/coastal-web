@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>[ItsCoastal]Daily Report</title>
+</head>
+<body>
+Hi,<br><br>
+This is today's report. Please check.<br>
+<table style="">
+    <tr>
+        <td style="text-align: center">Product</td>
+        <td style="text-align: center">Daily Growth<br>({{ day_time_display }})</td>
+        <td style="text-align: center">Yesterday's Growth<br>({{ last_day_time_display }})</td>
+        <td style="text-align: center">Weekly Growth<br>({{ week_time_display }})</td>
+        <td style="text-align: center">Weekly Growth<br>({{ last_week_time_display }})</td>
+        <td style="text-align: center">Monthly Growth<br>({{ month_time_display }})</td>
+        <td style="text-align: center">Monthly Growth<br>({{ last_month_time_display }})</td>
+        <td style="text-align: center">Total Number</td>
+    </tr>
+    <tr>
+        <td style="text-align: center">House</td>
+        {% for i in  house  %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Apartment</td>
+        {% for i in apartment %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Room</td>
+        {% for i in room %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Yacht</td>
+        {% for i in yacht %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Boat Slip</td>
+        {% for i in boat_slip %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Aircraft</td>
+        {% for i in aircraft %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Adventure</td>
+        {% for i in adventure %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+    <tr>
+        <td style="text-align: center">Transaction</td>
+        {% for i in transaction %}
+            <td style="text-align: center">{{ i }}</td>
+        {% endfor %}
+    </tr>
+</table>
+<br>
+Thanks,<br>
+ItsCoastal Team
+</body>
+</html>

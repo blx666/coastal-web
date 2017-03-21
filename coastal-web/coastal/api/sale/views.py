@@ -1,4 +1,5 @@
 import math
+from django.utils import timezone
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
@@ -15,6 +16,7 @@ from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, p
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
 from coastal.api import defines as api_defs
+from coastal.apps.support.tasks import send_transaction_email
 
 
 @login_required
@@ -39,6 +41,7 @@ def approve(request):
     if _approve:
         sale_offer.status = 'charge'
         expire_offer_charge.apply_async((sale_offer.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
+        sale_offer.offer_succeed = timezone.now()
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):
@@ -189,6 +192,7 @@ def payment_stripe(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
 
         try:
@@ -244,6 +248,7 @@ def payment_coastal(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
 
         try:

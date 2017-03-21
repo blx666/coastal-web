@@ -18,6 +18,7 @@ from coastal.apps.rental.tasks import expire_order_request, expire_order_charge,
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.api import defines as api_defs
+from coastal.apps.support.tasks import send_transaction_email
 
 
 @login_required
@@ -77,6 +78,8 @@ def book_rental(request):
     }
 
     if rental_order.status == 'charge':
+        rental_order.order_succeed = timezone.now()
+        rental_order.save()
         result.update(get_payment_info(rental_order, request.user))
         expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
@@ -116,6 +119,7 @@ def rental_approve(request):
 
     if approve:
         rental_order.status = 'charge'
+        rental_order.order_succeed = timezone.now()
         rental_order.save()
         try:
             publish_confirmed_order(rental_order)
@@ -174,6 +178,7 @@ def payment_stripe(request):
 
     if success:
         rental_order.status = 'booked'
+        send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
@@ -222,6 +227,7 @@ def payment_coastal(request):
     if success:
         rental_order.coastal_dollar = rental_order.total_price_usd
         rental_order.status = 'booked'
+        send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)

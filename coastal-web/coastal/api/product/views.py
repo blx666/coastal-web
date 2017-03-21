@@ -449,6 +449,7 @@ def product_update(request):
     if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
             product.publish()
+            product.active_product = timezone.now()
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
