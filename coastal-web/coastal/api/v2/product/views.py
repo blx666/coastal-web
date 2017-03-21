@@ -283,7 +283,7 @@ def get_nearby_products(lon, lat, origin_products):
         products = Product.objects.filter(status='published', point__distance_lte=(point, D(mi=distance_range[v]))).exclude(id__in=origin_products).order_by(Distance('point', point))[0:20]
         if products.count() >= 20:
             return products
-        if v == len(distance_range)-1 and not products:
+        if v == len(distance_range)-1 and len(products) < 20:
             products = Product.objects.filter(status='published').exclude(id__in=origin_products).order_by(Distance('point', point))[0:20]
             return products
 
