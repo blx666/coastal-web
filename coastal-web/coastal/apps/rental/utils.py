@@ -178,3 +178,8 @@ def recreate_rental_out_date(product):
         for order in rental_order:
             if order.end_datetime.replace(tzinfo=None) > datetime.datetime.now().replace(hour=0, minute=0, second=0):
                 rental_out_date(product, order.start_datetime, order.end_datetime)
+
+
+def expand_end_datetime(end_date):
+    end_date += datetime.timedelta(hours=1)
+    return end_date
