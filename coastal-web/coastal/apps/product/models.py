@@ -186,6 +186,8 @@ class Product(models.Model):
     # score
     score = models.PositiveIntegerField(default=0)
 
+    active_product = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.name
 

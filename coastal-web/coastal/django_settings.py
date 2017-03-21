@@ -179,16 +179,18 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # cronjob
 CRONJOBS = [
-    ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score'),
-    ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate'),
+    ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score', '>>/tmp/update_product_score.log'),
+    ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate', '>>/tmp/exchange_rate.log'),
+    ('0 12 * * *', 'coastal.apps.support.cronjobs.send_daily_report', '>>/tmp/send_daily_report.log'),
 ]
 
 # Email
 # https://docs.djangoproject.com/en/1.10/topics/email/
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'localhost'
 EMAIL_PORT = 25
 
-DEFAULT_FROM_EMAIL = "donotreply@itscoastal.com"
-
+DEFAULT_FROM_EMAIL = "join@itscoastal.com"
+LIVE_TO_EMAIL = "join@itscoastal.com"
+TEST_TO_EMAIL = 'renmiaomiao@aragoncs.com'

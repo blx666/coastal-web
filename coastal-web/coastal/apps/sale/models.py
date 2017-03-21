@@ -41,6 +41,7 @@ class SaleOffer(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+    offer_succeed = models.DateTimeField(null=True, blank=True)
 
     objects = SaleOfferManager()
 
