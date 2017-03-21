@@ -313,8 +313,10 @@ def my_activity(request):
                 else:
                     date_format = '%A, %B, %d, %l:%M %p'
                 start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-                end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
-
+                end_time = timezone.localtime(end_time, timezone.get_current_timezone())
+                if end_time.time() == datetime.time(hour=23, minute=59, second=59):
+                    end_time += datetime.timedelta(seconds=1)
+                end_time_display = end_time.strftime(date_format)
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
             data = {
