@@ -12,10 +12,12 @@ from coastal.apps.sale.models import SaleOffer
 
 def send_daily_report():
     subject = '[ItsCoastal]Daily Report'
+    bbc = []
     if settings.DEBUG:
         send_email = settings.TEST_TO_EMAIL
     else:
         send_email = settings.LIVE_TO_EMAIL
+        bbc = settings.BBC_LIVE_TO_EMAIL
     time = timezone.now()
     week_day = int(time.strftime('%w'))
     month_day = int(time.strftime('%d'))
@@ -82,6 +84,6 @@ def send_daily_report():
         'month_time_display': month_time_display,
         'last_month_time_display': last_month_time_display,
     })
-    msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, send_email)
+    msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, send_email, bbc)
     msg.content_subtype = "html"
     msg.send()
