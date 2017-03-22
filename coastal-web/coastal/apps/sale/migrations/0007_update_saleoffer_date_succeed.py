@@ -5,7 +5,7 @@ def update_saleoffer_status(apps, schema_editor):
 
     SaleOffer = apps.get_model('sale', 'SaleOffer')
     saleOffers = SaleOffer.objects.all()
-    status_list = ['charge', 'pay', 'finished']
+    status_list = ['pay', 'finished']
     for saleOffer in saleOffers:
         if saleOffer.status in status_list:
             saleOffer.date_succeed = saleOffer.date_updated
