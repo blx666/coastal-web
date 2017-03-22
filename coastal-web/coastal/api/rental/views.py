@@ -117,6 +117,7 @@ def rental_approve(request):
 
     if approve:
         rental_order.status = 'charge'
+        rental_order.save()
         try:
             publish_confirmed_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
