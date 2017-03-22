@@ -78,7 +78,7 @@ def book_rental(request):
     }
 
     if rental_order.status == 'charge':
-        rental_order.order_succeed = timezone.now()
+        rental_order.date_succeed = timezone.now()
         rental_order.save()
         result.update(get_payment_info(rental_order, request.user))
         expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
@@ -119,7 +119,7 @@ def rental_approve(request):
 
     if approve:
         rental_order.status = 'charge'
-        rental_order.order_succeed = timezone.now()
+        rental_order.date_succeed = timezone.now()
         rental_order.save()
         try:
             publish_confirmed_order(rental_order)

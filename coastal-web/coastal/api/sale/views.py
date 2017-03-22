@@ -41,7 +41,7 @@ def approve(request):
     if _approve:
         sale_offer.status = 'charge'
         expire_offer_charge.apply_async((sale_offer.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
-        sale_offer.offer_succeed = timezone.now()
+        sale_offer.date_succeed = timezone.now()
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):

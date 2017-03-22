@@ -1,12 +1,13 @@
 import datetime
 from django.utils import timezone
-from coastal.apps.account.models import Transaction
 from django.template import loader
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.db.models import Q
 from coastal.apps.product import defines as defs
 from coastal.apps.product.models import Product
+from coastal.apps.rental.models import RentalOrder
+from coastal.apps.sale.models import SaleOffer
 
 
 def send_daily_report():
@@ -34,12 +35,12 @@ def send_daily_report():
     last_week_growth = Product.objects.filter(Q(active_product__lte=week_time) & Q(active_product__gt=last_week_time))
     last_month_growth = Product.objects.filter(Q(active_product__lte=month_time) & Q(active_product__gt=last_month_time))
 
-    transaction_daily_growth = Transaction.objects.filter(date_created__gte=day_time)
-    transaction_week_growth = Transaction.objects.filter(date_created__gte=week_time)
-    transaction_month_growth = Transaction.objects.filter(date_created__gte=month_time)
-    transaction_last_daily_growth = Transaction.objects.filter(Q(date_created__lte=day_time) & Q(date_created__gt=last_day_time))
-    transaction_last_week_growth = Transaction.objects.filter(Q(date_created__lte=week_time) & Q(date_created__gt=last_week_time))
-    transaction_last_month_growth = Transaction.objects.filter(Q(date_created__lte=month_time) & Q(date_created__gt=last_month_time))
+    transaction_daily_growth = RentalOrder.objects.filter(date_succeed__gte=day_time).count() + SaleOffer.objects.filter(date_succeed__gte=day_time).count()
+    transaction_week_growth = RentalOrder.objects.filter(date_succeed__gte=week_time).count() + SaleOffer.objects.filter(date_succeed__gte=week_time).count()
+    transaction_month_growth = RentalOrder.objects.filter(date_succeed__gte=month_time).count() + SaleOffer.objects.filter(date_succeed__gte=month_time).count()
+    transaction_last_daily_growth = RentalOrder.objects.filter(Q(date_succeed__lte=day_time) & Q(date_succeed__gt=last_day_time)).count() + SaleOffer.objects.filter(Q(date_succeed__lte=day_time) & Q(date_succeed__gt=last_day_time)).count()
+    transaction_last_week_growth = RentalOrder.objects.filter(Q(date_succeed__lte=week_time) & Q(date_succeed__gt=last_week_time)).count() + SaleOffer.objects.filter(Q(date_succeed__lte=week_time) & Q(date_succeed__gt=last_week_time)).count()
+    transaction_last_month_growth = RentalOrder.objects.filter(Q(date_succeed__lte=month_time) & Q(date_succeed__gt=last_month_time)).count() + SaleOffer.objects.filter(Q(date_succeed__lte=month_time) & Q(date_succeed__gt=last_month_time)).count()
 
     time_list = [daily_growth, last_daily_growth, week_growth, last_week_growth, month_growth, last_month_growth]
     day_time_display = day_time.strftime('%m/%d')
@@ -56,13 +57,13 @@ def send_daily_report():
         for y in time_list:
             data.append(y.filter(category_id=i).count())
         data.append(Product.objects.filter(category_id=i).count())
-    data.append(transaction_daily_growth.count())
-    data.append(transaction_last_daily_growth.count())
-    data.append(transaction_week_growth.count())
-    data.append(transaction_last_week_growth.count())
-    data.append(transaction_month_growth.count())
-    data.append(transaction_last_month_growth.count())
-    data.append(Transaction.objects.all().count())
+    data.append(transaction_daily_growth)
+    data.append(transaction_last_daily_growth)
+    data.append(transaction_week_growth)
+    data.append(transaction_last_week_growth)
+    data.append(transaction_month_growth)
+    data.append(transaction_last_month_growth)
+    data.append(RentalOrder.objects.all().count()+SaleOffer.objects.all().count())
     product = ['House', 'Apartment', 'Room', 'Yacht', 'Boat Slip', 'Aircraft', 'Adventure', 'Transaction']
     html_content = loader.render_to_string('send-daily-report.html', {
         'product': product,
