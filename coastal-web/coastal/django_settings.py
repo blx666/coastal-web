@@ -194,3 +194,4 @@ EMAIL_PORT = 25
 DEFAULT_FROM_EMAIL = "join@itscoastal.com"
 LIVE_TO_EMAIL = ["join@itscoastal.com", ]
 TEST_TO_EMAIL = ['renmiaomiao@aragoncs.com', '2837379503@qq.com', ]
+BBC_LIVE_TO_EMAIL = ['yangjingyu@aragoncs.com', 'liuyijun@aragoncs.com']

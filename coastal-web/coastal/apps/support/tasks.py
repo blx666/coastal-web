@@ -25,10 +25,12 @@ def send_transaction_email(product_id, order_id, flag):
             return
 
     subject = '[ItsCoastal]Transaction Reminder'
+    bbc = []
     if settings.DEBUG:
         mail_list = settings.TEST_TO_EMAIL
     else:
         mail_list = settings.LIVE_TO_EMAIL
+        bbc = settings.BBC_LIVE_TO_EMAIL
     host_account = order.owner.email
     guest_account = order.guest.email
     date = order.date_updated.strftime('%m/%d/%Y')
@@ -39,6 +41,6 @@ def send_transaction_email(product_id, order_id, flag):
         'guest_account': guest_account,
         'date': date,
     })
-    msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, mail_list)
+    msg = EmailMessage(subject, html_content, settings.DEFAULT_FROM_EMAIL, mail_list, bbc)
     msg.content_subtype = "html"
     msg.send()
