@@ -41,7 +41,6 @@ def approve(request):
     if _approve:
         sale_offer.status = 'charge'
         expire_offer_charge.apply_async((sale_offer.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
-        sale_offer.date_succeed = timezone.now()
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):
@@ -192,6 +191,7 @@ def payment_stripe(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        sale_offer.date_succeed = timezone.now()
         send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
 
@@ -248,6 +248,7 @@ def payment_coastal(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        sale_offer.date_succeed = timezone.now()
         send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
 

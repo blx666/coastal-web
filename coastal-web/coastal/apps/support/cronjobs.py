@@ -63,7 +63,7 @@ def send_daily_report():
     data.append(transaction_last_week_growth)
     data.append(transaction_month_growth)
     data.append(transaction_last_month_growth)
-    data.append(RentalOrder.objects.all().count()+SaleOffer.objects.all().count())
+    data.append(RentalOrder.objects.all().count() + SaleOffer.objects.all().count())
     product = ['House', 'Apartment', 'Room', 'Yacht', 'Boat Slip', 'Aircraft', 'Adventure', 'Transaction']
     html_content = loader.render_to_string('send-daily-report.html', {
         'product': product,

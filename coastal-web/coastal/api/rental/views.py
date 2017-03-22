@@ -78,8 +78,6 @@ def book_rental(request):
     }
 
     if rental_order.status == 'charge':
-        rental_order.date_succeed = timezone.now()
-        rental_order.save()
         result.update(get_payment_info(rental_order, request.user))
         expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
@@ -119,8 +117,6 @@ def rental_approve(request):
 
     if approve:
         rental_order.status = 'charge'
-        rental_order.date_succeed = timezone.now()
-        rental_order.save()
         try:
             publish_confirmed_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
@@ -178,6 +174,7 @@ def payment_stripe(request):
 
     if success:
         rental_order.status = 'booked'
+        rental_order.date_succeed = timezone.now()
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
@@ -227,6 +224,7 @@ def payment_coastal(request):
     if success:
         rental_order.coastal_dollar = rental_order.total_price_usd
         rental_order.status = 'booked'
+        rental_order.date_succeed = timezone.now()
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
