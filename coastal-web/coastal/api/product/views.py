@@ -1079,6 +1079,6 @@ def all_detail(request):
     if product.check_exp_end_time():
         result['exp_end_time'] = '12:00 AM'
     else:
-        result['exp_end_time'] = product.exp_end_time.strftime('%I:%M %p')
+        result['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
     result.update(discount)
     return CoastalJsonResponse(result)
