@@ -11,6 +11,7 @@ from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
 from coastal.apps.payment.stripe import sale_charge as stripe_charge
 from coastal.apps.payment.coastal import sale_charge as coastal_charge
 from coastal.apps.account.models import CoastalBucket, Transaction, InviteRecord
+from coastal.apps.account.utils import reward_invite_referrer
 from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, publish_refuse_offer, \
     publish_paid_owner_offer
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
@@ -185,24 +186,7 @@ def payment_stripe(request):
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
         bucket.save()
-        try:
-            invite_record = InviteRecord.objects.filter(referrer=request.user).referrer_reward
-        except InviteRecord.DoesNotExist:
-            invite_record = True
-        if not invite_record:
-            try:
-                referrer = InviteRecord.objects.filter(user=request.user).referrer
-            except InviteRecord.DoesNotExist:
-                referrer = None
-            if referrer:
-                referrer_bucket = referrer.coastalbucket
-                referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
-                referrer_bucket.save()
-                try:
-                    push_referrer_reward(referrer)
-                except (NoEndpoint, DisabledEndpoint):
-                    pass
+
         Transaction.objects.create(
             bucket=bucket,
             type='in',
@@ -213,6 +197,8 @@ def payment_stripe(request):
         sale_offer.date_succeed = timezone.now()
         send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
+
+        reward_invite_referrer(request.user)
 
         try:
             publish_paid_owner_offer(sale_offer)
@@ -260,24 +246,7 @@ def payment_coastal(request):
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
         bucket.save()
-        try:
-            invite_record = InviteRecord.objects.filter(referrer=request.user).referrer_reward
-        except InviteRecord.DoesNotExist:
-            invite_record = True
-        if not invite_record:
-            try:
-                referrer = InviteRecord.objects.filter(user=request.user).referrer
-            except InviteRecord.DoesNotExist:
-                referrer = None
-            if referrer:
-                referrer_bucket = referrer.coastalbucket
-                referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
-                referrer_bucket.save()
-                try:
-                    push_referrer_reward(referrer)
-                except (NoEndpoint, DisabledEndpoint):
-                    pass
+
         Transaction.objects.create(
             bucket=bucket,
             type='in',
@@ -288,6 +257,8 @@ def payment_coastal(request):
         sale_offer.date_succeed = timezone.now()
         send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
+
+        reward_invite_referrer(request.user)
 
         try:
             publish_paid_owner_offer(sale_offer)

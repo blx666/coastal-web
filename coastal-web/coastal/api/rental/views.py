@@ -11,7 +11,7 @@ from coastal.apps.payment.coastal import charge as coastal_charge
 from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
-from coastal.apps.account.utils import is_confirmed_user
+from coastal.apps.account.utils import is_confirmed_user, reward_invite_referrer
 from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
@@ -180,24 +180,7 @@ def payment_stripe(request):
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
-        try:
-            invite_record = InviteRecord.objects.filter(referrer=request.user).referrer_reward
-        except InviteRecord.DoesNotExist:
-            invite_record = True
-        if not invite_record:
-            try:
-                referrer = InviteRecord.objects.filter(user=request.user).referrer
-            except InviteRecord.DoesNotExist:
-                referrer = None
-            if referrer:
-                referrer_bucket = referrer.coastalbucket
-                referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
-                referrer_bucket.save()
-                try:
-                    push_referrer_reward(referrer)
-                except (NoEndpoint, DisabledEndpoint):
-                    pass
+        reward_invite_referrer(request.user)
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
@@ -249,24 +232,7 @@ def payment_coastal(request):
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
-        try:
-            invite_record = InviteRecord.objects.filter(referrer=request.user).referrer_reward
-        except InviteRecord.DoesNotExist:
-            invite_record = True
-        if not invite_record:
-            try:
-                referrer = InviteRecord.objects.filter(user=request.user).referrer
-            except InviteRecord.DoesNotExist:
-                referrer = None
-            if referrer:
-                referrer_bucket = referrer.coastalbucket
-                referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
-                referrer_bucket.save()
-                try:
-                    push_referrer_reward(referrer)
-                except (NoEndpoint, DisabledEndpoint):
-                    pass
+        reward_invite_referrer(request.user)
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
