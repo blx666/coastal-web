@@ -1,13 +1,12 @@
 from django.http.response import HttpResponseRedirect, HttpResponse
 from django.utils import timezone
 from coastal.apps.account.models import ValidateEmail, InviteRecord, Transaction
-from coastal.apps.account.utils import create_user
+from coastal.apps.account.utils import create_user, reward_invite_user
 from coastal.apps.account.models import UserProfile
 from django.contrib.auth.models import User
 from coastal.api.account.forms import RegistrationForm
 from django.template.response import TemplateResponse
-from coastal.apps.sns.utils import push_referrer_reward
-from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+
 
 
 def validate_email_confirm(request):
@@ -25,6 +24,9 @@ def validate_email_confirm(request):
 
     profile.email_confirmed = 'confirmed'
     profile.save()
+
+    reward_invite_user(request.user)
+
     return HttpResponseRedirect('/static/html/confirm-email-success.html')
 
 
@@ -40,18 +42,6 @@ def sign_up(request, invite_code):
             user = create_user(cleaned_data['email'], cleaned_data['password'])
             if referrer:
                 InviteRecord.objects.create(invite_code=invite_code, user=user, referrer=referrer)
-                referrer_bucket = referrer.coastalbucket
-                referrer_bucket.balance += 10
-                Transaction.objects.create(bucket=referrer_bucket, type='in', note='invite_referrer', amount=10)
-                referrer_bucket.save()
-                user_bucket = user.coastalbucket
-                user_bucket.balance += 35
-                Transaction.objects.create(bucket=user_bucket, type='in', note='invite_user', amount=35)
-                user_bucket.save()
-                try:
-                    push_referrer_reward(referrer)
-                except (NoEndpoint, DisabledEndpoint):
-                    pass
 
             return TemplateResponse(request, 'successful.html')
     else:

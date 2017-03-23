@@ -11,14 +11,15 @@ from coastal.apps.payment.coastal import charge as coastal_charge
 from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
-from coastal.apps.account.utils import is_confirmed_user
+from coastal.apps.account.utils import is_confirmed_user, reward_invite_referrer
 from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
-from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
+from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order, push_referrer_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.api import defines as api_defs
 from coastal.apps.support.tasks import send_transaction_email
+from coastal.apps.account.models import Transaction, InviteRecord
 
 
 @login_required
@@ -179,6 +180,8 @@ def payment_stripe(request):
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
 
+        reward_invite_referrer(request.user)
+
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
             publish_paid_order(rental_order)
@@ -228,6 +231,8 @@ def payment_coastal(request):
         rental_order.date_succeed = timezone.now()
         send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
+
+        reward_invite_referrer(request.user)
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
