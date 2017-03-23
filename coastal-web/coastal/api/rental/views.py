@@ -264,7 +264,7 @@ def order_detail(request):
             start_time = order.start_datetime
             end_time = order.end_datetime
             start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
-            if order.product.check_exp_end_time():
+            if timezone.localtime(end_time, timezone.get_current_timezone()) == datetime.time(hour=23, minute=59):
                 end_datetime = timezone.localtime(end_time + datetime.timedelta(days=1), timezone.get_current_timezone()).replace(hour=0,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
             else:
                 end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
