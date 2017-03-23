@@ -625,13 +625,11 @@ def black_dates_for_rental(request):
             end_date = localtime(dr.end_date)
             if start_date.hour != 0:
                 start_date = (start_date + timedelta(days=1)).replace(hour=0)
-            elif end_date.hour != 0:
+            if end_date.hour != 0:
                 end_date = end_date.replace(hour=0)
 
             end_date -= timedelta(minutes=1)
-            if product.exp_time_unit != 'hour' and start_date < end_date:
-                data.append([start_date.date(), end_date.date()])
-            if product.exp_time_unit == 'hour' and product.exp_end_time < (end_date - timedelta(minutes=1) + timedelta(hours=product.exp_time_length)).time():
+            if start_date < end_date:
                 data.append([start_date.date(), end_date.date()])
     else:
         for dr in date_ranges2:
