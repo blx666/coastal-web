@@ -333,6 +333,20 @@ class Product(models.Model):
     def check_exp_end_time(self):
         return self.exp_end_time == datetime.time(hour=23, minute=59)
 
+    def has_remain_end_time(self, end_datetime):
+        if end_datetime.hour == 23 and end_datetime.minute == 59:
+            end_datetime_hour = 24
+        else:
+            end_datetime_hour = end_datetime.hour
+        if self.exp_end_time.hour == 23 and self.exp_end_time.minute == 59:
+            actual_exp_end_time_hour = 24
+        else:
+            actual_exp_end_time_hour = self.exp_end_time.hour
+        return end_datetime_hour + self.exp_time_length > actual_exp_end_time_hour
+
+    def has_remain_start_time(self, start_datetime):
+        return start_datetime.hour - self.exp_time_length < self.exp_start_time.hour
+
 
 class Amenity(models.Model):
     TYPE_CHOICES = (
