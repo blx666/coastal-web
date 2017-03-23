@@ -159,6 +159,8 @@ class InviteRecord(models.Model):
     user = models.ForeignKey(User, related_name='user_invite_code')
     referrer = models.ForeignKey(User, related_name='referrer_invite_code')
     invite_code = models.CharField(max_length=32)
+    user_reward = models.BooleanField(default=False)
+    referrer_reward = models.BooleanField(default=False)
     date_create = models.DateTimeField(auto_now_add=True)
 
 
