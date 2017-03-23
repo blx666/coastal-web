@@ -70,14 +70,14 @@ def rental_out_date(product, start_datetime, end_datetime):
     end_datetime = timezone.localtime(end_datetime)
     if product.category_id == defs.CATEGORY_ADVENTURE:
         if product.exp_time_unit == 'hour':
-            if start_datetime.hour - product.exp_time_length < product.exp_start_time.hour:
+            if product.has_remain_start_time(start_datetime):
                 start_datetime = start_datetime.replace(hour=0)
                 start_extend = start_datetime
             else:
                 start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length) + datetime.timedelta(seconds=1)
 
-            if end_datetime.hour + product.exp_time_length > product.exp_end_time.hour:
-                end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+            if product.has_remain_end_time(end_datetime):
+                end_datetime = end_datetime.replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
                 end_extend = end_datetime
             else:
                 end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length) - datetime.timedelta(seconds=1)
