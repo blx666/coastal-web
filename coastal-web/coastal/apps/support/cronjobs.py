@@ -24,7 +24,7 @@ def send_daily_report():
 
     day_time = timezone.now().date() + timezone.timedelta(days=-1)
     day_time_v2 = timezone.now().date() + timezone.timedelta(days=0)
-    month_time = day_time - timezone.timedelta(days=month_day)
+    month_time = day_time_v2 - timezone.timedelta(days=month_day)
     week_time = day_time_v2 - timezone.timedelta(days=week_day)
     week_time_v2 = day_time - timezone.timedelta(days=week_day)
     last_day_time = day_time - timezone.timedelta(days=1)
