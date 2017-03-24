@@ -1,4 +1,5 @@
 import math
+from django.utils import timezone
 
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core.decorators import login_required
@@ -9,12 +10,15 @@ from coastal.apps.currency.utils import get_exchange_rate
 from coastal.api.sale.forms import SaleOfferForm, SaleApproveForm
 from coastal.apps.payment.stripe import sale_charge as stripe_charge
 from coastal.apps.payment.coastal import sale_charge as coastal_charge
-from coastal.apps.account.models import CoastalBucket, Transaction
+from coastal.apps.account.models import CoastalBucket, Transaction, InviteRecord
+from coastal.apps.account.utils import reward_invite_referrer
 from coastal.apps.sns.utils import publish_new_offer, publish_confirmed_offer, publish_refuse_offer, \
     publish_paid_owner_offer
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sale.tasks import expire_offer_request, expire_offer_charge
-from coastal.api.product.utils import get_email_cipher
+from coastal.api import defines as api_defs
+from coastal.apps.support.tasks import send_transaction_email
+from coastal.apps.sns.utils import push_referrer_reward
 
 
 @login_required
@@ -38,7 +42,7 @@ def approve(request):
 
     if _approve:
         sale_offer.status = 'charge'
-        expire_offer_charge.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+        expire_offer_charge.apply_async((sale_offer.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
         try:
             publish_confirmed_offer(sale_offer)
         except (NoEndpoint, DisabledEndpoint):
@@ -121,7 +125,7 @@ def make_offer(request):
         "status": sale_offer.get_status_display(),
     }
 
-    expire_offer_request.apply_async((sale_offer.id,), countdown=24 * 60 * 60)
+    expire_offer_request.apply_async((sale_offer.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
     try:
         publish_new_offer(sale_offer)
     except (NoEndpoint, DisabledEndpoint):
@@ -182,6 +186,7 @@ def payment_stripe(request):
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
         bucket.save()
+
         Transaction.objects.create(
             bucket=bucket,
             type='in',
@@ -189,7 +194,11 @@ def payment_stripe(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        sale_offer.date_succeed = timezone.now()
+        send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
+
+        reward_invite_referrer(request.user)
 
         try:
             publish_paid_owner_offer(sale_offer)
@@ -237,6 +246,7 @@ def payment_coastal(request):
         bucket = CoastalBucket.objects.get(user=owner)
         bucket.balance += sale_offer.price_usd
         bucket.save()
+
         Transaction.objects.create(
             bucket=bucket,
             type='in',
@@ -244,7 +254,11 @@ def payment_coastal(request):
             amount=sale_offer.price_usd,
         )
         sale_offer.status = 'finished'
+        sale_offer.date_succeed = timezone.now()
+        send_transaction_email(sale_offer.product_id, sale_offer.id, 'sale')
         sale_offer.save()
+
+        reward_invite_referrer(request.user)
 
         try:
             publish_paid_owner_offer(sale_offer)

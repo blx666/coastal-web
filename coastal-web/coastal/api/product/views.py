@@ -34,7 +34,7 @@ from coastal.apps.review.models import Review
 from coastal.apps.support.models import Report
 from coastal.apps.coastline.utils import distance_from_coastline
 from coastal.apps.currency.utils import price_display
-from coastal.apps.rental.utils import recreate_rental_out_date
+from coastal.apps.rental.utils import recreate_rental_out_date, expand_end_datetime
 
 
 def product_list(request):
@@ -449,6 +449,7 @@ def product_update(request):
     if form.cleaned_data.get('action') == 'publish':
         if product.validate_publish_data():
             product.publish()
+            product.active_product = timezone.now()
             product.save()
         else:
             return CoastalJsonResponse({'action': 'There are invalid data for publish.'}, status=response.STATUS_400)
@@ -624,7 +625,7 @@ def black_dates_for_rental(request):
             end_date = localtime(dr.end_date)
             if start_date.hour != 0:
                 start_date = (start_date + timedelta(days=1)).replace(hour=0)
-            elif end_date.hour != 0:
+            if end_date.hour != 0:
                 end_date = end_date.replace(hour=0)
 
             end_date -= timedelta(minutes=1)
@@ -688,6 +689,8 @@ def get_available_time(request):
 
             a = a.replace(hour=max(a.hour, product.exp_start_time.hour))
             b = b.replace(hour=min(b.hour, product.exp_end_time.hour), minute=0, second=0)
+            if b.hour == 23 and product.check_exp_end_time():
+                b = expand_end_datetime(b)
             b = b - timezone.timedelta(hours=product.exp_time_length)
             if b >= a:
                 available_start_time.append((a.strftime("%I:%M %p"), b.strftime("%I:%M %p")))
@@ -864,7 +867,7 @@ def product_owner(request):
                 yachts_dict['beds'] = product.beds or 0
             yachts_list.append(yachts_dict)
         elif product.category.get_root().id == 9:
-            experience_list.append({
+            experience = {
                 "id": product.id,
                 "category": product.category_id,
                 "image": product.images and product.images[0].image.url or '',
@@ -879,10 +882,15 @@ def product_owner(request):
                 "reviews_count": reviews_avg_score['id__count'],
                 "reviews_avg_score": reviews_avg_score['score__avg'] or 0,
                 'exp_start_time':  product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
-                'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
                 'exp_time_unit': product.get_exp_time_unit_display(),
                 'exp_time_length': product.exp_time_length or 0,
-            })
+            }
+            if product.check_exp_end_time():
+                experience['exp_end_time'] = '12:00 AM'
+            else:
+                experience['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
+            experience_list.append(experience)
+
         else:
             jets_list.append({
                 "id": product.id,
@@ -1062,8 +1070,15 @@ def all_detail(request):
         'desc_other_to_note': product.desc_other_to_note or '',
         'exp_time_unit': product.get_exp_time_unit_display() or '',
         'exp_time_length': product.exp_time_length or 0,
-        'exp_start_time': product.exp_start_time and product.exp_start_time.strftime('%I:%M %p') or '',
-        'exp_end_time': product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or '',
     }
+    if product.exp_start_time is not None:
+        result['exp_start_time'] = product.exp_start_time.strftime('%I:%M %p')
+    else:
+        result['exp_start_time'] = ''
+
+    if product.check_exp_end_time():
+        result['exp_end_time'] = '12:00 AM'
+    else:
+        result['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
     result.update(discount)
     return CoastalJsonResponse(result)

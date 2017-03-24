@@ -17,6 +17,7 @@ from django.conf.urls import include, url
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from coastal.api.support import views
 
 urlpatterns = [
     url(r'^account/', include('coastal.apps.account.urls', namespace='account')),
@@ -33,6 +34,7 @@ urlpatterns = [
     url(r'^api/help-center/', include('coastal.api.support.urls', namespace='help')),
 
     url(r'^api/v2/products/', include('coastal.api.v2.product.urls', namespace='product-v2')),
+    url(r'^api/settings/$', views.setting, name='setting'),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

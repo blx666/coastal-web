@@ -11,7 +11,7 @@ class SaleOffer(models.Model):
         ('request', 'Unconfirmed'),  # The offer need to be confirmed by host
         ('approved', 'Approved'),  # The offer has been confirmed by host
         ('declined', 'Declined'),  # The offer has been declined by host
-        ('invalid', 'Invalid'),  # The offer did not be handle within 24 hours
+        ('invalid', 'Invalid'),  # The offer did not be handle within 72 hours
         ('charge', 'Unpaid'),  # The offer need to be paid for by guest
         ('pay', 'In Transaction'),  # Pay owner
         ('finished', 'Finished'),
@@ -41,6 +41,7 @@ class SaleOffer(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)
+    date_succeed = models.DateTimeField(null=True, blank=True)
 
     objects = SaleOfferManager()
 

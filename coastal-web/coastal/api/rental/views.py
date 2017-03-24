@@ -11,12 +11,15 @@ from coastal.apps.payment.coastal import charge as coastal_charge
 from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
-from coastal.apps.account.utils import is_confirmed_user
+from coastal.apps.account.utils import is_confirmed_user, reward_invite_referrer
 from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
-from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order
+from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order, push_referrer_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+from coastal.api import defines as api_defs
+from coastal.apps.support.tasks import send_transaction_email
+from coastal.apps.account.models import Transaction, InviteRecord
 
 
 @login_required
@@ -77,14 +80,14 @@ def book_rental(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     if rental_order.status == 'request':
         try:
             publish_get_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
             pass
-        expire_order_request.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_request.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -136,7 +139,7 @@ def rental_approve(request):
 
     if rental_order.status == 'charge':
         result.update(get_payment_info(rental_order, request.user))
-        expire_order_charge.apply_async((rental_order.id,), countdown=24 * 60 * 60)
+        expire_order_charge.apply_async((rental_order.id,), countdown=api_defs.EXPIRATION_TIME * 60 * 60)
 
     return CoastalJsonResponse(result)
 
@@ -173,7 +176,11 @@ def payment_stripe(request):
 
     if success:
         rental_order.status = 'booked'
+        rental_order.date_succeed = timezone.now()
+        send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
+
+        reward_invite_referrer(request.user)
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
@@ -221,7 +228,11 @@ def payment_coastal(request):
     if success:
         rental_order.coastal_dollar = rental_order.total_price_usd
         rental_order.status = 'booked'
+        rental_order.date_succeed = timezone.now()
+        send_transaction_email.delay(rental_order.product_id, rental_order.id, 'rental')
         rental_order.save()
+
+        reward_invite_referrer(request.user)
 
         check_in.apply_async((rental_order.id,), eta=rental_order.local_start_datetime)
         try:
@@ -249,21 +260,29 @@ def order_detail(request):
 
     time_format = order.rental_unit == 'day' and '%A/ %B %d, %Y' or '%l:%M %p, %A/ %B %d, %Y'
     start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(time_format)
-    end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(time_format)
-
+    end_datetime = timezone.localtime(end_time, timezone.get_current_timezone())
+    if end_datetime.time() == datetime.time(hour=23, minute=59, second=59):
+        end_datetime += datetime.timedelta(minutes=1)
+    end_datetime = end_datetime.strftime(time_format)
     if order.product.category_id == defs.CATEGORY_ADVENTURE:
         if order.product.exp_time_unit == 'hour':
             start_time = order.start_datetime
             end_time = order.end_datetime
             start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
-            end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
+            if timezone.localtime(end_time, timezone.get_current_timezone()).time() == datetime.time(hour=23, minute=59, second=59):
+                end_datetime = timezone.localtime(end_time + datetime.timedelta(days=1), timezone.get_current_timezone()).replace(hour=0,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
+            else:
+                end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).strftime('%l:%M %p, %A/ %B %d, %Y')
         else:
             start_hour = order.product.exp_start_time.hour
-            end_hour = order.product.exp_end_time.hour
             start_time = order.start_datetime
             end_time = order.end_datetime
             start_datetime = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime('%l:%M %p, %A/ %B %d, %Y')
-            end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
+            if timezone.localtime(end_time, timezone.get_current_timezone()).time() == datetime.time(hour=23, minute=59, second=59):
+                end_datetime = timezone.localtime(end_time + datetime.timedelta(days=1), timezone.get_current_timezone()).replace(hour=0,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
+            else:
+                end_hour = order.product.exp_end_time.hour
+                end_datetime = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime('%l:%M %p, %A/ %B %d, %Y')
 
     result = {
         'title': 'Book %s at %s' % (order.get_time_length_display(), order.product.locality or ''),

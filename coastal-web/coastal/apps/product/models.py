@@ -9,6 +9,7 @@ from coastal.apps.product import defines as defs
 from coastal.core.storage import ImageStorage
 from coastal.apps.currency.utils import get_exchange_rate
 import math
+import datetime
 
 
 class Category(MP_Node):
@@ -107,7 +108,7 @@ class Product(models.Model):
     )
     ALLOW_RENTAL_CHOICES = (
         ('meet-cr', 'Guests who meet Coastal\'s requirements'),
-        ('no-one', 'No one. I will read and approve every request within 24 hours'),
+        ('no-one', 'No one. I will read and approve every request within 72 hours'),
     )
     STATUS_CHOICES = (
         ('draft', 'Draft'),
@@ -186,6 +187,8 @@ class Product(models.Model):
     # score
     score = models.PositiveIntegerField(default=0)
 
+    active_product = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return self.name
 
@@ -226,7 +229,7 @@ class Product(models.Model):
             if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year):
                 return False
         elif self.category_id == defs.CATEGORY_ADVENTURE:
-            if not (self.exp_start_time and self.exp_end_time and self.exp_time_length and self.exp_time_unit):
+            if self.exp_start_time is None or self.exp_end_time is None or not self.exp_time_length or not self.exp_time_unit:
                 return False
         elif self.category_id in (defs.CATEGORY_HOUSE, defs.CATEGORY_APARTMENT):
             if not (self.rooms and self.sleeps and self.beds and self.bathrooms):
@@ -326,6 +329,23 @@ class Product(models.Model):
         if self.category_id == defs.CATEGORY_ADVENTURE and self.rental_price:
             self.rental_usd_price = math.ceil(self.rental_price / currency_rate)
         super(Product, self).save()
+
+    def check_exp_end_time(self):
+        return self.exp_end_time == datetime.time(hour=23, minute=59)
+
+    def has_remain_end_time(self, end_datetime):
+        if end_datetime.hour == 23 and end_datetime.minute == 59:
+            end_datetime_hour = 24
+        else:
+            end_datetime_hour = end_datetime.hour
+        if self.exp_end_time.hour == 23 and self.exp_end_time.minute == 59:
+            actual_exp_end_time_hour = 24
+        else:
+            actual_exp_end_time_hour = self.exp_end_time.hour
+        return end_datetime_hour + self.exp_time_length > actual_exp_end_time_hour
+
+    def has_remain_start_time(self, start_datetime):
+        return start_datetime.hour - self.exp_time_length < self.exp_start_time.hour
 
 
 class Amenity(models.Model):

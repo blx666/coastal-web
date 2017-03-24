@@ -18,7 +18,7 @@ from coastal.apps.account.models import ValidateEmail, FavoriteItem
 from coastal.apps.payment.stripe import get_stripe_info
 from coastal.apps.product.models import Product
 from coastal.apps.rental.models import RentalOrder
-from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode, InviteRecord
+from coastal.apps.account.models import UserProfile, CoastalBucket, InviteCode
 from coastal.apps.sale.models import SaleOffer
 from coastal.api.product.utils import bind_product_image, get_products_by_id, get_email_cipher
 from coastal.apps.sns.utils import bind_token, unbind_token, publish_log_in
@@ -26,6 +26,8 @@ from django.urls import reverse
 from coastal.apps.product import defines as product_defs
 from coastal.apps.sns.utils import push_user_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
+from coastal.apps.sns.tasks import push_user_notifications
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +92,7 @@ def facebook_login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
+    push_user_notifications.delay(user.id)
     data = {
         'user_id': user.id,
         'logged': user.is_authenticated(),
@@ -114,7 +117,6 @@ def login(request):
     if user:
         is_first = not bool(user.last_login)
         auth_login(request, user)
-        user_invite = InviteRecord.objects.filter(user=user).first()
         uuid = request.POST.get('uuid')
         token = request.POST.get('token')
         if uuid and token:
@@ -135,11 +137,7 @@ def login(request):
                 publish_log_in(user)
             except (NoEndpoint, DisabledEndpoint):
                 pass
-        if is_first and user_invite:
-            try:
-                push_user_reward(user)
-            except (NoEndpoint, DisabledEndpoint):
-                pass
+        push_user_notifications.delay(user.id)
     else:
         data = {
             "logged": request.user.is_authenticated(),
@@ -294,20 +292,28 @@ def my_activity(request):
                 date_format = '%A, %B, %d, %l:%M %p'
                 if order.product.exp_time_unit == 'hour':
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
+                    if timezone.localtime(end_time, timezone.get_current_timezone()).time() == datetime.time(hour=23, minute=59, second=59):
+                        end_time_display = (timezone.localtime(end_time, timezone.get_current_timezone()) + datetime.timedelta(days=1)).replace(hour=0, minute=0).strftime(date_format)
+                    else:
+                        end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
                 else:
                     start_hour = order.product.exp_start_time.hour
-                    end_hour = order.product.exp_end_time.hour
                     start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).replace(hour=start_hour).strftime(date_format)
-                    end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
+                    if timezone.localtime(end_time, timezone.get_current_timezone()).time() == datetime.time(hour=23, minute=59, second=59):
+                        end_time_display = (timezone.localtime(end_time, timezone.get_current_timezone()) + datetime.timedelta(days=1)).replace(hour=0, minute=0).strftime(date_format)
+                    else:
+                        end_hour = order.product.exp_end_time.hour
+                        end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).replace(hour=end_hour,minute=0).strftime(date_format)
             else:
                 if order.rental_unit == 'day':
                     date_format = '%A, %B, %d'
                 else:
                     date_format = '%A, %B, %d, %l:%M %p'
                 start_time_display = timezone.localtime(start_time, timezone.get_current_timezone()).strftime(date_format)
-                end_time_display = timezone.localtime(end_time, timezone.get_current_timezone()).strftime(date_format)
-
+                end_time = timezone.localtime(end_time, timezone.get_current_timezone())
+                if end_time.time() == datetime.time(hour=23, minute=59, second=59):
+                    end_time += datetime.timedelta(seconds=1)
+                end_time_display = end_time.strftime(date_format)
             guest_count_display = order.guest_count and ('%s people' % order.guest_count) or ''
 
             data = {

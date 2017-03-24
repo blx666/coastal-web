@@ -70,14 +70,14 @@ def rental_out_date(product, start_datetime, end_datetime):
     end_datetime = timezone.localtime(end_datetime)
     if product.category_id == defs.CATEGORY_ADVENTURE:
         if product.exp_time_unit == 'hour':
-            if start_datetime.hour - product.exp_time_length < product.exp_start_time.hour:
+            if product.has_remain_start_time(start_datetime):
                 start_datetime = start_datetime.replace(hour=0)
                 start_extend = start_datetime
             else:
                 start_extend = start_datetime - datetime.timedelta(hours=product.exp_time_length) + datetime.timedelta(seconds=1)
 
-            if end_datetime.hour + product.exp_time_length > product.exp_end_time.hour:
-                end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+            if product.has_remain_end_time(end_datetime):
+                end_datetime = end_datetime.replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
                 end_extend = end_datetime
             else:
                 end_extend = end_datetime + datetime.timedelta(hours=product.exp_time_length) - datetime.timedelta(seconds=1)
@@ -103,7 +103,7 @@ def rental_out_date(product, start_datetime, end_datetime):
         if end_datetime.hour < 12:
             end_datetime = end_datetime.replace(hour=12)
         elif end_datetime.hour > 12:
-            end_datetime = end_datetime.replace(hour=0) + datetime.timedelta(days=1)
+            end_datetime = end_datetime.replace(hour=0, minute=0, second=0) + datetime.timedelta(days=1)
 
         start_out_date = RentalOutDate.objects.filter(end_date=start_datetime, product=product)
         end_out_date = RentalOutDate.objects.filter(start_date=end_datetime, product=product)
@@ -178,3 +178,8 @@ def recreate_rental_out_date(product):
         for order in rental_order:
             if order.end_datetime.replace(tzinfo=None) > datetime.datetime.now().replace(hour=0, minute=0, second=0):
                 rental_out_date(product, order.start_datetime, order.end_datetime)
+
+
+def expand_end_datetime(end_date):
+    end_date += datetime.timedelta(hours=1)
+    return end_date
