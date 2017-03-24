@@ -238,7 +238,7 @@ class Product(models.Model):
             if not (self.sleeps and self.beds and self.bathrooms):
                 return False
         elif self.category_id == defs.CATEGORY_YACHT:
-            if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.depth and self.year and self.speed):
+            if not (self.cabins and self.beds and self.sleeps and self.bathrooms and self.length and self.year and self.speed):
                 return False
         elif self.category_id == defs.CATEGORY_BOAT_SLIP:
             if not (self.marina and self.basin and self.stall):
