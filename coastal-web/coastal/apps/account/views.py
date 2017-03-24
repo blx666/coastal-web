@@ -8,7 +8,6 @@ from coastal.api.account.forms import RegistrationForm
 from django.template.response import TemplateResponse
 
 
-
 def validate_email_confirm(request):
     try:
         validate_email = ValidateEmail.objects.get(token=request.GET.get("token"))
@@ -25,7 +24,7 @@ def validate_email_confirm(request):
     profile.email_confirmed = 'confirmed'
     profile.save()
 
-    reward_invite_user(request.user)
+    reward_invite_user(profile.user)
 
     return HttpResponseRedirect('/static/html/confirm-email-success.html')
 
