@@ -71,6 +71,12 @@ class FacebookLoginForm(forms.Form):
 class PassWordResetFromEmail(forms.Form):
     email = forms.EmailField(label=_("Email"), max_length=254)
 
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        value = self.get_users(email)
+        if not value:
+            raise forms.ValidationError("The email is not register.")
+
     def send_mail(self, subject_template_name, email_template_name,
                   context, from_email, email, html_email_template_name=None):
         """
@@ -98,7 +104,7 @@ class PassWordResetFromEmail(forms.Form):
         """
         active_users = get_user_model()._default_manager.filter(
             email__iexact=email, is_active=True)
-        return (u for u in active_users if u.has_usable_password())
+        return active_users
 
     def save(self, domain_override=None,
              subject_template_name='[ItsCoastal] Reset Password',

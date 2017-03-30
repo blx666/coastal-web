@@ -583,9 +583,4 @@ def password_reset(request,
         'extra_email_context': extra_email_context,
     }
     form.save(**opts)
-    email = form.cleaned_data['email']
-    active_users = get_user_model()._default_manager.filter(
-        email__iexact=email, is_active=True)
-    if active_users:
-        return CoastalJsonResponse(data={'send_email': 'true'})
-    return CoastalJsonResponse(data={'send_email': 'false'})
+    return CoastalJsonResponse(data={'send_email': 'true'})
