@@ -1,7 +1,7 @@
 from django import forms
-from django.contrib.auth import authenticate, get_user_model, password_validation
+from django.contrib.auth import get_user_model
 
-from django.utils.translation import ugettext, ugettext_lazy as _
+from django.utils.translation import ugettext_lazy as _
 from django.core.mail import EmailMessage
 from django.template import loader
 from django.contrib.sites.shortcuts import get_current_site
@@ -19,9 +19,8 @@ class PassWordResetFromEmail(forms.Form):
         """
         Sends a django.core.mail.EmailMultiAlternatives to `to_email`.
         """
-        subject = loader.render_to_string(subject_template_name, context)
+        subject = subject_template_name
         # Email subject *must not* contain newlines
-        subject = ''.join(subject.splitlines())
         body = loader.render_to_string(email_template_name, context)
 
         email_message = EmailMessage(subject, body, from_email, [email])
@@ -45,7 +44,7 @@ class PassWordResetFromEmail(forms.Form):
         return (u for u in active_users if u.has_usable_password())
 
     def save(self, domain_override=None,
-             subject_template_name='registration/password_reset_subject.txt',
+             subject_template_name='Reset Your Password',
              email_template_name='registration/password_reset_email.html',
              use_https=False, token_generator=default_token_generator,
              from_email=None, request=None, html_email_template_name=None,
