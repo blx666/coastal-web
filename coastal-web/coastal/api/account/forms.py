@@ -69,7 +69,6 @@ class FacebookLoginForm(forms.Form):
 
 
 class PassWordResetFromEmail(forms.Form):
-    email = forms.EmailField(label=_("Email"), max_length=254)
 
     def send_mail(self, subject_template_name, email_template_name,
                   context, from_email, email, html_email_template_name=None):
