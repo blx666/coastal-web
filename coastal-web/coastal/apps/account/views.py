@@ -5,12 +5,8 @@ from coastal.apps.account.utils import create_user, reward_invite_user
 from coastal.apps.account.models import UserProfile
 from coastal.api.account.forms import RegistrationForm
 from django.template.response import TemplateResponse
-from coastal.apps.account.form import PassWordResetFromEmail, SetPasswordForm
-
-from django.conf import settings
+from coastal.apps.account.form import SetPasswordForm
 from django.contrib.auth import get_user_model
-
-
 from django.contrib.auth.tokens import default_token_generator
 from django.http import HttpResponseRedirect
 from django.shortcuts import resolve_url
@@ -61,55 +57,6 @@ def sign_up(request, invite_code):
     return TemplateResponse(request, 'sign-up.html', {'form': form, 'referrer': referrer})
 
 
-def password_reset(request,
-                   email_template_name='registration/password_reset_email.html',
-                   password_reset_form=PassWordResetFromEmail,
-                   from_email=settings.DEFAULT_FROM_EMAIL,
-                   extra_context=None,
-                   html_email_template_name=None,
-                   extra_email_context=None):
-    if request.method == "POST":
-        form = password_reset_form(request.POST)
-        if form.is_valid():
-            opts = {
-                'use_https': request.is_secure(),
-                'from_email': from_email,
-                'email_template_name': email_template_name,
-                'subject_template_name': 'Reset Your Password',
-                'request': request,
-                'html_email_template_name': html_email_template_name,
-                'extra_email_context': extra_email_context,
-            }
-            form.save(**opts)
-            email = form.cleaned_data['email']
-            active_users = get_user_model()._default_manager.filter(
-                email__iexact=email, is_active=True)
-            if active_users:
-                return CoastalJsonResponse(data={'send_email': 'true'})
-    else:
-        form = password_reset_form()
-    context = {
-        'form': form,
-        'title': _('Password reset'),
-    }
-    if extra_context is not None:
-        context.update(extra_context)
-
-    return CoastalJsonResponse(data={'send_email': 'false'})
-
-
-def password_reset_done(request,
-                        template_name='registration/password_reset_done.html',
-                        extra_context=None):
-    context = {
-        'title': _('Password reset sent'),
-    }
-    if extra_context is not None:
-        context.update(extra_context)
-
-    return TemplateResponse(request, template_name, context)
-
-
 def password_reset_confirm(request, uidb64=None, token=None,
                            template_name='registration/password_reset_confirm.html',
                            token_generator=default_token_generator,
@@ -135,7 +82,6 @@ def password_reset_confirm(request, uidb64=None, token=None,
 
     if user is not None and token_generator.check_token(user, token):
         validlink = True
-        title = _('Enter new password')
         if request.method == 'POST':
             form = set_password_form(user, request.POST)
             if form.is_valid():
@@ -146,10 +92,8 @@ def password_reset_confirm(request, uidb64=None, token=None,
     else:
         validlink = False
         form = None
-        title = _('Password reset unsuccessful')
     context = {
         'form': form,
-        'title': title,
         'validlink': validlink,
     }
     if extra_context is not None:
@@ -158,14 +102,5 @@ def password_reset_confirm(request, uidb64=None, token=None,
     return TemplateResponse(request, template_name, context)
 
 
-def password_reset_complete(request,
-                            template_name='registration/password_reset_complete.html',
-                            extra_context=None):
-    context = {
-        'login_url': resolve_url(settings.LOGIN_URL),
-        'title': _('Password reset complete'),
-    }
-    if extra_context is not None:
-        context.update(extra_context)
-
-    return TemplateResponse(request, template_name, context)
+def password_reset_complete(request):
+    return HttpResponseRedirect('/static/html/password_reset_complete.html')

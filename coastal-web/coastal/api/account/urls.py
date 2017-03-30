@@ -1,6 +1,5 @@
 from django.conf.urls import url
 from coastal.api.account import views
-from coastal.apps.account import views as apps_views
 
 urlpatterns = [
     url(r'^register/$', views.register, name='register'),
@@ -19,5 +18,5 @@ urlpatterns = [
     url(r'^stripe-info/$', views.stripe_info, name='stripe-info'),
     url(r'^login/facebook/$', views.facebook_login, name='facebook-login'),
     url(r'^invite-code/$', views.invite_codes, name='invite-code'),
-    url(r'^password-reset/$', apps_views.password_reset, name='password_reset'),
+    url(r'^password-reset/$', views.password_reset, name='password_reset'),
 ]

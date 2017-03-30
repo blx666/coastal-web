@@ -9,7 +9,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Q
 
-from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm, FacebookLoginForm
+from coastal.api.account.forms import RegistrationForm, UserProfileForm, CheckEmailForm, FacebookLoginForm, PassWordResetFromEmail
 from coastal.apps.account.utils import create_user
 from coastal.api.core.response import CoastalJsonResponse
 from coastal.api.core import response
@@ -28,6 +28,8 @@ from coastal.apps.sns.utils import push_user_reward
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
 from coastal.apps.sns.tasks import push_user_notifications
 import datetime
+from django.contrib.auth import get_user_model
+from django.utils.translation import ugettext as _
 
 logger = logging.getLogger(__name__)
 
@@ -558,3 +560,32 @@ def invite_codes(request):
     }
 
     return CoastalJsonResponse(data)
+
+
+def password_reset(request,
+                   email_template_name='registration/password_reset_email.html',
+                   password_reset_form=PassWordResetFromEmail,
+                   from_email=settings.DEFAULT_FROM_EMAIL,
+                   html_email_template_name=None,
+                   extra_email_context=None):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    form = password_reset_form(request.POST)
+    if form.is_valid():
+        opts = {
+            'use_https': request.is_secure(),
+            'from_email': from_email,
+            'email_template_name': email_template_name,
+            'subject_template_name': 'Reset Your Password',
+            'request': request,
+            'html_email_template_name': html_email_template_name,
+            'extra_email_context': extra_email_context,
+        }
+        form.save(**opts)
+        email = form.cleaned_data['email']
+        active_users = get_user_model()._default_manager.filter(
+            email__iexact=email, is_active=True)
+        if active_users:
+            return CoastalJsonResponse(data={'send_email': 'true'})
+    return CoastalJsonResponse(data={'send_email': 'false'})
