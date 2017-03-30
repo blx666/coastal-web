@@ -61,7 +61,6 @@ def password_reset_confirm(request, uidb64=None, token=None,
                            template_name='registration/password_reset_confirm.html',
                            token_generator=default_token_generator,
                            set_password_form=SetPasswordForm,
-                           post_reset_redirect=None,
                            extra_context=None):
     """
     View that checks the hash in a password reset link and presents a
@@ -69,12 +68,7 @@ def password_reset_confirm(request, uidb64=None, token=None,
     """
     UserModel = get_user_model()
     assert uidb64 is not None and token is not None  # checked by URLconf
-    if post_reset_redirect is None:
-        post_reset_redirect = reverse('account:password_reset_complete')
-    else:
-        post_reset_redirect = resolve_url(post_reset_redirect)
     try:
-        # urlsafe_base64_decode() decodes to bytestring on Python 3
         uid = force_text(urlsafe_base64_decode(uidb64))
         user = UserModel._default_manager.get(pk=uid)
     except (TypeError, ValueError, OverflowError, UserModel.DoesNotExist):
@@ -86,7 +80,7 @@ def password_reset_confirm(request, uidb64=None, token=None,
             form = set_password_form(user, request.POST)
             if form.is_valid():
                 form.save()
-                return HttpResponseRedirect(post_reset_redirect)
+                return HttpResponseRedirect('/static/html/password_reset_complete.html')
         else:
             form = set_password_form(user)
     else:
@@ -100,7 +94,3 @@ def password_reset_confirm(request, uidb64=None, token=None,
         context.update(extra_context)
 
     return TemplateResponse(request, template_name, context)
-
-
-def password_reset_complete(request):
-    return HttpResponseRedirect('/static/html/password_reset_complete.html')
