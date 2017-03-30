@@ -18,4 +18,5 @@ urlpatterns = [
     url(r'^stripe-info/$', views.stripe_info, name='stripe-info'),
     url(r'^login/facebook/$', views.facebook_login, name='facebook-login'),
     url(r'^invite-code/$', views.invite_codes, name='invite-code'),
+    url(r'^password-reset/$', views.password_reset, name='password_reset'),
 ]
