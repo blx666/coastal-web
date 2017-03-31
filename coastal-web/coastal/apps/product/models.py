@@ -216,8 +216,10 @@ class Product(models.Model):
 
         if not (self.for_sale or self.for_rental) and self.category_id != defs.CATEGORY_ADVENTURE:
             return False
-
-        if self.for_rental:
+        if self.category_id == defs.CATEGORY_ADVENTURE:
+            if not (self.rental_price and self.rental_type and self.currency):
+                return False
+        elif self.for_rental:
             if not (self.rental_price and self.rental_unit and self.rental_type and self.currency):
                 return False
 
