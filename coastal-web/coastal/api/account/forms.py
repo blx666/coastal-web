@@ -75,7 +75,7 @@ class PassWordResetFromEmail(forms.Form):
         email = self.cleaned_data['email']
         value = self.get_users(email)
         if not value:
-            raise forms.ValidationError("The email is not register.")
+            raise forms.ValidationError("No account exists for the requested email address.")
         return email
 
     def send_mail(self, subject_template_name, email_template_name,
