@@ -104,7 +104,7 @@ class PassWordResetFromEmail(forms.Form):
         resetting their password.
         """
         active_users = get_user_model()._default_manager.filter(
-            email__iexact=email, is_active=True)
+            username=email, is_active=True)
         return active_users
 
     def save(self, domain_override=None,
