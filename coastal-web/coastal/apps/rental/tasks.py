@@ -1,7 +1,7 @@
 from celery import shared_task
 from coastal.apps.account.models import CoastalBucket, Transaction
 from coastal.apps.rental.models import RentalOrder
-from coastal.apps.rental.utils import clean_rental_out_date
+from coastal.apps.rental.utils import clean_rental_out_date, recreate_rental_out_date
 from coastal.apps.sns.utils import publish_unconfirmed_order, publish_unpay_order, publish_paid_owner_order, \
     publish_check_out_order
 from coastal.apps.sns.exceptions import NoEndpoint, DisabledEndpoint
@@ -18,7 +18,7 @@ def expire_order_request(order_id):
     if order.status == 'request':
         order.status = 'invalid'
         order.save()
-        clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
+        recreate_rental_out_date(order.product)
         try:
             publish_unconfirmed_order(order)
         except (NoEndpoint, DisabledEndpoint):
@@ -36,7 +36,7 @@ def expire_order_charge(order_id):
     if order.status == 'charge':
         order.status = 'invalid'
         order.save()
-        clean_rental_out_date(order.product, order.start_datetime, order.end_datetime)
+        recreate_rental_out_date(order.product)
         try:
             publish_unpay_order(order)
         except (NoEndpoint, DisabledEndpoint):
