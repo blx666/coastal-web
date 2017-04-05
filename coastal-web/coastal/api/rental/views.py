@@ -12,7 +12,7 @@ from coastal.api.product.utils import calc_price, get_email_cipher
 from coastal.api.core.decorators import login_required
 from coastal.apps.product import defines as defs
 from coastal.apps.account.utils import is_confirmed_user, reward_invite_referrer
-from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date
+from coastal.apps.rental.utils import validate_rental_date, rental_out_date, clean_rental_out_date, recreate_rental_out_date
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.rental.tasks import expire_order_request, expire_order_charge, check_in
 from coastal.apps.sns.utils import publish_get_order, publish_confirmed_order, publish_refuse_order, publish_paid_order, push_referrer_reward
@@ -126,7 +126,7 @@ def rental_approve(request):
     else:
         rental_order.status = 'declined'
         rental_order.save()
-        clean_rental_out_date(rental_order.product, rental_order.start_datetime,rental_order.end_datetime)
+        recreate_rental_out_date(rental_order.product)
         try:
             publish_refuse_order(rental_order)
         except (NoEndpoint, DisabledEndpoint):
