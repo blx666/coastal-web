@@ -10,7 +10,7 @@ def validate_rental_date(product, start_date, end_date):
        So when user update Black-Out Dates or Rental Order is created, please call the function.
     """
     black_out_dates = BlackOutDate.objects.filter(product=product, start_date__gte=start_date).filter(end_date__lte=end_date)
-    rental_dates = RentalOrder.objects.filter(product=product, start_datetime__gte=start_date).filter(end_datetime__lte=end_date)
+    rental_dates = RentalOrder.objects.filter(product=product, start_datetime__gte=start_date).filter(end_datetime__lte=end_date).exclude(status__in=RentalOrder.INVALID_STATUS_LIST)
     return black_out_dates or rental_dates
 
 
