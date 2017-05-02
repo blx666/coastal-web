@@ -67,7 +67,7 @@ def get_home_banners():
 
         home_banners_list.append(banner_dict)
 
-    cache.set(cache_keys.CACHE_HOME_BANNER_KEY, home_banners_list, 5 * 60)
+    cache.set(cache_keys.CACHE_HOME_BANNER_KEY, home_banners_list, cache_keys.CACHE_TIME)
 
     return home_banners_list
 
@@ -140,7 +140,7 @@ def get_home_product_list(page):
     else:
         next_page = page + 1
 
-    cache.set(cache_keys.CACHE_HOME_PRODUCT_LIST_KEY % page, (product_list, next_page), 5 * 60)
+    cache.set(cache_keys.CACHE_HOME_PRODUCT_LIST_KEY % page, (product_list, next_page), cache_keys.CACHE_TIME)
 
     return product_list, next_page
 

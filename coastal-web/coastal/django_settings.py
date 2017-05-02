@@ -182,6 +182,7 @@ CRONJOBS = [
     ('* */6 * * *', 'coastal.apps.product.cronjobs.update_product_score', '>> /tmp/update_product_score.log'),
     ('00 12 * * *', 'coastal.apps.product.cronjobs.exchange_rate', '>> /tmp/exchange_rate.log'),
     ('0 0 * * *', 'coastal.apps.support.cronjobs.send_daily_report', '>> /tmp/send_daily_report.log'),
+    ('/30 * * * *', 'coastal.apps.support.cronjobs.update_cache', '>> /tmp/update_cache.log'),
 ]
 
 # Email
