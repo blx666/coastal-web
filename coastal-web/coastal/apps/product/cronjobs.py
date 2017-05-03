@@ -3,6 +3,12 @@ from coastal.apps.product.models import Product, ProductViewCount
 from coastal.apps.currency.models import Currency
 from coastal.apps.currency.utils import get_exchange_rate
 from coastal.apps.product import defines as defs
+from coastal.api.page.views import get_home_banners, get_home_product_list
+from django.core.cache import cache
+from coastal.core import cache_defines as cache_keys
+from coastal.api import defines as coastal_defs
+from django.core.paginator import Paginator
+
 
 from django.utils import timezone
 import urllib.request
@@ -48,3 +54,11 @@ def exchange_rate():
         if product.rental_price and product.category_id == defs.CATEGORY_ADVENTURE:
             product.rental_usd_price = math.ceil(product.rental_price / currency_rate)
         product.save()
+
+
+def update_cache():
+    cache.delete(cache_keys.CACHE_HOME_BANNER_KEY)
+    get_home_banners()
+    for page in range(1, 11):
+        cache.delete(cache_keys.CACHE_HOME_PRODUCT_LIST_KEY % page)
+        get_home_product_list(page)
