@@ -58,10 +58,7 @@ def exchange_rate():
 
 def update_cache():
     cache.delete(cache_keys.CACHE_HOME_BANNER_KEY)
-    products = Product.objects.filter(status='published')
-    paginator = Paginator(products, coastal_defs.PER_PAGE_ITEM)
-    for page in paginator.num_pages:
-        real_page = page + 1
-        cache.delete(cache_keys.CACHE_HOME_PRODUCT_LIST_KEY % real_page)
-        get_home_product_list(real_page)
     get_home_banners()
+    for page in range(1, 11):
+        cache.delete(cache_keys.CACHE_HOME_PRODUCT_LIST_KEY % page)
+        get_home_product_list(page)
