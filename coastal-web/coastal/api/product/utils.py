@@ -110,9 +110,9 @@ def get_product_discount(rental_price, rental_unit, discount_weekly=0, discount_
         rental_price *= 4
     if rental_unit == 'hour':
         rental_price *= 24
-    if discount_weekly:
+    if discount_weekly is not None:
         updated_weekly_price = math.ceil(rental_price * 7 * (1 - discount_weekly/100.0))
-    if discount_monthly:
+    if discount_monthly is not None:
         updated_monthly_price = math.ceil(rental_price * 30 * (1 - discount_monthly/100.0))
 
     data = [updated_weekly_price, updated_monthly_price]
