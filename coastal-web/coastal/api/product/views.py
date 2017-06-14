@@ -249,7 +249,7 @@ def product_detail(request, pid):
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
-        if pi.caption != ProductImage.CAPTION_360:
+        if pi.image_type != ProductImage.CAPTION_360:
             images.append(pi.image.url)
         else:
             views.append(pi.image.url)
@@ -1003,7 +1003,7 @@ def all_detail(request):
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
-        if pi.caption != ProductImage.CAPTION_360:
+        if pi.image_type != ProductImage.CAPTION_360:
             image = {
                 'image_id': pi.id,
                 'url': pi.image.url,
@@ -1098,4 +1098,15 @@ def update_ordering(request):
 
     for index in range(len(order_list)):
         ProductImage.objects.filter(id=order_list[index]).update(display_order=index)
+    return CoastalJsonResponse()
+
+
+def update_caption(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    product_image = ProductImage.objects.filter(id=request.POST.get('id'))
+    if not product_image:
+        return CoastalJsonResponse(message='image not exist')
+    product_image.update(caption=request.POST.get('caption'))
     return CoastalJsonResponse()

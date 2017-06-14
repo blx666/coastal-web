@@ -385,7 +385,7 @@ def product_detail(request, pid):
     images = []
     views = []
     for pi in ProductImage.objects.filter(product=product):
-        if pi.caption != ProductImage.CAPTION_360:
+        if pi.image_type != ProductImage.CAPTION_360:
             images.append(pi.image.url)
         else:
             views.append(pi.image.url)

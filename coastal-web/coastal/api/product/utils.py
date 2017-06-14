@@ -73,7 +73,7 @@ def bind_product_image(products):
     :param products: product obj list
     :return: None
     """
-    product_images = ProductImage.objects.filter(product__in=products).exclude(caption=ProductImage.CAPTION_360)
+    product_images = ProductImage.objects.filter(product__in=products).exclude(image_type=ProductImage.CAPTION_360)
 
     image_group = {}
     for image in product_images:
@@ -86,7 +86,7 @@ def bind_product_image(products):
 
 
 def bind_product_main_image(products):
-    product_images = ProductImage.objects.filter(product__in=products).exclude(caption=ProductImage.CAPTION_360)
+    product_images = ProductImage.objects.filter(product__in=products).exclude(image_type=ProductImage.CAPTION_360)
 
     images = {}
     for image in product_images:
