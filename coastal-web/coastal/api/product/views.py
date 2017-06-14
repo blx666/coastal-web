@@ -1082,3 +1082,13 @@ def all_detail(request):
         result['exp_end_time'] = product.exp_end_time and product.exp_end_time.strftime('%I:%M %p') or ''
     result.update(discount)
     return CoastalJsonResponse(result)
+
+
+def update_ordering(request):
+    if request.method != 'POST':
+        return CoastalJsonResponse(status=response.STATUS_405)
+
+    order_list = request.POST.get('ordered_list').split(',')
+    for index in range(len(order_list)):
+        ProductImage.objects.filter(id=order_list[index]).update(display_order=index)
+    return CoastalJsonResponse()
