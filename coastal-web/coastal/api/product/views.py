@@ -1089,6 +1089,13 @@ def update_ordering(request):
         return CoastalJsonResponse(status=response.STATUS_405)
 
     order_list = request.POST.get('ordered_list').split(',')
+    product = Product.objects.filter(id=request.POST.get('product_id')).first()
+    if not product:
+        return CoastalJsonResponse(message='product not exist')
+    product_image = product.productimage_set.all()
+    if len(order_list) != len(product_image):
+        return CoastalJsonResponse(message='Incoming length inconsistencies and product images')
+
     for index in range(len(order_list)):
         ProductImage.objects.filter(id=order_list[index]).update(display_order=index)
     return CoastalJsonResponse()

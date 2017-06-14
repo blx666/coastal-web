@@ -16,11 +16,9 @@ def basic_info(self, prefix=''):
 
     info = cache.get('user_basic_info|%s' % self.id)
     if info is None:
-        user_email = secure_email(self.email)
-        email = user_email.split('@')[0][0:3]+'***'
         info = {
             'id': self.id,
-            'name': self.first_name or email,
+            'name': self.first_name or secure_email(self.email),
             'photo': self.userprofile.photo and self.userprofile.photo.url or '',
         }
 
