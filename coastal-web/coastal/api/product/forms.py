@@ -12,7 +12,7 @@ from coastal.api.product.utils import set_point
 class ImageUploadForm(forms.ModelForm):
     class Meta:
         model = ProductImage
-        fields = ['image', 'caption', 'product']
+        fields = ['image', 'image_type', 'product']
 
 
 class ProductAddForm(forms.ModelForm):

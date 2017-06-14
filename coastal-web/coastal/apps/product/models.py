@@ -300,14 +300,14 @@ class Product(models.Model):
             'images_360': []
         }
 
-        images = self.productimage_set.exclude(caption=ProductImage.CAPTION_360)
+        images = self.productimage_set.exclude(image_type=ProductImage.CAPTION_360)
         for img in images:
             image_info['images'].append({
                 'image_id': img.id,
                 'url': img.image.url
             })
 
-        images_360 = self.productimage_set.filter(caption=ProductImage.CAPTION_360)
+        images_360 = self.productimage_set.filter(image_type=ProductImage.CAPTION_360)
         for img in images_360:
             image_info['images_360'].append({
                 'image_id': img.id,
@@ -373,7 +373,8 @@ class ProductImage(models.Model):
     product = models.ForeignKey(Product, null=True, blank=True)
     image = models.ImageField(upload_to='product/%Y/%m', max_length=255, storage=ImageStorage())
     display_order = models.PositiveSmallIntegerField(default=0)
-    caption = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
+    image_type = models.CharField(max_length=32, choices=TYPE_CHOICE, blank=True)
+    caption = models.CharField(max_length=35, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

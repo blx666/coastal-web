@@ -147,7 +147,7 @@ def get_home_product_list(page):
 
 @cache_page(5 * 60)
 def images_360(request):
-    images_view = ProductImage.objects.filter(caption='360-view', product__status='published').order_by('-product__score')[0:90]
+    images_view = ProductImage.objects.filter(image_type='360-view', product__status='published').order_by('-product__score')[0:90]
 
     image_list = []
     for image_360 in images_view:

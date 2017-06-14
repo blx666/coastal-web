@@ -24,4 +24,6 @@ urlpatterns = [
     url(r'^owner/reviews/$', views.product_owner_reviews, name='product-owner-reviews'),
     url(r'^flag-inappropriate/$', views.flag_junk, name='flag-junk'),
     url(r'^all-detail/$', views.all_detail, name='all-detail'),
+    url(r'^images/update-ordering/$', views.update_ordering, name='update-ordering'),
+    url(r'^images/update/$', views.update_caption, name='update-caption'),
 ]
