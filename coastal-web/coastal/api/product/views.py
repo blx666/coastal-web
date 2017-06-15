@@ -1007,12 +1007,14 @@ def all_detail(request):
             image = {
                 'image_id': pi.id,
                 'url': pi.image.url,
+                'caption': pi.caption,
             }
             images.append(image)
         else:
             view = {
                 'image_id': pi.id,
                 'url': pi.image.url,
+                'caption': pi.caption,
             }
             views.append(view)
     if product.for_rental:
